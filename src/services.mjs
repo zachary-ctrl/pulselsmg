@@ -149,5 +149,12 @@ export const TrustService={
 };
 
 export const OutcomeService={
-  complete(project,swarm,outcome){const result=Store.addOutcome({projectId:project.id,swarmId:swarm?.id||null,...outcome});project.status="completed";Store.upsertProject(project);if(swarm){swarm.status="completed";Store.upsertSwarm(swarm)}Store.activity("project_completed",{projectId:project.id,swarmId:swarm?.id||null});return result}
+  complete(project,swarm,outcome){
+    const result=Store.addOutcome({projectId:project.id,swarmId:swarm?.id||null,...outcome});
+    project.status=outcome.finished===false?"abandoned":"completed";Store.upsertProject(project);
+    if(swarm){swarm.status=outcome.finished===false?"cancelled":"completed";Store.upsertSwarm(swarm)}
+    Store.activity(outcome.finished===false?"project_abandoned":"project_completed",{projectId:project.id,swarmId:swarm?.id||null});
+    if(outcome.creatorSatisfied!=null)Store.activity("team_rated",{projectId:project.id,swarmId:swarm?.id||null,rating:Number(outcome.creatorSatisfied)});
+    return result
+  }
 };

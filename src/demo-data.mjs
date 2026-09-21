@@ -16,7 +16,7 @@ export const DEMO_PROFILES = [
     experience:[{title:"Product & Brand Designer",years:7,industry:"Design"}],verifiedExperience:["Led brand systems for 14 launches"],
     industries:["Fashion","Technology","Media"],interests:["fashion","culture","consumer apps"],goals:["build iconic brands","work with ambitious founders"],desiredRoles:["Brand Designer","UI Designer","Creative Director"],
     location:{city:"Dallas",state:"TX",country:"US"},remoteAllowed:true,travelRadius:50,availability:{start:"2026-09-22",end:"2027-02-28",hoursPerWeek:18},timezone:"America/Chicago",
-    hourlyRate:85,projectRate:2200,minimumBudget:900,preferredProjectTypes:["fashion","app","brand","campaign"],languages:["English"],
+    hourlyRate:85,projectRate:1000,minimumBudget:700,preferredProjectTypes:["fashion","app","brand","campaign"],languages:["English"],
     workingStyle:["collaborative","visual","fast-iteration"],communicationPreferences:["Slack","Video"],portfolio:["https://example.com/maya"],socialLinks:[],
     verificationStatus:{identity:true,email:true,phone:true,skills:true},reliabilityScore:.94,completionRate:.95,responseRate:.95,averageResponseTime:1.5,projectsCompleted:44,peerRatings:4.8,
     previousCollaborators:["demo-dev-01","demo-photo-01"],blockedUsers:[],teamHistory:["launchlab"],createdAt:"2026-02-10",updatedAt:"2026-09-14"
@@ -27,7 +27,7 @@ export const DEMO_PROFILES = [
     experience:[{title:"Commercial Photographer",years:8,industry:"Media"}],verifiedExperience:["Published editorial and campaign work"],
     industries:["Fashion","Beauty","Food","Media"],interests:["fashion","editorial","music"],goals:["shoot national campaigns"],desiredRoles:["Photographer","Photo Director"],
     location:{city:"Dallas",state:"TX",country:"US"},remoteAllowed:false,travelRadius:75,availability:{start:"2026-09-25",end:"2027-01-31",hoursPerWeek:20},timezone:"America/Chicago",
-    hourlyRate:110,projectRate:1800,minimumBudget:700,preferredProjectTypes:["campaign","fashion","food","event"],languages:["English","Spanish"],
+    hourlyRate:110,projectRate:900,minimumBudget:600,preferredProjectTypes:["campaign","fashion","food","event"],languages:["English","Spanish"],
     workingStyle:["on-set","collaborative","detail-driven"],communicationPreferences:["Text","Email"],portfolio:["https://example.com/jordan"],socialLinks:[],
     verificationStatus:{identity:true,email:true,phone:true,skills:true},reliabilityScore:.92,completionRate:.94,responseRate:.9,averageResponseTime:3,projectsCompleted:61,peerRatings:4.8,
     previousCollaborators:["demo-ui-01","demo-video-01"],blockedUsers:[],teamHistory:["editorial-22"],createdAt:"2026-01-11",updatedAt:"2026-09-01"
@@ -38,7 +38,7 @@ export const DEMO_PROFILES = [
     experience:[{title:"Growth Lead",years:6,industry:"Marketing"}],verifiedExperience:["Managed seven-figure campaign spend"],
     industries:["E-commerce","Technology","Fashion"],interests:["consumer brands","culture","analytics"],goals:["scale high-conviction products"],desiredRoles:["Growth Marketer","Marketing Lead","Launch Strategist"],
     location:{city:"Austin",state:"TX",country:"US"},remoteAllowed:true,travelRadius:40,availability:{start:"2026-09-22",end:"2027-04-30",hoursPerWeek:25},timezone:"America/Chicago",
-    hourlyRate:90,projectRate:2400,minimumBudget:900,preferredProjectTypes:["brand","startup","campaign","ecommerce"],languages:["English","Hindi"],
+    hourlyRate:90,projectRate:1000,minimumBudget:700,preferredProjectTypes:["brand","startup","campaign","ecommerce"],languages:["English","Hindi"],
     workingStyle:["data-driven","async","fast-iteration"],communicationPreferences:["Slack","Email"],portfolio:["https://example.com/priya"],socialLinks:[],
     verificationStatus:{identity:true,email:true,phone:true,skills:true},reliabilityScore:.95,completionRate:.96,responseRate:.97,averageResponseTime:1,projectsCompleted:42,peerRatings:4.9,
     previousCollaborators:["demo-pm-01"],blockedUsers:[],teamHistory:["atlas"],createdAt:"2026-03-01",updatedAt:"2026-09-19"
@@ -49,7 +49,7 @@ export const DEMO_PROFILES = [
     experience:[{title:"Apparel Designer",years:5,industry:"Fashion"}],verifiedExperience:["Produced four capsule collections"],
     industries:["Fashion","Streetwear","Retail"],interests:["streetwear","manufacturing","music"],goals:["launch culturally relevant product"],desiredRoles:["Fashion Designer","Apparel Designer","Product Designer"],
     location:{city:"Dallas",state:"TX",country:"US"},remoteAllowed:true,travelRadius:45,availability:{start:"2026-09-22",end:"2027-03-15",hoursPerWeek:22},timezone:"America/Chicago",
-    hourlyRate:80,projectRate:2000,minimumBudget:850,preferredProjectTypes:["fashion","brand","campaign"],languages:["English"],
+    hourlyRate:80,projectRate:950,minimumBudget:650,preferredProjectTypes:["fashion","brand","campaign"],languages:["English"],
     workingStyle:["hands-on","visual","structured"],communicationPreferences:["Text","Video"],portfolio:["https://example.com/nia"],socialLinks:[],
     verificationStatus:{identity:true,email:true,phone:true,skills:true},reliabilityScore:.93,completionRate:.94,responseRate:.91,averageResponseTime:2.5,projectsCompleted:27,peerRatings:4.8,
     previousCollaborators:["demo-photo-01"],blockedUsers:[],teamHistory:["capsule-a"],createdAt:"2026-02-19",updatedAt:"2026-09-16"
@@ -60,7 +60,7 @@ export const DEMO_PROFILES = [
     experience:[{title:"E-commerce Developer",years:7,industry:"E-commerce"}],verifiedExperience:["Built 32 storefronts"],
     industries:["E-commerce","Fashion","Food"],interests:["retail","automation","growth"],goals:["build fast storefronts"],desiredRoles:["E-commerce Developer","Developer"],
     location:{city:"Fort Worth",state:"TX",country:"US"},remoteAllowed:true,travelRadius:60,availability:{start:"2026-09-22",end:"2027-06-30",hoursPerWeek:28},timezone:"America/Chicago",
-    hourlyRate:90,projectRate:2200,minimumBudget:900,preferredProjectTypes:["ecommerce","fashion","food truck","brand"],languages:["English","Spanish"],
+    hourlyRate:90,projectRate:1100,minimumBudget:700,preferredProjectTypes:["ecommerce","fashion","food truck","brand"],languages:["English","Spanish"],
     workingStyle:["async","structured","fast-iteration"],communicationPreferences:["Slack","Email"],portfolio:["https://example.com/luis"],socialLinks:[],
     verificationStatus:{identity:true,email:true,phone:true,skills:true},reliabilityScore:.97,completionRate:.98,responseRate:.95,averageResponseTime:1.8,projectsCompleted:55,peerRatings:4.9,
     previousCollaborators:["demo-growth-01"],blockedUsers:[],teamHistory:["storefront-9"],createdAt:"2026-01-29",updatedAt:"2026-09-20"

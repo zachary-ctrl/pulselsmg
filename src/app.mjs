@@ -399,7 +399,7 @@ function bind(){
   $("#runMatching")?.addEventListener("click",()=>{state.stage="matches";state.candidates=null;render()});
   $("#buildTeams")?.addEventListener("click",()=>{state.stage="teams";state.teams=null;render()});
   $$("[data-profile-demo]").forEach(b=>b.onclick=()=>profileModal(b.dataset.profileDemo));
-  $$("[data-role-detail]").forEach(b=>b.onclick=()=>roleModal(currentProject(),b.dataset.roleDetail));
+  $("[data-role-detail],[data-role-node]").forEach(b=>b.onclick=()=>roleModal(currentProject(),b.dataset.roleDetail||b.dataset.roleNode));
   $$("[data-build-team]").forEach(b=>b.onclick=()=>{const p=currentProject(),team=ensureTeams(p)[Number(b.dataset.buildTeam)];if(!team)return;const swarm=SwarmService.create(p,team);graphMoment(p,team,()=>{state.stage="invites";render();toast("Swarm formation started")})});
   $$("[data-invite]").forEach(b=>b.onclick=()=>{const p=currentProject(),s=currentSwarm(),result=InvitationService.respond(b.dataset.invite,b.dataset.response,p,DEMO_PROFILES,s);if(result.replacement)toast("Declined → replacement matching ran automatically");SwarmService.syncMembers(s);render()});
   $$("[data-ms-check]").forEach(c=>c.onchange=()=>{ProjectService.setMilestone(currentProject().id,c.dataset.msCheck,c.checked?"done":"todo");render()});

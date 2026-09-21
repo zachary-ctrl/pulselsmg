@@ -148,7 +148,7 @@ export function parseGoalFallback(rawGoal){
   const tpl=pickTemplate(rawGoal);
   const budget=parseMoney(rawGoal);
   const location=cityNames.find(c=>new RegExp("\\b"+c.replace(" ","\\s+")+"\\b","i").test(rawGoal))||"Remote";
-  const remoteAllowed=/remote|anywhere|online/i.test(rawGoal)||location==="Remote";
+  const remoteAllowed=/remote|anywhere|online/i.test(rawGoal)||location==="Remote"||["Software / Product","Fashion / Brand","Startup","Marketing / Campaign","Podcast / Audio","Music"].includes(tpl.category);
   const deadline=parseDeadline(rawGoal);
   const startDate=new Date().toISOString().slice(0,10);
   const roles=tpl.roles.map((r,i)=>({

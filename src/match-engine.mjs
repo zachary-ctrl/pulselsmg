@@ -62,8 +62,9 @@ export function hardConstraintReasons(profile,role,project,teamIds=[]){
   const languages=(profile.languages||[]).map(lower);for(const l of role.requiredLanguages||[]){if(!languages.includes(lower(l)))reasons.push("required language unavailable")}
   if(availabilityOverlap(profile,project)===0)reasons.push("unavailable during required dates");
   if(locationFit(profile,project)===0)reasons.push("location incompatible");
-  const desired=(profile.desiredRoles||[]).map(lower),title=lower(role.title);
-  const roleMatch=desired.some(r=>r.includes(title)||title.includes(r))||skillFit(profile,role)>=.62;
+  const desired=(profile.desiredRoles||[]).map(lower),title=lower(role.title),skillScore=skillFit(profile,role);
+  const directRole=desired.some(r=>r===title||(title.length>10&&(r.includes(title)||title.includes(r))));
+  const roleMatch=directRole||skillScore>=.62;
   if(!roleMatch)reasons.push("role mismatch");
   if((role.certifications||[]).length){const verified=(profile.verifiedExperience||[]).map(lower);for(const c of role.certifications){if(!verified.some(v=>v.includes(lower(c))))reasons.push("missing mandatory certification")}}
   if(role.budgetCap&&profile.minimumBudget&&Number(profile.minimumBudget)>Number(role.budgetCap))reasons.push("budget incompatible");
@@ -164,11 +165,13 @@ export function optimizeTeams(project,profiles,{matchWeights=DEFAULT_MATCH_WEIGH
   scored.sort((a,b)=>b.metrics.score-a.metrics.score||a.metrics.totalBudget-b.metrics.totalBudget);
   if(!scored.length)return [];
   const unique=[];const seen=new Set();
-  const add=(x,label)=>{if(!x)return;const key=x.assignments.map(a=>a.profileId+":"+a.roleId).sort().join("|");if(seen.has(key))return;seen.add(key);unique.push({...x,label})};
-  add(scored[0],"OPTIMAL SWARM");
-  const balanced=scored.find(x=>x!==scored[0]&&x.metrics.memberCount>=Math.min(project.teamSizeMax||99,roles.length-1)&&x.metrics.pairwiseCompatibility>=.62);
+  const memberKey=x=>[...new Set(x.assignments.map(a=>a.profileId))].sort().join("|");
+  const add=(x,label)=>{if(!x)return;const key=memberKey(x);if(seen.has(key))return;seen.add(key);unique.push({...x,label})};
+  const optimal=scored[0];add(optimal,"OPTIMAL SWARM");
+  const optimalKey=memberKey(optimal);
+  const balanced=scored.find(x=>memberKey(x)!==optimalKey&&x.metrics.memberCount>=Math.min(project.teamSizeMax||99,roles.length-1)&&x.metrics.pairwiseCompatibility>=.62&&x.metrics.score>=optimal.metrics.score-.12);
   add(balanced,"BALANCED SWARM");
-  const affordable=[...scored].filter(x=>!project.budgetMax||x.metrics.totalBudget<=project.budgetMax).sort((a,b)=>a.metrics.totalBudget-b.metrics.totalBudget||b.metrics.score-a.metrics.score).find(x=>x!==scored[0]);
+  const affordable=[...scored].filter(x=>memberKey(x)!==optimalKey&&x.metrics.totalBudget<optimal.metrics.totalBudget*.98&&(!project.budgetMax||x.metrics.totalBudget<=project.budgetMax)).sort((a,b)=>a.metrics.totalBudget-b.metrics.totalBudget||b.metrics.score-a.metrics.score)[0];
   add(affordable,"BUDGET-FRIENDLY SWARM");
   return unique;
 }
