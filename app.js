@@ -12,6 +12,28 @@ const creators = [
   {name:'SOPHIA',role:'MODEL',loc:'LEDGERA FACES',image:'https://gcdn.picsart.com/editing-temp/d1210a97-37b9-4dc3-b9b0-091c0879171a.jpeg',skills:['STREETWEAR','LIFESTYLE','EDITORIAL'],need:'Fashion, streetwear, lifestyle and editorial collaborations.',url:'https://ledgeramagazine.com/new-faces/sophia'}
 ];
 
+const LEDGERA = 'https://ledgeramagazine.com';
+const fallbackArticles = [
+  {title:'The NFL Cutdown Is Where the Season Gets Real',summary:'For hundreds of players, the 53-man deadline turns a summer audition into a career decision.',category:'SPORTS / NFL',url:LEDGERA+'/articles/nfl-roster-cuts-2026-53-man-deadline.html',image:''},
+  {title:'College Sports Eligibility Is Colliding With the Courts',summary:'Conference rules, court orders and athlete rights are forcing the sport to redraw the line between college and pro.',category:'SPORTS / COLLEGE ATHLETICS',url:LEDGERA+'/articles/college-sports-eligibility-sec-court-fight-2026.html',image:''},
+  {title:'The U.S. Open Is Getting the RedZone Treatment',summary:'ESPN is turning 16 courts into one fast-moving live feed and testing the future of sports television.',category:'SPORTS / MEDIA',url:LEDGERA+'/articles/us-open-redzone-espn-sports-broadcast-2026.html',image:''},
+  {title:'Remembering Dolly Parton, 1946–2026',summary:'The songs made her immortal. The generosity, business instinct and radical warmth made her something even bigger.',category:'REMEMBRANCE / MUSIC / CULTURE',url:LEDGERA+'/articles/remembering-dolly-parton-1946-2026.html',image:'https://cdn.prod.website-files.com/6a8deb242351864903af5057/6a8dfd7b4e874c9803980efe_Dolly%20Main.avif'},
+  {title:'Remembering Hayden Panettiere',summary:'The Heroes, Nashville and Scream star leaves behind more than three decades of work across television, film and music.',category:'REMEMBRANCE / CULTURE',url:LEDGERA+'/articles/hayden-panettiere-dies-at-36.html',image:''},
+  {title:'How to Feed a Dictator',summary:'Andrew Neel’s documentary turns private kitchens into a study of power, complicity and survival.',category:'FILM / TRIBECA',url:LEDGERA+'/articles/how-to-feed-a-dictator-tribeca-2026.html',image:''},
+  {title:'The Robin Byrd Story',summary:'New York cable-access history finally gets the documentary spotlight it deserves.',category:'CULTURE / TRIBECA',url:LEDGERA+'/articles/the-robin-byrd-story-tribeca-2026.html',image:''},
+  {title:'Met Gala 2026',summary:'Fashion’s biggest night, the politics of the guest list, and who gets to define the room.',category:'FASHION',url:LEDGERA+'/articles/met-gala-2026-predictions-and-politics.html',image:''},
+  {title:'Why Vinyl Keeps Climbing',summary:'Physical media is not nostalgia anymore — it is identity, ritual and a billion-dollar signal.',category:'MUSIC',url:LEDGERA+'/articles/why-vinyl-sales-keep-climbing.html',image:''},
+  {title:'Celebrity Brand Deals in 2026: Who Is Actually Cashing In',summary:'From equity stakes to co-ownership, the smartest celebrities are building businesses — not just collecting checks.',category:'BUSINESS / CULTURE',url:LEDGERA+'/articles/celebrity-brand-deals-2026-who-is-cashing-in.html',image:''}
+];
+const issues = [
+  {title:'RUNWAY SEVEN.',subtitle:'37 pages from Runway 7 at New York Fashion Week.',label:'SPECIAL EDITION / NYFW / SEPT. 2026',url:LEDGERA+'/magazine/runway-7-nyfw/',cover:'https://gcdn.picsart.com/editing-temp/38a8dae5-d809-42ae-bfa4-e953de41b213.jpeg'},
+  {title:'TOWER OF ELEGANCE.',subtitle:'M by Elegance on championship gold, pressure, branding and presence.',label:'ISSUE NO. 05 / 2026',url:LEDGERA+'/magazine/issue-05/',cover:'https://gcdn.picsart.com/editing-temp/fac7efda-c422-4bfa-9bea-5cda7afc3e82.jpeg'},
+  {title:'WIND SHIFTS',subtitle:'A New Direction · The Same Purpose · Culture in Motion',label:'ISSUE NO. 04',url:LEDGERA+'/magazine/issue-04/',cover:LEDGERA+'/assets/covers/ledgera-issue-04-wind-shifts.jpeg'},
+  {title:'THE NIGHT ISSUE',subtitle:'Monster Squad · New Energy · Summer After Dark',label:'ISSUE NO. 03',url:LEDGERA+'/magazine/issue-03/',cover:LEDGERA+'/assets/covers/ledgera-issue-03-monster-squad-cover.jpeg'},
+  {title:'THE POWER ISSUE',subtitle:'Karmen Petrovic · Confidence · Discipline',label:'ISSUE NO. 02',url:LEDGERA+'/magazine/issue-02/',cover:LEDGERA+'/assets/covers/ledgera-issue-02-karmen-petrovic-cover.png'},
+  {title:'THE SUMMER ISSUE',subtitle:'New Faces · Culture · Tribeca',label:'ISSUE NO. 01',url:LEDGERA+'/magazine/issue-01/',cover:LEDGERA+'/assets/covers/ledgera-issue-01-cover.png'}
+];
+
 const fallbackMarkets = [
   {id:'fallback-film',source:'PULSE',title:'Will a major streaming title announce a renewal this month?',yes:63,no:37,volume24h:0,endDate:'2026-09-30T23:59:00-05:00'},
   {id:'fallback-music',source:'PULSE',title:'Will a major artist announce a surprise release before October?',yes:58,no:42,volume24h:0,endDate:'2026-10-01T00:00:00-05:00'}
@@ -28,7 +50,9 @@ const state = {
   transactions: [],
   aiMessages: [],
   aiMode: 'signal',
-  deferredInstall: null
+  deferredInstall: null,
+  articles: fallbackArticles,
+  session: JSON.parse(localStorage.getItem('pulse.session.v1') || 'null')
 };
 
 function getDeviceId(){
@@ -84,61 +108,118 @@ function appInstalled(){
   return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 }
 
-async function api(path, options={}){
-  const headers = {...(options.headers||{}),'x-pulse-device':DEVICE_ID};
-  const res = await fetch(path,{...options,headers});
-  let data={};
-  try{ data=await res.json(); }catch{}
-  if(!res.ok) throw Object.assign(new Error(data.message||data.error||'Request failed'),{data,status:res.status});
-  return data;
+function localWallet(){
+  const saved=JSON.parse(localStorage.getItem('pulse.wallet.local.v1') || 'null');
+  if(saved) state.wallet=saved;
+  else localStorage.setItem('pulse.wallet.local.v1',JSON.stringify(state.wallet));
+  state.rewards={
+    'after-dark-pass':{cost:100,label:'LEDGERA After Dark access badge'},
+    'creator-boost':{cost:250,label:'24-hour creator profile boost'},
+    'issue-drop':{cost:500,label:'LEDGERA digital issue drop'},
+    'profile-review':{cost:1000,label:'LSMG creative profile review request'}
+  };
 }
-
-async function loadWallet(){
-  try{
-    const data=await api('/api/wallet');
-    state.wallet=data.wallet||state.wallet;
-    state.rewards=data.rewards||{};
-    state.transactions=data.transactions||[];
-  }catch(e){
-    console.warn('wallet',e);
+function saveLocalWallet(){ localStorage.setItem('pulse.wallet.local.v1',JSON.stringify(state.wallet)); }
+async function walletAction(action,extra={}){
+  localWallet();
+  if(action==='deposit'||action==='withdraw'){ paymentRailModal(action); return null; }
+  if(action==='claim_daily'){
+    const today=new Date().toISOString().slice(0,10);
+    if(state.wallet.last_daily_claim===today){toast('Daily Pulse Bucks already claimed');return null;}
+    state.wallet.pulse_bucks=Number(state.wallet.pulse_bucks||0)+50; state.wallet.last_daily_claim=today; saveLocalWallet(); return {ok:true};
   }
-  if(state.tab==='me') render();
-}
-
-async function walletAction(action, extra={}){
-  try{
-    const data=await api('/api/wallet',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action,...extra})});
-    await loadWallet();
-    return data;
-  }catch(e){
-    if(e?.data?.error==='payment_provider_required'){
-      paymentRailModal(action);
-      return null;
-    }
-    if(e?.data?.error==='already_claimed_today'){ toast('Daily Pulse Bucks already claimed'); return null; }
-    if(e?.data?.error==='insufficient_pulse_bucks'){ toast('Not enough Pulse Bucks'); return null; }
-    toast(e?.message||'Could not complete that action');
-    return null;
+  if(action==='redeem'){
+    const reward=state.rewards[extra.reward_key]; if(!reward) return null;
+    if(Number(state.wallet.pulse_bucks||0)<reward.cost){toast('Not enough Pulse Bucks');return null;}
+    state.wallet.pulse_bucks-=reward.cost; saveLocalWallet(); return {ok:true};
   }
+  return null;
 }
-
+function isCultureMarket(text=''){
+  const t=text.toLowerCase();
+  const culture=['movie','film','box office','oscar','grammy','emmy','album','song','music','artist','singer','rapper','concert','tour','billboard','spotify','netflix','hbo','disney','marvel','celebrity','actor','actress','television','streaming','fashion','runway','designer','wrestling','wwe','aew','tna','youtube','tiktok','creator','influencer','award'];
+  const blocked=['election','president','senate','congress','parliament','minister','governor','mayor','democrat','republican'];
+  return culture.some(x=>t.includes(x))&&!blocked.some(x=>t.includes(x));
+}
 async function loadLive(){
   state.liveStatus='loading';
-  if(state.tab==='feed'||state.tab==='predict') render();
+  const markets=[];
   try{
-    const data=await fetch('/api/pulse-feed',{cache:'no-store'}).then(r=>r.json());
-    state.live={
-      news:Array.isArray(data.news)?data.news:[],
-      markets:Array.isArray(data.markets)?data.markets:[],
-      generatedAt:data.generatedAt||new Date().toISOString(),
-      sources:data.sources||[]
-    };
-    state.liveStatus='live';
-  }catch(e){
-    state.liveStatus='fallback';
-    state.live={...state.live,markets:fallbackMarkets};
-  }
+    const r=await fetch('https://gamma-api.polymarket.com/markets?active=true&closed=false&limit=250&order=volume24hr&ascending=false',{cache:'no-store'});
+    if(r.ok){ const data=await r.json(); for(const m of data){
+      if(!isCultureMarket((m.question||'')+' '+(m.events?.[0]?.title||''))) continue;
+      let outcomes=[],prices=[]; try{outcomes=JSON.parse(m.outcomes||'[]')}catch{} try{prices=JSON.parse(m.outcomePrices||'[]')}catch{}
+      const yi=outcomes.findIndex(x=>String(x).toLowerCase()==='yes'); if(yi<0) continue;
+      const yes=Math.max(0,Math.min(100,Math.round(Number(prices[yi]||0)*100)));
+      markets.push({id:'poly-'+m.id,source:'POLYMARKET',title:m.question,yes,no:100-yes,volume24h:Number(m.volume24hr||0),change24h:Number(m.oneDayPriceChange||0)*100,endDate:m.endDate||m.endDateIso||'',image:m.image||m.icon||''});
+      if(markets.length>=14) break;
+    }}
+  }catch{}
+  try{
+    const r=await fetch('https://api.elections.kalshi.com/trade-api/v2/markets?limit=300&status=open',{cache:'no-store'});
+    if(r.ok){ const data=await r.json(); for(const m of (data.markets||[])){
+      if(!isCultureMarket((m.title||'')+' '+(m.yes_sub_title||''))) continue;
+      const p=Number(m.last_price_dollars||m.yes_ask_dollars||m.yes_bid_dollars||0); if(!(p>0&&p<1)) continue;
+      const yes=Math.round(p*100); markets.push({id:'kalshi-'+m.ticker,source:'KALSHI',title:m.title,yes,no:100-yes,volume24h:Number(m.volume_24h_fp||0),change24h:(p-Number(m.previous_price_dollars||p))*100,endDate:m.close_time||m.expiration_time||'',image:''});
+      if(markets.length>=20) break;
+    }}
+  }catch{}
+  try{
+    const r=await fetch(LEDGERA+'/feed.json',{cache:'no-store'});
+    if(r.ok){ const feed=await r.json(); if(Array.isArray(feed.items)) state.articles=feed.items.map(x=>({title:x.title||'LEDGERA',summary:x.summary||'',category:x._ledgera?.category||x.tags?.join(' / ')||'LEDGERA',url:x.url||x.id,image:x.image||''})); }
+  }catch{}
+  state.live={news:state.articles.map(a=>({title:a.title,url:a.url,domain:'LEDGERA',image:a.image||''})),markets:markets.length?markets:fallbackMarkets,generatedAt:new Date().toISOString(),sources:markets.length?[...new Set(markets.map(m=>m.source))]:['PULSE SNAPSHOT']};
+  state.liveStatus=markets.length?'live':'fallback';
   if(state.tab==='feed'||state.tab==='predict') render();
+}
+async function loadWallet(){ localWallet(); if(state.tab==='me') render(); }
+function userInitials(name='P'){ return String(name).trim().split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase()||'P'; }
+function bytesToB64(bytes){ return btoa(String.fromCharCode(...bytes)); }
+function b64ToBytes(s){ return Uint8Array.from(atob(s),c=>c.charCodeAt(0)); }
+async function passwordHash(password,salt){
+  const base=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveBits']);
+  const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt,iterations:120000,hash:'SHA-256'},base,256);
+  return bytesToB64(new Uint8Array(bits));
+}
+function playPulseBeep(){
+  try{ const Ctx=window.AudioContext||window.webkitAudioContext; if(!Ctx)return; const ctx=new Ctx(); const o=ctx.createOscillator(); const g=ctx.createGain(); o.type='sine'; o.frequency.setValueAtTime(520,ctx.currentTime); o.frequency.exponentialRampToValueAtTime(880,ctx.currentTime+.06); g.gain.setValueAtTime(.0001,ctx.currentTime); g.gain.exponentialRampToValueAtTime(.07,ctx.currentTime+.01); g.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+.1); o.connect(g);g.connect(ctx.destination);o.start();o.stop(ctx.currentTime+.11);setTimeout(()=>ctx.close(),160);}catch{}
+}
+function showOnboarding(){
+  const wrap=document.createElement('div'); wrap.className='onboarding-layer';
+  wrap.innerHTML=`<div class="onboard-top"><b>PULSE.</b><button id="skipOnboard">SKIP</button></div><div class="onboard-slides">
+  <section class="onboard-slide active"><div class="onboard-icon">⌁</div><small>LIVE CULTURE</small><h2>SEE WHAT'S MOVING.</h2><p>Stories, video, creators and live public culture-market signals in one place.</p></section>
+  <section class="onboard-slide"><div class="onboard-icon">RA</div><small>READ INSIDE PULSE</small><h2>OPEN THE STORY.<br>FLIP THE ISSUE.</h2><p>Read LEDGERA articles and full magazine editions without leaving the app.</p></section>
+  <section class="onboard-slide"><div class="onboard-icon">✦</div><small>PULSE AI</small><h2>ASK THE SIGNAL.</h2><p>Search stories, issues, creators and prediction signals conversationally.</p></section></div>
+  <div class="onboard-bottom"><div class="onboard-dots"><i class="on"></i><i></i><i></i></div><button id="onboardNext">NEXT</button></div>`;
+  document.body.appendChild(wrap); let i=0;
+  const paint=()=>{ $('.onboard-slide',wrap).forEach((s,n)=>s.classList.toggle('active',n===i)); $('.onboard-dots i',wrap).forEach((d,n)=>d.classList.toggle('on',n===i)); $('#onboardNext',wrap).textContent=i===2?'CREATE ACCOUNT':'NEXT'; };
+  const done=()=>{ localStorage.setItem('pulse.intro.v1','1'); wrap.classList.add('leaving'); setTimeout(()=>{wrap.remove();showAuth('create');},220); };
+  $('#skipOnboard',wrap).onclick=done; $('#onboardNext',wrap).onclick=()=>{haptic(); if(i<2){i++;paint()}else done();};
+}
+function showAuth(mode='create'){
+  let wrap=$('#pulseAuth'); if(wrap)wrap.remove(); wrap=document.createElement('div'); wrap.id='pulseAuth'; wrap.className='auth-layer';
+  const create=mode==='create';
+  wrap.innerHTML=`<div class="auth-card"><div class="auth-brand"><b>PULSE<span>.</span></b><small>LSMG × LEDGERA</small></div>
+  <div class="auth-tabs"><button data-auth="create" class="${create?'active':''}">CREATE ACCOUNT</button><button data-auth="signin" class="${!create?'active':''}">SIGN IN</button></div>
+  <form id="authForm">${create?'<label>NAME<input id="authName" autocomplete="name" required placeholder="Your name"></label>':''}<label>EMAIL<input id="authEmail" type="email" autocomplete="email" required placeholder="you@example.com"></label><label>PASSWORD<input id="authPass" type="password" minlength="6" required placeholder="6+ characters"></label><button class="auth-submit">${create?'CREATE ACCOUNT':'SIGN IN'}</button></form>
+  <p class="auth-note">This no-Netlify-credit build stores the account securely on this device. Cross-device sync will use a separate auth backend before public launch.</p><button class="auth-guest" id="authGuest">CONTINUE AS GUEST</button></div>`;
+  document.body.appendChild(wrap);
+  $('[data-auth]',wrap).forEach(b=>b.onclick=()=>showAuth(b.dataset.auth));
+  $('#authGuest',wrap).onclick=()=>{state.session={name:'Guest',email:'guest@local'};localStorage.setItem('pulse.session.v1',JSON.stringify(state.session));wrap.remove();pulseStarted=false;startPulse();};
+  $('#authForm',wrap).onsubmit=async e=>{ e.preventDefault(); const email=$('#authEmail',wrap).value.trim().toLowerCase(); const pass=$('#authPass',wrap).value; const accounts=JSON.parse(localStorage.getItem('pulse.accounts.v1')||'{}');
+    if(create){ const name=$('#authName',wrap).value.trim(); if(accounts[email]){toast('Account already exists on this device');return;} const salt=crypto.getRandomValues(new Uint8Array(16)); accounts[email]={name,email,salt:bytesToB64(salt),hash:await passwordHash(pass,salt)}; localStorage.setItem('pulse.accounts.v1',JSON.stringify(accounts)); state.session={name,email}; }
+    else { const acct=accounts[email]; if(!acct){toast('Account not found on this device');return;} if(await passwordHash(pass,b64ToBytes(acct.salt))!==acct.hash){toast('Password does not match');return;} state.session={name:acct.name,email}; }
+    localStorage.setItem('pulse.session.v1',JSON.stringify(state.session)); wrap.remove(); pulseStarted=false; startPulse(); toast(create?'Welcome to PULSE':'Signed in');
+  };
+}
+function bootPulse(){
+  const splash=$('#splash'); const btn=$('#enterPulse');
+  const enter=()=>{playPulseBeep();haptic();splash?.classList.add('exit');setTimeout(()=>{splash?.classList.add('hide'); if(!localStorage.getItem('pulse.intro.v1'))showOnboarding();else if(!state.session)showAuth('create');else startPulse();},300);};
+  if(btn)btn.onclick=enter; else setTimeout(enter,1200);
+}
+let pulseStarted=false;
+function startPulse(){
+  if(pulseStarted)return; pulseStarted=true; const av=$('.avatar'); if(av)av.textContent=userInitials(state.session?.name||'PULSE'); render(); Promise.all([loadLive(),loadWallet()]); setInterval(loadLive,90000);
 }
 
 function installChip(){
@@ -148,12 +229,12 @@ function installChip(){
 
 function feed(){
   const liveNews = state.live.news.length ? state.live.news.slice(0,8).map((a,i)=>`
-    <a class="live-story" href="${esc(a.url)}" target="_blank" rel="noopener">
+    <button class="live-story" data-read-article="${i}">
       <div class="live-story-img" ${a.image?`style="background-image:linear-gradient(180deg,transparent 28%,rgba(0,0,0,.88)),url('${esc(a.image)}')"`:''}>
-        <span>${i<2?'BREAKING':'NOW'}</span>
+        <span>${i<2?'FEATURED':'READ'}</span>
       </div>
-      <div class="live-story-copy"><b>${esc(a.title)}</b><small>${esc(a.domain||'LIVE SOURCE')} · AUTO-UPDATED</small></div>
-    </a>`).join('') : `
+      <div class="live-story-copy"><b>${esc(a.title)}</b><small>LEDGERA · READ IN PULSE</small></div>
+    </button>`).join('') : `
       <div class="live-fallback"><div class="skeleton sk-line"></div><div class="skeleton sk-line short"></div><span>${state.liveStatus==='loading'?'SYNCING LIVE CULTURE…':'LIVE FEED WILL RETRY AUTOMATICALLY'}</span></div>`;
 
   const pulseSignals=(state.live.markets.length?state.live.markets:fallbackMarkets).slice(0,3).map(m=>`
@@ -187,6 +268,9 @@ function feed(){
   <div class="section-kicker"><span><b>NOW</b> / CULTURE WIRE</span><button class="text-btn" id="refreshLive">REFRESH ↻</button></div>
   <div class="live-grid">${liveNews}</div>
 
+  <div class="section-kicker"><span><b>MAGAZINE</b> / READ FULL ISSUES</span><button class="text-btn" id="allIssues">ARCHIVE →</button></div>
+  <div class="issue-rail">${issues.slice(0,4).map((x,i)=>`<button class="issue-card" data-read-issue="${i}"><img src="${esc(x.cover)}" alt="${esc(x.title)} cover" loading="lazy"><span><small>${esc(x.label)}</small><b>${esc(x.title)}</b><em>READ ISSUE →</em></span></button>`).join('')}</div>
+
   <div class="section-kicker"><span><b>WATCH</b> / NEW CUT</span><span>LSMG × LEDGERA</span></div>
   <article class="feature-video-card app-card" data-go="watch">
     <div class="feature-video-poster" style="background-image:linear-gradient(180deg,transparent 18%,rgba(0,0,0,.9)),url('${VIDEO_POSTER}')">
@@ -215,6 +299,8 @@ function watch(){
     <a class="channel-card red" href="https://ledgeramagazine.com/after-dark/" target="_blank"><small>LEDGERA</small><strong>AFTER DARK</strong><span>Night edition · Visual culture</span></a>
     <a class="channel-card" href="https://ledgeramagazine.com/coverage/" target="_blank"><small>FIELD</small><strong>ARCHIVE</strong><span>Festivals · Sports · Film · Events</span></a>
   </div>
+  <div class="section-kicker"><span>READ LEDGERA</span><button class="text-btn" id="allIssues">MAGAZINE →</button></div>
+  <div class="compact-stories">${state.articles.slice(0,4).map((a,i)=>`<button data-read-article="${i}"><span>${String(i+1).padStart(2,'0')}</span><div><small>${esc(a.category||'LEDGERA')}</small><b>${esc(a.title)}</b></div><em>›</em></button>`).join('')}</div>
   <div class="section-kicker"><span>FROM LEDGERA</span></div>
   <div class="face-rail">${creators.map((c,i)=>`<button class="face-tile" data-face="${i}"><img src="${c.image}" alt="${esc(c.name)}" loading="lazy"><span><b>${esc(c.name)}</b><small>${esc(c.role)}</small></span></button>`).join('')}</div>`;
 }
@@ -272,38 +358,20 @@ function connect(){
 }
 
 function me(){
+  const u=state.session||{name:'Guest',email:'guest@local'};
   return `
   <div class="screen-title"><div><small>PULSE ID</small><h1>YOU.</h1></div>${installChip()}</div>
-  <section class="profile-head app-card"><div class="profile-row"><div class="profile-avatar">ZH</div><div><h2>PULSE PROFILE</h2><p>LSMG × LEDGERA NETWORK</p></div></div></section>
-  <div class="profile-grid app-card">
-    <div class="profile-stat"><strong>${state.matches.length}</strong><span>CONNECTIONS</span></div>
-    <div class="profile-stat"><strong>₱${Number(state.wallet.pulse_bucks||0)}</strong><span>PULSE BUCKS</span></div>
-    <div class="profile-stat"><strong>${state.liveStatus==='live'?'LIVE':'ON'}</strong><span>SIGNAL</span></div>
-  </div>
-
+  <section class="profile-head app-card"><div class="profile-row"><div class="profile-avatar">${userInitials(u.name)}</div><div><h2>${esc(u.name)}</h2><p>${esc(u.email)}</p></div></div></section>
+  <div class="profile-grid app-card"><div class="profile-stat"><strong>${state.matches.length}</strong><span>CONNECTIONS</span></div><div class="profile-stat"><strong>₱${Number(state.wallet.pulse_bucks||0)}</strong><span>PULSE BUCKS</span></div><div class="profile-stat"><strong>${state.liveStatus==='live'?'LIVE':'ON'}</strong><span>SIGNAL</span></div></div>
+  <div class="section-kicker"><span><b>READ</b> / LEDGERA LIBRARY</span></div>
+  <div class="settings-list app-card"><button id="profileStories"><span>Articles</span><b>${state.articles.length}</b></button><button id="profileIssues"><span>Magazine editions</span><b>${issues.length}</b></button><button id="openAISettings"><span>PULSE AI</span><b>ON-DEVICE</b></button></div>
   <div class="section-kicker"><span><b>WALLET</b> / PULSE BUCKS</span></div>
-  <section class="bucks-wallet app-card">
-    <div class="bucks-balance"><div><small>AVAILABLE</small><strong>₱${Number(state.wallet.pulse_bucks||0).toLocaleString()}</strong></div><span>PULSE BUCKS</span></div>
-    <div class="bucks-actions"><button id="claimDaily">DAILY DROP +50</button><button id="tradeBucks">TRADE IN</button></div>
-  </section>
-
+  <section class="bucks-wallet app-card"><div class="bucks-balance"><div><small>AVAILABLE</small><strong>₱${Number(state.wallet.pulse_bucks||0).toLocaleString()}</strong></div><span>PULSE BUCKS</span></div><div class="bucks-actions"><button id="claimDaily">DAILY DROP +50</button><button id="tradeBucks">TRADE IN</button></div></section>
   <div class="section-kicker"><span><b>CASH</b> / WALLET RAIL</span></div>
-  <section class="cash-wallet app-card">
-    <div><small>AVAILABLE CASH</small><strong>${moneyCents(state.wallet.cash_cents)}</strong><span>Provider connection required before funds can move.</span></div>
-    <div><button data-cash="deposit">DEPOSIT</button><button data-cash="withdraw">WITHDRAW</button></div>
-  </section>
-
+  <section class="cash-wallet app-card"><div><small>AVAILABLE CASH</small><strong>${moneyCents(state.wallet.cash_cents)}</strong><span>External payment rail required before funds can move.</span></div><div><button data-cash="deposit">DEPOSIT</button><button data-cash="withdraw">WITHDRAW</button></div></section>
   <div class="section-kicker"><span>ACCOUNT</span></div>
-  <div class="settings-list app-card">
-    <button id="openAISettings"><span>PULSE AI</span><b>${state.aiMode==='ai'?'CONNECTED':'SIGNAL MODE'}</b></button>
-    <button><span>Creative connections</span><b>${state.matches.length}</b></button>
-    <button><span>Live culture alerts</span><b>ON</b></button>
-    <button id="installSettings"><span>Install PULSE to home screen</span><b>${appInstalled()?'INSTALLED':'›'}</b></button>
-  </div>
-
-  ${state.transactions.length?`<div class="section-kicker"><span>RECENT ACTIVITY</span></div><div class="tx-list">${state.transactions.slice(0,6).map(tx=>`<div><span><b>${esc(String(tx.kind||'activity').replaceAll('_',' ').toUpperCase())}</b><small>${new Date(tx.created_at).toLocaleDateString()}</small></span><strong class="${Number(tx.amount)>=0?'pos':''}">${tx.currency==='PB'?'₱':''}${Number(tx.amount)>=0?'+':''}${Number(tx.amount)}</strong></div>`).join('')}</div>`:''}`;
+  <div class="settings-list app-card"><button id="installSettings"><span>Install PULSE to Home Screen</span><b>${appInstalled()?'INSTALLED':'›'}</b></button><button id="signOut"><span>Sign out</span><b>›</b></button></div>`;
 }
-
 function render(){
   const view=$('#view');
   view.classList.remove('view-enter');
@@ -323,8 +391,8 @@ function setTab(t){
 function paymentRailModal(action){
   openModal(`<button class="modal-close" data-close>×</button><span class="category">CASH WALLET</span><h2>${String(action).toUpperCase()}</h2>
   <div class="big-status">PAYMENT RAIL<br>NOT CONNECTED</div>
-  <p>The wallet interface and ledger are built. Real deposits and withdrawals stay locked until a payment/settlement provider that approves the operator's exact licensed prediction-wagering use case is connected.</p>
-  <div class="status-grid"><span><b>✓</b> WALLET UI</span><span><b>✓</b> SERVER LEDGER</span><span><b>✓</b> TX / FL GATING UI</span><span class="pending"><b>○</b> CASH PROVIDER</span></div>
+  <p>The wallet interface is built. Real deposits and withdrawals stay locked until an approved payment/settlement provider and permitted-jurisdiction verification are connected.</p>
+  <div class="status-grid"><span><b>✓</b> WALLET UI</span><span><b>✓</b> LOCAL APP WALLET</span><span><b>✓</b> PERMITTED-JURISDICTION UI</span><span class="pending"><b>○</b> CASH PROVIDER</span></div>
   <button class="btn primary full" data-close>GOT IT</button>`);
 }
 
@@ -340,6 +408,23 @@ function tradeModal(){
   <div class="modal-balance">AVAILABLE <strong>₱${Number(state.wallet.pulse_bucks||0).toLocaleString()}</strong></div>
   <p>Pulse Bucks are PULSE's digital currency inside the app. Earn them, hold them, and trade them for PULSE / LEDGERA / LSMG drops, access, boosts, and experiences. They are separate from your cash wallet.</p>
   <div class="reward-list">${catalog.map(([key,r])=>`<button data-redeem="${esc(key)}"><span><b>${esc(r.label)}</b><small>PULSE BUCKS MARKET</small></span><strong>₱${Number(r.cost)}</strong></button>`).join('')}</div>`);
+}
+
+function openReader(url,title,label='LEDGERA'){
+  const layer=document.createElement('div'); layer.className='reader-overlay';
+  layer.innerHTML=`<header class="reader-bar"><button class="reader-back" aria-label="Back">‹</button><div><small>${esc(label)}</small><b>${esc(title)}</b></div><a href="${esc(url)}" target="_blank" rel="noopener">↗</a></header><div class="reader-loading"><i></i><b>OPENING IN PULSE…</b></div><iframe class="reader-frame" src="${esc(url)}" title="${esc(title)}" allow="fullscreen"></iframe>`;
+  document.body.appendChild(layer); const frame=$('.reader-frame',layer); frame.onload=()=>$('.reader-loading',layer)?.classList.add('hide');
+  $('.reader-back',layer).onclick=()=>{layer.classList.add('closing');setTimeout(()=>layer.remove(),220);};
+}
+function readArticle(i){ const a=state.articles[Number(i)]; if(a)openReader(a.url,a.title,a.category||'LEDGERA ARTICLE'); }
+function readIssue(i){ const x=issues[Number(i)]; if(x)openReader(x.url,x.title,x.label); }
+function issuesModal(){
+  openModal(`<button class="modal-close" data-close>×</button><span class="category">LEDGERA MAGAZINE</span><h2>READ THE ISSUES.</h2><p>Full editions open inside PULSE in LEDGERA’s mobile reader.</p><div class="issue-library">${issues.map((x,i)=>`<button data-read-issue="${i}"><img src="${esc(x.cover)}" alt=""><span><small>${esc(x.label)}</small><b>${esc(x.title)}</b><p>${esc(x.subtitle)}</p></span></button>`).join('')}</div>`);
+  $('[data-read-issue]',$('#modalCard')).forEach(b=>b.onclick=()=>{closeModal();readIssue(b.dataset.readIssue);});
+}
+function allStoriesModal(){
+  openModal(`<button class="modal-close" data-close>×</button><span class="category">LEDGERA</span><h2>ALL STORIES.</h2><div class="article-library">${state.articles.map((a,i)=>`<button data-read-article="${i}"><span>${String(i+1).padStart(2,'0')}</span><div><small>${esc(a.category||'LEDGERA')}</small><b>${esc(a.title)}</b><p>${esc(a.summary||'')}</p></div><em>›</em></button>`).join('')}</div>`);
+  $('[data-read-article]',$('#modalCard')).forEach(b=>b.onclick=()=>{closeModal();readArticle(b.dataset.readArticle);});
 }
 
 function marketModal(id){
@@ -362,32 +447,64 @@ function faceModal(i){
 function aiModal(prefill=''){
   const msgs=state.aiMessages.slice(-6).map(m=>`<div class="ai-msg ${m.role}"><span>${m.role==='assistant'?'PULSE AI':'YOU'}</span><p>${esc(m.text)}</p></div>`).join('');
   openModal(`<button class="modal-close" data-close>×</button><div class="ai-head"><span class="ai-orb">✦</span><div><small>PULSE AI</small><h2>ASK WHAT'S NEXT.</h2></div></div>
-    <div class="ai-mode"><i></i><span id="aiModeLabel">${state.aiMode==='ai'?'GENERATIVE AI':'LIVE SIGNAL ENGINE'}</span></div>
-    <div class="ai-chat" id="aiChat">${msgs||'<div class="ai-welcome">Ask about an artist, show, film, fashion trend, wrestling story, headline, or any live prediction on screen.</div>'}</div>
+    <div class="ai-mode"><i></i><span id="aiModeLabel">ON-DEVICE AI · LIVE APP DATA</span></div>
+    <div class="ai-chat" id="aiChat">${msgs||'<div class="ai-welcome">Ask about stories, full magazine issues, creators, fashion, film, music, wrestling, or any culture prediction on screen.</div>'}</div>
     <div class="ai-quick"><button data-ai-quick="What are the biggest culture prediction signals right now?">BIGGEST SIGNALS</button><button data-ai-quick="What culture headlines should I know right now?">HEADLINES</button></div>
     <form id="aiForm" class="ai-form"><input id="aiInput" autocomplete="off" placeholder="Ask PULSE AI…" value="${esc(prefill)}"><button>↑</button></form>`, 'ai-sheet');
   setTimeout(()=>$('#aiInput')?.focus(),100);
 }
 
-async function sendAI(prompt){
-  const p=String(prompt||'').trim();
-  if(!p) return;
-  state.aiMessages.push({role:'user',text:p});
-  const chat=$('#aiChat');
-  if(chat) chat.innerHTML=state.aiMessages.slice(-6).map(m=>`<div class="ai-msg ${m.role}"><span>${m.role==='assistant'?'PULSE AI':'YOU'}</span><p>${esc(m.text)}</p></div>`).join('')+'<div class="ai-thinking">PULSE IS READING THE SIGNAL…</div>';
+let browserAI=null;
+async function browserAIAnswer(prompt){
+  if(!globalThis.LanguageModel) return null;
   try{
-    const response=await fetch('/api/ai',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({prompt:p,context:{markets:state.live.markets.slice(0,12),news:state.live.news.slice(0,12)}})});
-    const data=await response.json();
-    state.aiMode=data.mode==='ai'?'ai':'signal';
-    state.aiMessages.push({role:'assistant',text:data.answer||'No answer returned.'});
-  }catch(e){
-    state.aiMessages.push({role:'assistant',text:'The AI endpoint is reconnecting. Live PULSE signals are still updating in the app.'});
-  }
-  const c=$('#aiChat');
-  if(c){c.innerHTML=state.aiMessages.slice(-7).map(m=>`<div class="ai-msg ${m.role}"><span>${m.role==='assistant'?'PULSE AI':'YOU'}</span><p>${esc(m.text)}</p></div>`).join('');c.scrollTop=c.scrollHeight;}
-  if($('#aiModeLabel')) $('#aiModeLabel').textContent=state.aiMode==='ai'?'GENERATIVE AI':'LIVE SIGNAL ENGINE';
+    const availability=await LanguageModel.availability({expectedInputs:[{type:'text',languages:['en']}],expectedOutputs:[{type:'text',languages:['en']}]});
+    if(availability==='unavailable') return null;
+    if(!browserAI){ browserAI=await LanguageModel.create({expectedInputs:[{type:'text',languages:['en']}],expectedOutputs:[{type:'text',languages:['en']}],initialPrompts:[{role:'system',content:'You are PULSE AI for LSMG x LEDGERA. Be concise and factual. Use the supplied app context. Treat prediction market prices as changing crowd signals, never certainty. Do not recommend political candidates or election outcomes.'}]}); }
+    const context=JSON.stringify({articles:state.articles.slice(0,8).map(a=>({title:a.title,category:a.category,summary:a.summary})),issues:issues.slice(0,4).map(x=>({title:x.title,label:x.label,subtitle:x.subtitle})),markets:(state.live.markets.length?state.live.markets:fallbackMarkets).slice(0,8).map(m=>({title:m.title,source:m.source,yes:m.yes,no:m.no}))});
+    return await browserAI.prompt('APP CONTEXT: '+context+'\nUSER: '+prompt);
+  }catch{return null;}
 }
 
+function buildAIAnswer(prompt){
+  const q=String(prompt||'').toLowerCase();
+  if(/\b(politic|election|president|senate|congress|governor|mayor)\b/.test(q)){
+    return {text:'PULSE keeps election and political outcome recommendations out of the prediction feed. I can still help you find factual culture coverage.'};
+  }
+  if(/biggest|top|live prediction|market|signal|odds/.test(q)){
+    const top=[...(state.live.markets.length?state.live.markets:fallbackMarkets)].sort((a,b)=>Number(b.volume24h||0)-Number(a.volume24h||0)).slice(0,3);
+    return {text:top.map((m,i)=>`${i+1}. ${m.title} — ${m.yes}% YES on ${m.source}.`).join(' ')+' These are changing public market signals, not guarantees.',action:{label:'OPEN PREDICTIONS',run:()=>{closeModal();setTab('predict');}}};
+  }
+  if(/newest|latest|magazine|issue|edition/.test(q)){
+    const x=issues[0]; return {text:`The newest LEDGERA edition in PULSE is ${x.title} ${x.subtitle}`,action:{label:'READ '+x.title,run:()=>{closeModal();readIssue(0);}}};
+  }
+  if(/fashion|music|film|movie|sports|wrestling|culture|article|story|read/.test(q)){
+    const keys=['fashion','music','film','movie','sports','wrestling','culture'].filter(k=>q.includes(k));
+    const ranked=state.articles.map((a,i)=>({a,i,score:keys.reduce((n,k)=>n+((a.category+' '+a.title+' '+a.summary).toLowerCase().includes(k)?1:0),0)})).sort((a,b)=>b.score-a.score);
+    const best=ranked.find(x=>x.score>0)||ranked[0];
+    if(best)return {text:`Start with “${best.a.title}.” ${best.a.summary}`,action:{label:'READ ARTICLE',run:()=>{closeModal();readArticle(best.i);}}};
+  }
+  if(/model|creator|talent|connect|collab|photographer|stylist/.test(q)){
+    const words=q.split(/\W+/).filter(w=>w.length>3);
+    const c=creators.map((x,i)=>({x,i,score:words.filter(w=>(x.name+' '+x.role+' '+x.skills.join(' ')+' '+x.need).toLowerCase().includes(w)).length})).sort((a,b)=>b.score-a.score)[0]||{x:creators[0],i:0};
+    return {text:`A current PULSE network match is ${c.x.name}, ${c.x.role} in ${c.x.loc}. ${c.x.need}`,action:{label:'OPEN CONNECT',run:()=>{state.creatorIndex=c.i;closeModal();setTab('connect');}}};
+  }
+  const words=q.split(/\W+/).filter(w=>w.length>3);
+  const a=state.articles.map((x,i)=>({x,i,score:words.filter(w=>(x.title+' '+x.summary+' '+x.category).toLowerCase().includes(w)).length})).sort((a,b)=>b.score-a.score)[0];
+  const m=(state.live.markets.length?state.live.markets:fallbackMarkets).map(x=>({x,score:words.filter(w=>x.title.toLowerCase().includes(w)).length})).sort((a,b)=>b.score-a.score)[0];
+  if(a?.score>0)return {text:`The closest LEDGERA story is “${a.x.title}.” ${a.x.summary}`,action:{label:'READ IT',run:()=>{closeModal();readArticle(a.i);}}};
+  if(m?.score>0)return {text:`The closest culture prediction is “${m.x.title},” currently ${m.x.yes}% YES on ${m.x.source}.`,action:{label:'OPEN MARKET',run:()=>{closeModal();marketModal(m.x.id);}}};
+  return {text:'I can search PULSE across LEDGERA articles, full magazine editions, culture prediction signals and creator profiles. Ask what you want to read, watch, track or find.'};
+}
+async function sendAI(prompt){
+  const p=String(prompt||'').trim(); if(!p)return;
+  state.aiMessages.push({role:'user',text:p});
+  const chat=$('#aiChat'); if(chat)chat.innerHTML=state.aiMessages.slice(-8).map(m=>`<div class="ai-msg ${m.role}"><span>${m.role==='assistant'?'PULSE AI':'YOU'}</span><p>${esc(m.text)}</p></div>`).join('')+'<div class="ai-thinking">PULSE IS READING THE SIGNAL…</div>';
+  const generated=await browserAIAnswer(p);
+  const answer=generated?{text:generated}:buildAIAnswer(p); state.aiMessages.push({role:'assistant',text:answer.text}); state.aiMode=generated?'browser-ai':'local';
+  if(chat){ chat.innerHTML=state.aiMessages.slice(-8).map(m=>`<div class="ai-msg ${m.role}"><span>${m.role==='assistant'?'PULSE AI':'YOU'}</span><p>${esc(m.text)}</p></div>`).join('')+(answer.action?`<button class="ai-action" id="aiAction">${esc(answer.action.label)}</button>`:''); chat.scrollTop=chat.scrollHeight; if(answer.action)$('#aiAction').onclick=answer.action.run; }
+  if($('#aiModeLabel'))$('#aiModeLabel').textContent=generated?'BROWSER GENERATIVE AI':'ON-DEVICE SIGNAL AI';
+}
 function installApp(){
   if(appInstalled()){toast('PULSE is already in app mode');return;}
   if(state.deferredInstall){
@@ -411,7 +528,11 @@ function bind(){
     const m=[...state.live.markets,...fallbackMarkets].find(x=>x.id===b.dataset.aiMarket);
     closeModal(); aiModal(m?`Break down this live prediction signal: ${m.title}`:'Break down this market.');
   });
-  $$('[data-face]').forEach(b=>b.onclick=()=>faceModal(b.dataset.face));
+  $('[data-face]').forEach(b=>b.onclick=()=>faceModal(b.dataset.face));
+  $('[data-read-article]').forEach(b=>b.onclick=()=>{closeModal();readArticle(b.dataset.readArticle);});
+  $('[data-read-issue]').forEach(b=>b.onclick=()=>{closeModal();readIssue(b.dataset.readIssue);});
+  $('#allIssues')?.addEventListener('click',issuesModal);
+  $('#allStories')?.addEventListener('click',allStoriesModal);
   $$('[data-swipe-card]').forEach(b=>b.onclick=()=>{
     const action=b.dataset.swipeCard; const c=creators[state.creatorIndex%creators.length];
     if(action==='like' && !state.matches.includes(c.name)){state.matches.push(c.name);toast('Connection saved');}
@@ -420,23 +541,25 @@ function bind(){
   });
   $$('#installApp, #installSettings').forEach(b=>b.onclick=installApp);
   $('#openAISettings')?.addEventListener('click',()=>aiModal());
+  $('#profileStories')?.addEventListener('click',allStoriesModal);
+  $('#profileIssues')?.addEventListener('click',issuesModal);
+  $('#signOut')?.addEventListener('click',()=>{localStorage.removeItem('pulse.session.v1');state.session=null;pulseStarted=false;showAuth('signin');});
 }
 
 $('#searchBtn')?.addEventListener('click',()=>{
-  openModal(`<button class="modal-close" data-close>×</button><span class="category">PULSE SEARCH</span><h2>SEARCH EVERYTHING.</h2><input class="search-box" id="searchInput" placeholder="Creators, stories, live markets…"><div id="searchResults" class="search-results"></div>`);
+  openModal(`<button class="modal-close" data-close>×</button><span class="category">PULSE SEARCH</span><h2>SEARCH EVERYTHING.</h2><input class="search-box" id="searchInput" placeholder="Stories, issues, creators, markets…"><div id="searchResults" class="search-results"></div>`);
   $('#searchInput')?.addEventListener('input',e=>{
     const q=e.target.value.trim().toLowerCase(); const results=[];
     if(q){
-      state.live.news.filter(x=>String(x.title).toLowerCase().includes(q)).slice(0,4).forEach(x=>results.push(`<a class="search-result" target="_blank" href="${esc(x.url)}"><b>${esc(x.title)}</b><span>LIVE STORY · ${esc(x.domain)}</span></a>`));
-      state.live.markets.filter(x=>String(x.title).toLowerCase().includes(q)).slice(0,4).forEach(x=>results.push(`<button class="search-result" data-market="${esc(x.id)}"><b>${esc(x.title)}</b><span>${esc(x.source)} · ${Number(x.yes)}% YES</span></button>`));
-      creators.filter(x=>(x.name+x.role+x.skills.join(' ')).toLowerCase().includes(q)).forEach((x,i)=>results.push(`<button class="search-result" data-face-search="${creators.indexOf(x)}"><b>${esc(x.name)}</b><span>${esc(x.role)} · ${esc(x.loc)}</span></button>`));
+      state.articles.filter(a=>(a.title+' '+a.summary+' '+a.category).toLowerCase().includes(q)).slice(0,5).forEach(a=>results.push({type:'article',label:a.title,sub:a.category,index:state.articles.indexOf(a)}));
+      issues.filter(x=>(x.title+' '+x.subtitle+' '+x.label).toLowerCase().includes(q)).slice(0,4).forEach(x=>results.push({type:'issue',label:x.title,sub:x.label,index:issues.indexOf(x)}));
+      (state.live.markets||[]).filter(x=>String(x.title).toLowerCase().includes(q)).slice(0,4).forEach(x=>results.push({type:'market',label:x.title,sub:`${x.source} · ${Number(x.yes)}% YES`,id:x.id}));
+      creators.filter(x=>(x.name+' '+x.role+' '+x.skills.join(' ')).toLowerCase().includes(q)).slice(0,4).forEach(x=>results.push({type:'creator',label:x.name,sub:x.role,index:creators.indexOf(x)}));
     }
-    $('#searchResults').innerHTML=results.join('')||'<div class="empty">Type to search PULSE.</div>';
-    $$('[data-market]').forEach(b=>b.onclick=()=>marketModal(b.dataset.market));
-    $$('[data-face-search]').forEach(b=>b.onclick=()=>faceModal(b.dataset.faceSearch));
+    $('#searchResults').innerHTML=results.length?results.map((x,i)=>`<button class="search-result" data-search-result="${i}"><b>${esc(x.label)}</b><span>${esc(x.sub||'PULSE')}</span></button>`).join(''):'<div class="empty">Type to search PULSE.</div>';
+    $$('[data-search-result]').forEach(b=>b.onclick=()=>{ const x=results[Number(b.dataset.searchResult)]; closeModal(); if(x.type==='article')readArticle(x.index); if(x.type==='issue')readIssue(x.index); if(x.type==='market')marketModal(x.id); if(x.type==='creator'){state.creatorIndex=x.index;setTab('connect');} });
   });
 });
-
 $('#modal')?.addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
 document.addEventListener('click',e=>{
   if(e.target.closest('[data-close]')) closeModal();
@@ -484,8 +607,5 @@ document.addEventListener('touchend',e=>{
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();state.deferredInstall=e;render();});
 window.addEventListener('appinstalled',()=>{state.deferredInstall=null;toast('PULSE installed');render();});
 
-render();
-Promise.all([loadLive(),loadWallet()]);
-setInterval(loadLive,60000);
-setTimeout(()=>$('#splash')?.classList.add('hide'),650);
+bootPulse();
 if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
