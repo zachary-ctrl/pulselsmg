@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#050505" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="PULSE" />
+  <meta name="description" content="PULSE by LSMG × LEDGERA — watch culture, predict what happens next, and connect with creatives." />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/assets/icon-192.png" />
+  <link rel="icon" href="/assets/icon-192.png" />
+  <link rel="stylesheet" href="/styles.css" />
+  <title>PULSE — LSMG × LEDGERA</title>
+</head>
+<body>
+  <div id="splash" class="splash" aria-hidden="true">
+    <div class="splash-brand">LSMG <span>×</span> LEDGERA</div>
+    <div class="splash-pulse">PULSE</div>
+    <svg class="splash-wave" viewBox="0 0 340 60" role="img" aria-label="Pulse line">
+      <path d="M4 31h88l11-15 14 30 18-40 19 25h182" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="square" stroke-linejoin="miter" />
+    </svg>
+    <div class="splash-tag">THE RECORD OF WHAT'S NEXT</div>
+  </div>
+
+  <div id="app" class="app-shell">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">LSMG <span>×</span> LEDGERA</div>
+        <div class="wordmark">PULSE<span class="dot">.</span></div>
+      </div>
+      <div class="top-actions">
+        <button class="icon-btn" id="searchBtn" aria-label="Search">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 21-4.5-4.5m2-5A7 7 0 1 1 4.5 11.5a7 7 0 0 1 14 0Z"/></svg>
+        </button>
+        <button class="avatar" data-tab="me" aria-label="Open profile">ZH</button>
+      </div>
+    </header>
+
+    <main id="view" class="view" tabindex="-1"></main>
+
+    <nav class="bottom-nav" aria-label="Primary navigation">
+      <button class="nav-item active" data-tab="feed" aria-label="Feed">
+        <span class="nav-icon">⌁</span><span>FEED</span>
+      </button>
+      <button class="nav-item" data-tab="watch" aria-label="Watch">
+        <span class="nav-icon">▶</span><span>WATCH</span>
+      </button>
+      <button class="nav-item predict-nav" data-tab="predict" aria-label="Predict">
+        <span class="nav-pulse">⌁</span><span>PREDICT</span>
+      </button>
+      <button class="nav-item" data-tab="connect" aria-label="Connect">
+        <span class="nav-icon">◇</span><span>CONNECT</span>
+      </button>
+      <button class="nav-item" data-tab="me" aria-label="Profile">
+        <span class="nav-icon">◎</span><span>ME</span>
+      </button>
+    </nav>
+  </div>
+
+  <dialog id="modal" class="modal">
+    <div class="modal-card" id="modalCard"></div>
+  </dialog>
+
+  <script src="/app.js" defer></script>
+</body>
+</html>
