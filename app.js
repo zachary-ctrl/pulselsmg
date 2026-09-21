@@ -382,8 +382,8 @@ function setTab(t){
 function paymentRailModal(action){
   openModal(`<button class="modal-close" data-close>×</button><span class="category">CASH WALLET</span><h2>${String(action).toUpperCase()}</h2>
   <div class="big-status">PAYMENT RAIL<br>NOT CONNECTED</div>
-  <p>The wallet interface and ledger are built. Real deposits and withdrawals stay locked until a payment/settlement provider that approves the operator's exact licensed prediction-wagering use case is connected.</p>
-  <div class="status-grid"><span><b>✓</b> WALLET UI</span><span><b>✓</b> SERVER LEDGER</span><span><b>✓</b> TX / FL GATING UI</span><span class="pending"><b>○</b> CASH PROVIDER</span></div>
+  <p>The wallet interface is built. Real deposits and withdrawals stay locked until an approved payment/settlement provider and permitted-jurisdiction verification are connected.</p>
+  <div class="status-grid"><span><b>✓</b> WALLET UI</span><span><b>✓</b> LOCAL APP WALLET</span><span><b>✓</b> PERMITTED-JURISDICTION UI</span><span class="pending"><b>○</b> CASH PROVIDER</span></div>
   <button class="btn primary full" data-close>GOT IT</button>`);
 }
 
