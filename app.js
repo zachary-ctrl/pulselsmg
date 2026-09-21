@@ -454,32 +454,51 @@ function faceModal(i){
 function aiModal(prefill=''){
   const msgs=state.aiMessages.slice(-6).map(m=>`<div class="ai-msg ${m.role}"><span>${m.role==='assistant'?'PULSE AI':'YOU'}</span><p>${esc(m.text)}</p></div>`).join('');
   openModal(`<button class="modal-close" data-close>×</button><div class="ai-head"><span class="ai-orb">✦</span><div><small>PULSE AI</small><h2>ASK WHAT'S NEXT.</h2></div></div>
-    <div class="ai-mode"><i></i><span id="aiModeLabel">${state.aiMode==='ai'?'GENERATIVE AI':'LIVE SIGNAL ENGINE'}</span></div>
-    <div class="ai-chat" id="aiChat">${msgs||'<div class="ai-welcome">Ask about an artist, show, film, fashion trend, wrestling story, headline, or any live prediction on screen.</div>'}</div>
+    <div class="ai-mode"><i></i><span id="aiModeLabel">ON-DEVICE AI · LIVE APP DATA</span></div>
+    <div class="ai-chat" id="aiChat">${msgs||'<div class="ai-welcome">Ask about stories, full magazine issues, creators, fashion, film, music, wrestling, or any culture prediction on screen.</div>'}</div>
     <div class="ai-quick"><button data-ai-quick="What are the biggest culture prediction signals right now?">BIGGEST SIGNALS</button><button data-ai-quick="What culture headlines should I know right now?">HEADLINES</button></div>
     <form id="aiForm" class="ai-form"><input id="aiInput" autocomplete="off" placeholder="Ask PULSE AI…" value="${esc(prefill)}"><button>↑</button></form>`, 'ai-sheet');
   setTimeout(()=>$('#aiInput')?.focus(),100);
 }
 
-async function sendAI(prompt){
-  const p=String(prompt||'').trim();
-  if(!p) return;
-  state.aiMessages.push({role:'user',text:p});
-  const chat=$('#aiChat');
-  if(chat) chat.innerHTML=state.aiMessages.slice(-6).map(m=>`<div class="ai-msg ${m.role}"><span>${m.role==='assistant'?'PULSE AI':'YOU'}</span><p>${esc(m.text)}</p></div>`).join('')+'<div class="ai-thinking">PULSE IS READING THE SIGNAL…</div>';
-  try{
-    const response=await fetch('/api/ai',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({prompt:p,context:{markets:state.live.markets.slice(0,12),news:state.live.news.slice(0,12)}})});
-    const data=await response.json();
-    state.aiMode=data.mode==='ai'?'ai':'signal';
-    state.aiMessages.push({role:'assistant',text:data.answer||'No answer returned.'});
-  }catch(e){
-    state.aiMessages.push({role:'assistant',text:'The AI endpoint is reconnecting. Live PULSE signals are still updating in the app.'});
+function buildAIAnswer(prompt){
+  const q=String(prompt||'').toLowerCase();
+  if(/\b(politic|election|president|senate|congress|governor|mayor)\b/.test(q)){
+    return {text:'PULSE keeps election and political outcome recommendations out of the prediction feed. I can still help you find factual culture coverage.'};
   }
-  const c=$('#aiChat');
-  if(c){c.innerHTML=state.aiMessages.slice(-7).map(m=>`<div class="ai-msg ${m.role}"><span>${m.role==='assistant'?'PULSE AI':'YOU'}</span><p>${esc(m.text)}</p></div>`).join('');c.scrollTop=c.scrollHeight;}
-  if($('#aiModeLabel')) $('#aiModeLabel').textContent=state.aiMode==='ai'?'GENERATIVE AI':'LIVE SIGNAL ENGINE';
+  if(/biggest|top|live prediction|market|signal|odds/.test(q)){
+    const top=[...(state.live.markets.length?state.live.markets:fallbackMarkets)].sort((a,b)=>Number(b.volume24h||0)-Number(a.volume24h||0)).slice(0,3);
+    return {text:top.map((m,i)=>`${i+1}. ${m.title} — ${m.yes}% YES on ${m.source}.`).join(' ')+' These are changing public market signals, not guarantees.',action:{label:'OPEN PREDICTIONS',run:()=>{closeModal();setTab('predict');}}};
+  }
+  if(/newest|latest|magazine|issue|edition/.test(q)){
+    const x=issues[0]; return {text:`The newest LEDGERA edition in PULSE is ${x.title} ${x.subtitle}`,action:{label:'READ '+x.title,run:()=>{closeModal();readIssue(0);}}};
+  }
+  if(/fashion|music|film|movie|sports|wrestling|culture|article|story|read/.test(q)){
+    const keys=['fashion','music','film','movie','sports','wrestling','culture'].filter(k=>q.includes(k));
+    const ranked=state.articles.map((a,i)=>({a,i,score:keys.reduce((n,k)=>n+((a.category+' '+a.title+' '+a.summary).toLowerCase().includes(k)?1:0),0)})).sort((a,b)=>b.score-a.score);
+    const best=ranked.find(x=>x.score>0)||ranked[0];
+    if(best)return {text:`Start with “${best.a.title}.” ${best.a.summary}`,action:{label:'READ ARTICLE',run:()=>{closeModal();readArticle(best.i);}}};
+  }
+  if(/model|creator|talent|connect|collab|photographer|stylist/.test(q)){
+    const words=q.split(/\W+/).filter(w=>w.length>3);
+    const c=creators.map((x,i)=>({x,i,score:words.filter(w=>(x.name+' '+x.role+' '+x.skills.join(' ')+' '+x.need).toLowerCase().includes(w)).length})).sort((a,b)=>b.score-a.score)[0]||{x:creators[0],i:0};
+    return {text:`A current PULSE network match is ${c.x.name}, ${c.x.role} in ${c.x.loc}. ${c.x.need}`,action:{label:'OPEN CONNECT',run:()=>{state.creatorIndex=c.i;closeModal();setTab('connect');}}};
+  }
+  const words=q.split(/\W+/).filter(w=>w.length>3);
+  const a=state.articles.map((x,i)=>({x,i,score:words.filter(w=>(x.title+' '+x.summary+' '+x.category).toLowerCase().includes(w)).length})).sort((a,b)=>b.score-a.score)[0];
+  const m=(state.live.markets.length?state.live.markets:fallbackMarkets).map(x=>({x,score:words.filter(w=>x.title.toLowerCase().includes(w)).length})).sort((a,b)=>b.score-a.score)[0];
+  if(a?.score>0)return {text:`The closest LEDGERA story is “${a.x.title}.” ${a.x.summary}`,action:{label:'READ IT',run:()=>{closeModal();readArticle(a.i);}}};
+  if(m?.score>0)return {text:`The closest culture prediction is “${m.x.title},” currently ${m.x.yes}% YES on ${m.x.source}.`,action:{label:'OPEN MARKET',run:()=>{closeModal();marketModal(m.x.id);}}};
+  return {text:'I can search PULSE across LEDGERA articles, full magazine editions, culture prediction signals and creator profiles. Ask what you want to read, watch, track or find.'};
 }
-
+async function sendAI(prompt){
+  const p=String(prompt||'').trim(); if(!p)return;
+  state.aiMessages.push({role:'user',text:p});
+  const answer=buildAIAnswer(p); state.aiMessages.push({role:'assistant',text:answer.text}); state.aiMode='local';
+  const chat=$('#aiChat');
+  if(chat){ chat.innerHTML=state.aiMessages.slice(-8).map(m=>`<div class="ai-msg ${m.role}"><span>${m.role==='assistant'?'PULSE AI':'YOU'}</span><p>${esc(m.text)}</p></div>`).join('')+(answer.action?`<button class="ai-action" id="aiAction">${esc(answer.action.label)}</button>`:''); chat.scrollTop=chat.scrollHeight; if(answer.action)$('#aiAction').onclick=answer.action.run; }
+  if($('#aiModeLabel'))$('#aiModeLabel').textContent='ON-DEVICE AI · LIVE APP DATA';
+}
 function installApp(){
   if(appInstalled()){toast('PULSE is already in app mode');return;}
   if(state.deferredInstall){
