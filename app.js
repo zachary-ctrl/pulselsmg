@@ -445,6 +445,18 @@ function aiModal(prefill=''){
   setTimeout(()=>$('#aiInput')?.focus(),100);
 }
 
+let browserAI=null;
+async function browserAIAnswer(prompt){
+  if(!globalThis.LanguageModel) return null;
+  try{
+    const availability=await LanguageModel.availability({expectedInputs:[{type:'text',languages:['en']}],expectedOutputs:[{type:'text',languages:['en']}]});
+    if(availability==='unavailable') return null;
+    if(!browserAI){ browserAI=await LanguageModel.create({expectedInputs:[{type:'text',languages:['en']}],expectedOutputs:[{type:'text',languages:['en']}],initialPrompts:[{role:'system',content:'You are PULSE AI for LSMG x LEDGERA. Be concise and factual. Use the supplied app context. Treat prediction market prices as changing crowd signals, never certainty. Do not recommend political candidates or election outcomes.'}]}); }
+    const context=JSON.stringify({articles:state.articles.slice(0,8).map(a=>({title:a.title,category:a.category,summary:a.summary})),issues:issues.slice(0,4).map(x=>({title:x.title,label:x.label,subtitle:x.subtitle})),markets:(state.live.markets.length?state.live.markets:fallbackMarkets).slice(0,8).map(m=>({title:m.title,source:m.source,yes:m.yes,no:m.no}))});
+    return await browserAI.prompt('APP CONTEXT: '+context+'\nUSER: '+prompt);
+  }catch{return null;}
+}
+
 function buildAIAnswer(prompt){
   const q=String(prompt||'').toLowerCase();
   if(/\b(politic|election|president|senate|congress|governor|mayor)\b/.test(q)){
@@ -478,10 +490,11 @@ function buildAIAnswer(prompt){
 async function sendAI(prompt){
   const p=String(prompt||'').trim(); if(!p)return;
   state.aiMessages.push({role:'user',text:p});
-  const answer=buildAIAnswer(p); state.aiMessages.push({role:'assistant',text:answer.text}); state.aiMode='local';
-  const chat=$('#aiChat');
+  const chat=$('#aiChat'); if(chat)chat.innerHTML=state.aiMessages.slice(-8).map(m=>`<div class="ai-msg ${m.role}"><span>${m.role==='assistant'?'PULSE AI':'YOU'}</span><p>${esc(m.text)}</p></div>`).join('')+'<div class="ai-thinking">PULSE IS READING THE SIGNAL…</div>';
+  const generated=await browserAIAnswer(p);
+  const answer=generated?{text:generated}:buildAIAnswer(p); state.aiMessages.push({role:'assistant',text:answer.text}); state.aiMode=generated?'browser-ai':'local';
   if(chat){ chat.innerHTML=state.aiMessages.slice(-8).map(m=>`<div class="ai-msg ${m.role}"><span>${m.role==='assistant'?'PULSE AI':'YOU'}</span><p>${esc(m.text)}</p></div>`).join('')+(answer.action?`<button class="ai-action" id="aiAction">${esc(answer.action.label)}</button>`:''); chat.scrollTop=chat.scrollHeight; if(answer.action)$('#aiAction').onclick=answer.action.run; }
-  if($('#aiModeLabel'))$('#aiModeLabel').textContent='ON-DEVICE AI · LIVE APP DATA';
+  if($('#aiModeLabel'))$('#aiModeLabel').textContent=generated?'BROWSER GENERATIVE AI':'ON-DEVICE SIGNAL AI';
 }
 function installApp(){
   if(appInstalled()){toast('PULSE is already in app mode');return;}
