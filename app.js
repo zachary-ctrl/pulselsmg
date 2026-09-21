@@ -172,7 +172,7 @@ async function loadLive(){
     const r=await fetch('/api/live',{cache:'no-store'});
     if(r.ok){
       const d=await r.json();
-      if(Array.isArray(d.articles)&&d.articles.length) state.articles=d.articles;
+      if(Array.isArray(d.articles)&&d.articles.length) state.articles=d.articles.map((a,i)=>({...a,image:a.image||nyfwPhotos[i%nyfwPhotos.length]?.image||''}));
       const markets=Array.isArray(d.markets)&&d.markets.length?d.markets:fallbackMarkets;
       state.live={news:state.articles.map(a=>({title:a.title,url:a.url,domain:'LEDGERA',image:a.image||''})),markets,generatedAt:d.generatedAt||new Date().toISOString(),sources:[...new Set(markets.map(m=>m.source))]};
       state.liveStatus=d.markets?.length?'live':'fallback';
@@ -186,7 +186,7 @@ async function loadLive(){
     const r=await fetch('https://gamma-api.polymarket.com/markets?active=true&closed=false&limit=120&order=volume24hr&ascending=false',{cache:'no-store'});
     if(r.ok){const data=await r.json();for(const m of data){if(!isCultureMarket(m.question||''))continue;let outcomes=[],prices=[];try{outcomes=JSON.parse(m.outcomes||'[]');prices=JSON.parse(m.outcomePrices||'[]')}catch{}const yi=outcomes.findIndex(x=>String(x).toLowerCase()==='yes');if(yi<0)continue;const yes=Math.round(Number(prices[yi]||0)*100);markets.push({id:'poly-'+m.id,source:'POLYMARKET',title:m.question,yes,no:100-yes,volume24h:Number(m.volume24hr||0),change24h:Number(m.oneDayPriceChange||0)*100,endDate:m.endDate||'',image:m.image||''});if(markets.length>=12)break}}
   }catch{}
-  try{const r=await fetch(LEDGERA+'/feed.json',{cache:'no-store'});if(r.ok){const feed=await r.json();if(Array.isArray(feed.items))state.articles=feed.items.map(x=>({title:x.title||'LEDGERA',summary:x.summary||'',category:x._ledgera?.category||x.tags?.join(' / ')||'LEDGERA',url:x.url||x.id,image:x.image||''}));}}catch{}
+  try{const r=await fetch(LEDGERA+'/feed.json',{cache:'no-store'});if(r.ok){const feed=await r.json();if(Array.isArray(feed.items))state.articles=feed.items.map((x,i)=>({title:x.title||'LEDGERA',summary:x.summary||'',category:x._ledgera?.category||x.tags?.join(' / ')||'LEDGERA',url:x.url||x.id,image:x.image||nyfwPhotos[i%nyfwPhotos.length]?.image||''}));}}catch{}
   state.live={news:state.articles.map(a=>({title:a.title,url:a.url,domain:'LEDGERA',image:a.image||''})),markets:markets.length?markets:fallbackMarkets,generatedAt:new Date().toISOString(),sources:markets.length?['POLYMARKET']:['PULSE SNAPSHOT']};
   state.liveStatus=markets.length?'live':'fallback';if(state.tab==='feed'||state.tab==='predict')render();
 }
@@ -344,69 +344,21 @@ function installChip(){
 }
 
 function feed(){
-  const liveNews = state.live.news.length ? state.live.news.slice(0,8).map((a,i)=>`
-    <button class="live-story" data-read-article="${i}">
-      <div class="live-story-img" ${a.image?`style="background-image:linear-gradient(180deg,transparent 28%,rgba(0,0,0,.88)),url('${esc(a.image)}')"`:''}>
-        <span>${i<2?'FEATURED':'READ'}</span>
-      </div>
-      <div class="live-story-copy"><b>${esc(a.title)}</b><small>LEDGERA · READ IN PULSE</small></div>
-    </button>`).join('') : `
-      <div class="live-fallback"><div class="skeleton sk-line"></div><div class="skeleton sk-line short"></div><span>${state.liveStatus==='loading'?'SYNCING LIVE CULTURE…':'LIVE FEED WILL RETRY AUTOMATICALLY'}</span></div>`;
-
-  const pulseSignals=(state.live.markets.length?state.live.markets:fallbackMarkets).slice(0,3).map(m=>`
-    <button class="signal-mini" data-market="${esc(m.id)}">
-      <span class="source-badge">${iconForSource(m.source)}</span>
-      <div><b>${esc(m.title)}</b><small>${esc(m.source)} · ${compact(m.volume24h)} 24H VOL</small></div>
-      <strong>${Number(m.yes||0)}%</strong>
-    </button>`).join('');
-
-  const nyfwRail=nyfwPhotos.map((p,i)=>`<button class="nyfw-card" data-photo="${i}"><div class="nyfw-media" style="background-image:linear-gradient(rgba(0,0,0,.48),rgba(0,0,0,.48)),url('${p.image}')"><img src="${p.image}" alt="${esc(p.title)} at NYFW" loading="lazy"></div><span><small>${esc(p.subtitle)}</small><b>${esc(p.title)}</b></span></button>`).join('');
-
-  const faceRail=creators.map((c,i)=>`
-    <button class="face-tile" data-face="${i}">
-      <img src="${c.image}" alt="${esc(c.name)}" loading="lazy">
-      <span><b>${esc(c.name)}</b><small>${esc(c.role)}</small></span>
-    </button>`).join('');
-
-  return `
-  <section class="hero app-card">
-    <div class="hero-grid"></div>
-    <div class="hero-topline"><div class="live-pill"><i></i> PULSE LIVE</div>${installChip()}</div>
-    <div class="brand-lockup"><span>LSMG</span><em>×</em><span>LEDGERA</span></div>
-    <h1>THE CULTURE<br><mark>IN MOTION.</mark></h1>
-    <p>Watch the network. Track live public prediction signals. Find collaborators. Ask PULSE AI what is moving.</p>
-    <div class="cta-row"><button class="btn primary" data-go="predict">LIVE SIGNALS</button><button class="btn ghost" data-go="watch">WATCH</button></div>
-  </section>
-
-  <div class="ticker"><span class="ticker-label">LIVE</span><div class="ticker-track"><span>ENTERTAINMENT</span><b>•</b><span>FASHION</span><b>•</b><span>MUSIC</span><b>•</b><span>FILM</span><b>•</b><span>WRESTLING</span><b>•</b><span>CREATORS</span><b>•</b><span>PREDICTIONS</span></div></div>
-
-  <div class="section-kicker"><span><b>PULSE SIGNAL</b> / LIVE PREDICTIONS</span><button class="text-btn" data-go="predict">SEE ALL →</button></div>
-  <div class="signal-stack">${pulseSignals}</div>
-
-  <div class="section-kicker"><span><b>NOW</b> / CULTURE WIRE</span><button class="text-btn" id="refreshLive">REFRESH ↻</button></div>
-  <div class="live-grid">${liveNews}</div>
-
-  <div class="section-kicker"><span><b>MAGAZINE</b> / READ FULL ISSUES</span><button class="text-btn" id="allIssues">ARCHIVE →</button></div>
-  <div class="issue-rail">${issues.slice(0,4).map((x,i)=>`<button class="issue-card" data-read-issue="${i}"><img src="${esc(x.cover)}" alt="${esc(x.title)} cover" loading="lazy"><span><small>${esc(x.label)}</small><b>${esc(x.title)}</b><em>READ ISSUE →</em></span></button>`).join('')}</div>
-
-  <div class="section-kicker"><span><b>NYFW</b> / FROM THE LSMG DRIVE</span><span>RUNWAY 7</span></div>
-  <div class="nyfw-rail">${nyfwRail}</div>
-
-  <div class="section-kicker"><span><b>WATCH</b> / NEW CUT</span><span>LSMG × LEDGERA</span></div>
-  <article class="feature-video-card app-card" data-go="watch">
-    <div class="feature-video-poster" style="background-image:linear-gradient(180deg,transparent 18%,rgba(0,0,0,.9)),url('${VIDEO_POSTER}')">
-      <div class="play-orb">▶</div><div class="feature-tag">LEDGERA FASHION EDIT · NEW</div><h2>WATCH THE<br>NEW CUT.</h2>
-    </div>
-  </article>
-
-  <div class="section-kicker"><span><b>CONNECT</b> / LEDGERA FACES</span><button class="text-btn" data-go="connect">DISCOVER →</button></div>
-  <div class="face-rail">${faceRail}</div>
-
-  <a class="network-banner" href="https://ledgeramagazine.com/coverage/" target="_blank" rel="noopener" style="background-image:linear-gradient(90deg,rgba(0,0,0,.92),rgba(0,0,0,.45)),url('${TRIBECA_IMAGE}')">
-    <span>FROM THE NETWORK</span><strong>LSMG FIELD ARCHIVE</strong><small>Interviews · Festivals · Fashion · Film · Culture →</small>
-  </a>`;
+ const articles=state.articles.length?state.articles:fallbackArticles,lead=articles[0]||fallbackArticles[0];
+ const pulseSignals=(state.live.markets.length?state.live.markets:fallbackMarkets).slice(0,3).map(m=>`<button class="signal-mini" data-market="${esc(m.id)}"><span class="source-badge">${iconForSource(m.source)}</span><div><b>${esc(m.title)}</b><small>${esc(m.source)} · ${compact(m.volume24h)} 24H VOL</small></div><strong>${Number(m.yes||0)}%</strong></button>`).join('');
+ const articleStream=articles.slice(1,10).map((a,i)=>`<button class="news-row" data-read-article="${i+1}"><div class="news-row-copy"><small>${esc(a.category||'LEDGERA')} · LIVE</small><h3>${esc(a.title)}</h3><p>${esc(a.summary||'')}</p><b>READ →</b></div><div class="news-row-img">${a.image?`<img src="${esc(a.image)}" alt="" loading="lazy">`:''}</div></button>`).join('');
+ const nyfwRail=nyfwPhotos.map((p,i)=>`<button class="nyfw-card" data-photo="${i}"><div class="nyfw-media" style="background-image:linear-gradient(rgba(0,0,0,.48),rgba(0,0,0,.48)),url('${p.image}')"><img src="${p.image}" alt="${esc(p.title)} at NYFW" loading="lazy"></div><span><small>${esc(p.subtitle)}</small><b>${esc(p.title)}</b></span></button>`).join('');
+ const faceRail=creators.map((c,i)=>`<button class="face-tile" data-face="${i}"><img src="${c.image}" alt="${esc(c.name)}" loading="lazy"><span><b>${esc(c.name)}</b><small>${esc(c.role)}</small></span></button>`).join('');
+ return `<section class="live-edition-head"><div><span class="live-dot"></span> LEDGERA LIVE</div><b>${state.liveStatus==='live'?'SYNCED NOW':'SYNCING'}</b></section>
+ <button class="lead-story" data-read-article="0"><div class="lead-media">${lead.image?`<img src="${esc(lead.image)}" alt="" loading="eager">`:''}<span>TOP STORY</span></div><div class="lead-copy"><small>${esc(lead.category||'LEDGERA')}</small><h1>${esc(lead.title)}</h1><p>${esc(lead.summary||'')}</p><b>READ IN PULSE →</b></div></button>
+ <div class="ticker"><span class="ticker-label">LIVE</span><div class="ticker-track"><span>ENTERTAINMENT</span><b>•</b><span>FASHION</span><b>•</b><span>MUSIC</span><b>•</b><span>FILM</span><b>•</b><span>WRESTLING</span><b>•</b><span>CREATORS</span></div></div>
+ <div class="section-kicker"><span><b>LATEST</b> / LEDGERA NEWSROOM</span><button class="text-btn" id="refreshLive">REFRESH ↻</button></div><div class="news-stream">${articleStream}</div>
+ <div class="section-kicker"><span><b>PULSE SIGNAL</b> / LIVE PREDICTIONS</span><button class="text-btn" data-go="predict">SEE ALL →</button></div><div class="signal-stack">${pulseSignals}</div>
+ <div class="section-kicker"><span><b>MAGAZINE</b> / PULSE EDITION READER</span><button class="text-btn" id="allIssues">ARCHIVE →</button></div><div class="issue-rail">${issues.slice(0,4).map((x,i)=>`<button class="issue-card" data-read-issue="${i}"><img src="${esc(x.cover)}" alt="${esc(x.title)} cover" loading="lazy"><span><small>${esc(x.label)}</small><b>${esc(x.title)}</b><em>OPEN EDITION →</em></span></button>`).join('')}</div>
+ <div class="section-kicker"><span><b>NYFW</b> / LSMG ARCHIVE</span><span>RUNWAY 7</span></div><div class="nyfw-rail">${nyfwRail}</div>
+ <div class="section-kicker"><span><b>WATCH</b> / PULSE TV</span><button class="text-btn" data-go="watch">OPEN →</button></div><article class="feature-video-card app-card" data-go="watch"><div class="feature-video-poster" style="background-image:linear-gradient(180deg,transparent 18%,rgba(0,0,0,.9)),url('${VIDEO_POSTER}')"><div class="play-orb">▶</div><div class="feature-tag">LEDGERA FASHION EDIT</div><h2>WATCH THE<br>NEW CUT.</h2></div></article>
+ <div class="section-kicker"><span><b>CONNECT</b> / LEDGERA FACES</span><button class="text-btn" data-go="connect">DISCOVER →</button></div><div class="face-rail">${faceRail}</div>`;
 }
-
 function watch(){
   const stockRail=stockVideos.map((v,i)=>`
     <article class="stock-video-card">
