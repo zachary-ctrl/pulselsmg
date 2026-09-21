@@ -1,0 +1,12 @@
+{
+  "name": "pulselsmg",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@netlify/database": "latest",
+    "openai": "latest"
+  },
+  "devDependencies": {
+    "@netlify/functions": "latest"
+  }
+}
