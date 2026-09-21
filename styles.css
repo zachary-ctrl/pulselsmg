@@ -102,3 +102,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .upload-btn{cursor:pointer;color:var(--cyan);font-size:7px;font-weight:950;letter-spacing:.06em}
 .check-list input:disabled{opacity:.35}
 @media(max-width:700px){.blueprint-readonly{grid-template-columns:1fr}.blueprint-readonly .span-2{grid-column:auto}.live-banner,.cloud-status{align-items:flex-start;flex-direction:column}}
+
+/* SWARM live onboarding + invitation thread */
+.onboarding-callout{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:12px 0;border:1px solid #52683e;border-radius:16px;background:linear-gradient(120deg,#152016,#0c1210);padding:14px}
+.onboarding-callout small{display:block;color:var(--acid);font-size:7px;font-weight:950;letter-spacing:.11em}.onboarding-callout b{display:block;margin-top:4px;font-family:Impact,"Arial Narrow",sans-serif;font-size:24px}.onboarding-callout p{margin:5px 0 0;color:#8e9d93;font-size:9px;line-height:1.45;max-width:620px}.onboarding-callout button{flex:0 0 auto;min-height:42px;border:1px solid var(--acid);border-radius:11px;background:var(--acid);color:#071009;padding:9px 12px;font-size:7px;font-weight:950}
+.invite-thread{display:grid;gap:8px;max-height:54svh;overflow:auto;margin:6px 0 12px}.invite-thread>div{max-width:88%;border:1px solid var(--line);border-radius:13px 13px 13px 3px;background:#111611;padding:9px}.invite-thread>div.mine{justify-self:end;border-color:#44613b;background:#152016;border-radius:13px 13px 3px 13px}.invite-thread b{display:block;color:var(--acid);font-size:6px;letter-spacing:.08em}.invite-thread p{margin:4px 0;color:#d6dfd9;font-size:9px;line-height:1.5}.invite-thread small{color:#617067;font-size:6px}
+@media(max-width:700px){.onboarding-callout{align-items:stretch;flex-direction:column}.onboarding-callout button{width:100%}}

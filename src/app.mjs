@@ -129,6 +129,7 @@ function graphMoment(project,team,done){
 function incomingInvites(){return state.invitations.filter(i=>i.profileId===state.profile?.id&&i.status==="pending")}
 function home(){
   const projects=state.projects.filter(p=>p.creatorId===state.profile?.id).slice(0,4),active=state.swarms.filter(s=>s.status==="active").length,invites=incomingInvites();
+  const needsProfile=!(state.profile.skills||[]).length||!(state.profile.desiredRoles||[]).length||state.profile.visibility!=="public";
   return `<section class="hero">
     <div class="hero-ambient"><i></i><i></i><i></i><i></i><i></i></div>
     <div class="eyebrow">SWARM / LIVE GOAL-TO-ORGANIZATION ENGINE</div>
@@ -140,6 +141,7 @@ function home(){
     </form>
     <div class="goal-examples">${["Build an iOS fitness app","Launch a clothing brand","Shoot a short film","Start a podcast","Organize a 300-person event","Launch a food truck"].map(x=>`<button data-example="${esc(x)}">${esc(x)}</button>`).join("")}</div>
   </section>
+  ${needsProfile?`<section class="onboarding-callout"><div><small>MAKE YOUR PROFILE MATCHABLE</small><b>COMPLETE YOUR CAPABILITY PROFILE</b><p>Add skills, roles, availability and rates. You choose when to make the profile public to the SWARM Match Engine.</p></div><button id="completeProfile">COMPLETE PROFILE →</button></section>`:""}
   <section class="system-strip"><div><b>${projects.length}</b><span>YOUR PROJECTS</span></div><div><b>${active}</b><span>ACTIVE SWARMS</span></div><div><b>${state.publicProfiles.filter(p=>p.id!==state.profile?.id).length}</b><span>LIVE PROFILES</span></div><div><b>${invites.length}</b><span>INVITES</span></div></section>
   ${invites.length?`<div class="section-head"><div><small>INCOMING</small><h2>YOU'VE BEEN MATCHED</h2></div></div><div class="invite-stack">${invites.map(incomingInviteCard).join("")}</div>`:""}
   <div class="section-head"><div><small>YOUR WORK</small><h2>PROJECTS IN MOTION</h2></div><button data-tab-jump="projects">VIEW ALL</button></div>
@@ -149,7 +151,7 @@ function home(){
 function incomingInviteCard(i){
   return `<article class="invite-card live"><div><span class="member-avatar">↗</span><div><b>${esc(i.project?.title||"SWARM Project")}</b><small>${esc(i.roleTitle)} · ${money(i.estimatedCompensation)} EST.</small></div></div><em class="invite-status pending">PENDING</em>
     <p>${esc((i.whyMatched||[]).slice(0,2).join(" · ")||"Your capability profile matched this project's role requirements.")}</p>
-    <div class="invite-actions"><button data-live-invite="${i.id}" data-response="accepted">ACCEPT</button><button data-live-invite="${i.id}" data-response="declined">DECLINE</button><button data-open-invite-project="${i.projectId}">VIEW PROJECT</button></div></article>`;
+    <div class="invite-actions"><button data-live-invite="${i.id}" data-response="accepted">ACCEPT</button><button data-live-invite="${i.id}" data-response="declined">DECLINE</button><button data-invite-question="${i.id}">ASK QUESTION</button><button data-open-invite-project="${i.projectId}">VIEW PROJECT</button></div></article>`;
 }
 function projectCard(p){
   const swarm=state.swarms.find(s=>s.projectId===p.id),mine=isCreator(p);
@@ -162,8 +164,13 @@ function projectCard(p){
 function projectsPage(){
   const p=currentProject();
   if(!p){
+    const related=new Set([
+      ...state.invitations.filter(i=>["pending","accepted"].includes(i.status)).map(i=>i.projectId),
+      ...state.swarms.map(s=>s.projectId)
+    ]);
+    const list=state.projects.filter(x=>x.creatorId===state.profile?.id||related.has(x.id));
     return `<div class="page-title"><small>SWARM CLOUD</small><h1>PROJECTS.</h1><p>Projects you created plus projects where you have an active invitation or Swarm membership.</p></div>
-      ${state.projects.length?`<div class="project-grid">${state.projects.map(projectCard).join("")}</div>`:`<div class="empty-state"><b>NOTHING TO ASSEMBLE YET</b><p>Start with a goal on Home.</p><button class="primary-btn" data-tab-jump="home">CREATE A GOAL</button></div>`}`;
+      ${list.length?`<div class="project-grid">${list.map(projectCard).join("")}</div>`:`<div class="empty-state"><b>NOTHING TO ASSEMBLE YET</b><p>Start with a goal on Home.</p><button class="primary-btn" data-tab-jump="home">CREATE A GOAL</button></div>`}`;
   }
   return `<div class="project-shell">
     <header class="project-header"><button class="back-link" id="backProjects">← ALL PROJECTS</button><div><small>${esc(p.category||"PROJECT")} · ${isCreator(p)?"OWNER":"MEMBER / INVITEE"}</small><h1>${esc(p.title)}</h1></div><span class="status ${esc(p.status)}">${esc(p.status)}</span></header>
@@ -270,7 +277,10 @@ function invitationsView(p){
   return `<div class="live-banner"><b>REAL INVITATIONS</b><span>These records are stored in SWARM Cloud and recipients see them on their own accounts.</span></div><div class="stage-heading"><div><small>FORMATION STATUS</small><h2>INVITATIONS</h2></div><span>${esc(swarm?.status||p.status)}</span></div>
   <div class="invite-stack">${invites.map(i=>`<article class="invite-card"><div><span class="member-avatar">${initials(i.profileName)}</span><div><b>${esc(i.profileName)}</b><small>${esc(i.roleTitle)} · ${money(i.estimatedCompensation)}</small></div></div><em class="invite-status ${i.status}">${i.status}</em>
     <p>${esc((i.whyMatched||[]).slice(0,2).join(" · "))}</p>
-    ${!mine&&i.profileId===state.profile.id&&i.status==="pending"?`<div class="invite-actions"><button data-live-invite="${i.id}" data-response="accepted">ACCEPT</button><button data-live-invite="${i.id}" data-response="declined">DECLINE</button></div>`:""}</article>`).join("")}</div>
+    <div class="invite-actions">
+      ${!mine&&i.profileId===state.profile.id&&i.status==="pending"?`<button data-live-invite="${i.id}" data-response="accepted">ACCEPT</button><button data-live-invite="${i.id}" data-response="declined">DECLINE</button>`:""}
+      ${i.status!=="expired"&&i.status!=="withdrawn"?`<button data-invite-question="${i.id}">${mine?"MESSAGE":"ASK QUESTION"}</button>`:""}
+    </div></article>`).join("")}</div>
   <div class="stage-actions"><button class="primary-btn" data-stage-go="room">OPEN SWARM ROOM →</button></div>`;
 }
 function roomView(p){
@@ -328,6 +338,22 @@ function roleModal(p,id){
   const r=[...(p.requiredRoles||[]),...(p.optionalRoles||[])].find(x=>x.id===id);if(!r)return;
   openModal(`<div class="modal-head"><div><small>${r.required?"REQUIRED ROLE":"OPTIONAL ROLE"}</small><h2>${esc(r.title)}</h2></div><button data-close>×</button></div><div class="modal-section"><small>SKILLS</small><div class="chips">${(r.skills||[]).map(s=>`<span>${esc(s.name)}</span>`).join("")}</div></div><div class="proof-grid"><div><b>${money(r.budgetCap)}</b><span>BUDGET CAP</span></div><div><b>${r.estimatedHours||24}</b><span>EST. HOURS</span></div></div>`);
 }
+async function invitationQuestionModal(id){
+  const invite=state.invitations.find(i=>i.id===id);if(!invite)return;
+  openModal(`<div class="modal-head"><div><small>INVITATION THREAD</small><h2>${esc(invite.project?.title||"SWARM PROJECT")}</h2></div><button data-close>×</button></div><div class="ai-wait"><i></i><p>Loading conversation…</p></div>`);
+  try{
+    const messages=await Cloud.loadInvitationMessages(id);
+    const draw=()=>{
+      $("#modalCard").innerHTML=`<div class="modal-head"><div><small>INVITATION THREAD · ${esc(invite.roleTitle)}</small><h2>${esc(invite.project?.title||"SWARM PROJECT")}</h2></div><button data-close>×</button></div>
+        <div class="invite-thread">${messages.length?messages.map(m=>`<div class="${m.sender_id===state.profile.id?"mine":""}"><b>${esc(m.sender_id===state.profile.id?"YOU":m.sender?.name||"SWARM USER")}</b><p>${esc(m.body)}</p><small>${new Date(m.created_at).toLocaleString()}</small></div>`).join(""):"<p>No questions yet. Start the conversation before accepting or declining.</p>"}</div>
+        <form id="inviteMessageForm" class="room-composer"><input id="inviteMessageInput" maxlength="1000" placeholder="Ask about expectations, schedule, compensation…" required><button>SEND</button></form>`;
+      $("[data-close]",$("#modal")).forEach(b=>b.onclick=()=>$("#modal").close());
+      $("#inviteMessageForm").onsubmit=async e=>{e.preventDefault();const input=$("#inviteMessageInput"),body=input.value.trim();if(!body)return;try{await Cloud.addInvitationMessage(id,body);const fresh=await Cloud.loadInvitationMessages(id);messages.splice(0,messages.length,...fresh);draw()}catch(err){toast(err?.message||"Could not send message")}};
+    };
+    draw();
+  }catch(err){$("#modalCard").innerHTML=`<div class="modal-head"><div><small>INVITATION THREAD</small><h2>COULD NOT LOAD</h2></div><button data-close>×</button></div><p class="modal-lead">${esc(err?.message||"Try again.")}</p>`;$("[data-close]",$("#modal")).forEach(b=>b.onclick=()=>$("#modal").close())}
+}
+
 function openModal(html){const dlg=$("#modal");$("#modalCard").innerHTML=html;dlg.showModal();$$("[data-close]",dlg).forEach(b=>b.onclick=()=>dlg.close())}
 function editProfileModal(){
   const p=state.profile;
@@ -347,7 +373,8 @@ function editProfileModal(){
   $("#profileForm").onsubmit=async e=>{
     e.preventDefault();const f=new FormData(e.currentTarget),split=k=>String(f.get(k)||"").split(",").map(x=>x.trim()).filter(Boolean),btn=$("button[type='submit']",e.currentTarget);btn.disabled=true;btn.textContent="SAVING…";
     try{
-      const next={...p,name:String(f.get("name")),bio:String(f.get("bio")||""),skills:split("skills").map(x=>[x,.8,false]),desiredRoles:split("desiredRoles"),industries:split("industries"),
+      const previousSkills=new Map((p.skills||[]).map(s=>[String(Array.isArray(s)?s[0]:s.name).toLowerCase(),Array.isArray(s)?s:[s.name,s.level||s.proficiency||.8,!!s.verified]]));
+      const next={...p,name:String(f.get("name")),bio:String(f.get("bio")||""),skills:split("skills").map(x=>previousSkills.get(x.toLowerCase())||[x,.8,false]),desiredRoles:split("desiredRoles"),industries:split("industries"),
         location:{...p.location,city:String(f.get("city")||""),state:String(f.get("state")||"")},hourlyRate:Number(f.get("hourlyRate")||0),projectRate:Number(f.get("projectRate")||0),
         availability:{start:String(f.get("availableStart")||""),end:String(f.get("availableEnd")||""),hoursPerWeek:Number(f.get("hoursPerWeek")||10)},
         goals:split("goals"),preferredProjectTypes:split("projectTypes"),workingStyle:split("workingStyle"),communicationPreferences:split("communication"),languages:split("languages"),
@@ -427,6 +454,8 @@ function bind(){
   $$("[data-file-path]").forEach(b=>b.onclick=async()=>{try{const url=await Cloud.signedFileUrl(b.dataset.filePath);window.open(url,"_blank","noopener")}catch(err){toast(err?.message||"Could not open file")}});
   $("#runCoordinator")?.addEventListener("click",()=>coordinatorModal(currentProject()));$("#projectOutcome")?.addEventListener("click",()=>outcomeModal(currentProject()));
   $("#discoverySearch")?.addEventListener("input",filterDiscovery);$("#discoveryFilter")?.addEventListener("change",filterDiscovery);$("#shareSwarm")?.addEventListener("click",shareSwarm);
+  $("[data-invite-question]").forEach(b=>b.onclick=()=>invitationQuestionModal(b.dataset.inviteQuestion));
+  $("#completeProfile")?.addEventListener("click",editProfileModal);
   $("#editProfile")?.addEventListener("click",editProfileModal);$("#installBtn")?.addEventListener("click",installApp);
   $("#signOut")?.addEventListener("click",async()=>{state.unsubscribeRealtime?.();await Cloud.signOut();state.session=null;state.profile=null;showAuth("signin","Signed out of SWARM Cloud.")});
 }

@@ -164,6 +164,15 @@ export const Cloud={
     const {data,error}=await supabase.functions.invoke("swarm-match",{body:{action:"respond_invitation",invitationId,status}});
     if(error)throw error;if(data?.error)throw new Error(data.error);return data;
   },
+  async loadInvitationMessages(invitationId){
+    const {data,error}=await supabase.from("invitation_messages").select("*,sender:profiles!invitation_messages_sender_id_fkey(id,name)").eq("invitation_id",invitationId).order("created_at");
+    if(error)throw error;return data||[];
+  },
+  async addInvitationMessage(invitationId,body){
+    const user=await requireUser();
+    const {data,error}=await supabase.from("invitation_messages").insert({invitation_id:invitationId,sender_id:user.id,body:String(body||"").trim()}).select("*").single();
+    if(error)throw error;return data;
+  },
   async loadRoom(swarmId,projectId){
     const [tasks,messages,decisions,files,members]=await Promise.all([
       supabase.from("tasks").select("*").eq("swarm_id",swarmId).order("created_at"),
@@ -205,6 +214,7 @@ export const Cloud={
       .on("postgres_changes",{event:"*",schema:"public",table:"swarms"},onChange)
       .on("postgres_changes",{event:"*",schema:"public",table:"invitations"},onChange)
       .on("postgres_changes",{event:"*",schema:"public",table:"notifications"},onChange)
+      .on("postgres_changes",{event:"*",schema:"public",table:"invitation_messages"},onChange)
       .on("postgres_changes",{event:"*",schema:"public",table:"tasks"},onChange)
       .on("postgres_changes",{event:"*",schema:"public",table:"messages"},onChange)
       .on("postgres_changes",{event:"*",schema:"public",table:"swarm_decisions"},onChange)
