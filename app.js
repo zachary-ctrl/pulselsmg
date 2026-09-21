@@ -192,7 +192,7 @@ function showOnboarding(){
   <section class="onboard-slide"><div class="onboard-icon">✦</div><small>PULSE AI</small><h2>ASK THE SIGNAL.</h2><p>Search stories, issues, creators and prediction signals conversationally.</p></section></div>
   <div class="onboard-bottom"><div class="onboard-dots"><i class="on"></i><i></i><i></i></div><button id="onboardNext">NEXT</button></div>`;
   document.body.appendChild(wrap); let i=0;
-  const paint=()=>{ $('.onboard-slide',wrap).forEach((s,n)=>s.classList.toggle('active',n===i)); $('.onboard-dots i',wrap).forEach((d,n)=>d.classList.toggle('on',n===i)); $('#onboardNext',wrap).textContent=i===2?'CREATE ACCOUNT':'NEXT'; };
+  const paint=()=>{ $$('.onboard-slide',wrap).forEach((s,n)=>s.classList.toggle('active',n===i)); $$('.onboard-dots i',wrap).forEach((d,n)=>d.classList.toggle('on',n===i)); $('#onboardNext',wrap).textContent=i===2?'CREATE ACCOUNT':'NEXT'; };
   const done=()=>{ localStorage.setItem('pulse.intro.v1','1'); wrap.classList.add('leaving'); setTimeout(()=>{wrap.remove();showAuth('create');},220); };
   $('#skipOnboard',wrap).onclick=done; $('#onboardNext',wrap).onclick=()=>{haptic(); if(i<2){i++;paint()}else done();};
 }
@@ -204,7 +204,7 @@ function showAuth(mode='create'){
   <form id="authForm">${create?'<label>NAME<input id="authName" autocomplete="name" required placeholder="Your name"></label>':''}<label>EMAIL<input id="authEmail" type="email" autocomplete="email" required placeholder="you@example.com"></label><label>PASSWORD<input id="authPass" type="password" minlength="6" required placeholder="6+ characters"></label><button class="auth-submit">${create?'CREATE ACCOUNT':'SIGN IN'}</button></form>
   <p class="auth-note">This no-Netlify-credit build stores the account securely on this device. Cross-device sync will use a separate auth backend before public launch.</p><button class="auth-guest" id="authGuest">CONTINUE AS GUEST</button></div>`;
   document.body.appendChild(wrap);
-  $('[data-auth]',wrap).forEach(b=>b.onclick=()=>showAuth(b.dataset.auth));
+  $$('[data-auth]',wrap).forEach(b=>b.onclick=()=>showAuth(b.dataset.auth));
   $('#authGuest',wrap).onclick=()=>{state.session={name:'Guest',email:'guest@local'};localStorage.setItem('pulse.session.v1',JSON.stringify(state.session));wrap.remove();pulseStarted=false;startPulse();};
   $('#authForm',wrap).onsubmit=async e=>{ e.preventDefault(); const email=$('#authEmail',wrap).value.trim().toLowerCase(); const pass=$('#authPass',wrap).value; const accounts=JSON.parse(localStorage.getItem('pulse.accounts.v1')||'{}');
     if(create){ const name=$('#authName',wrap).value.trim(); if(accounts[email]){toast('Account already exists on this device');return;} const salt=crypto.getRandomValues(new Uint8Array(16)); accounts[email]={name,email,salt:bytesToB64(salt),hash:await passwordHash(pass,salt)}; localStorage.setItem('pulse.accounts.v1',JSON.stringify(accounts)); state.session={name,email}; }
@@ -528,9 +528,9 @@ function bind(){
     const m=[...state.live.markets,...fallbackMarkets].find(x=>x.id===b.dataset.aiMarket);
     closeModal(); aiModal(m?`Break down this live prediction signal: ${m.title}`:'Break down this market.');
   });
-  $('[data-face]').forEach(b=>b.onclick=()=>faceModal(b.dataset.face));
-  $('[data-read-article]').forEach(b=>b.onclick=()=>{closeModal();readArticle(b.dataset.readArticle);});
-  $('[data-read-issue]').forEach(b=>b.onclick=()=>{closeModal();readIssue(b.dataset.readIssue);});
+  $$('[data-face]').forEach(b=>b.onclick=()=>faceModal(b.dataset.face));
+  $$('[data-read-article]').forEach(b=>b.onclick=()=>{closeModal();readArticle(b.dataset.readArticle);});
+  $$('[data-read-issue]').forEach(b=>b.onclick=()=>{closeModal();readIssue(b.dataset.readIssue);});
   $('#allIssues')?.addEventListener('click',issuesModal);
   $('#allStories')?.addEventListener('click',allStoriesModal);
   $$('[data-swipe-card]').forEach(b=>b.onclick=()=>{
