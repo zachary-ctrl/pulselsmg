@@ -1,30 +1,86 @@
-const SYSTEM="You are PULSE AI, the live culture intelligence assistant inside PULSE by LSMG × LEDGERA. Answer naturally and directly. Use the supplied current app context: LEDGERA stories, magazine issues, The Last Shot Podcast, creators, and live public culture prediction-market signals. Never invent a current fact that is not supported by the supplied context. Clearly distinguish reported facts from changing market prices. Never claim a market price guarantees an outcome. For political or electoral questions, remain neutral and factual and do not recommend a candidate, rank political choices, or predict an election winner. Do not tell users what cash wager to place or promise profit. Keep most answers under 220 words unless the user asks for detail.";
-export default async function(req){
-  const openaiBase=Netlify.env.get("OPENAI_BASE_URL");
-  const openaiKey=Netlify.env.get("OPENAI_API_KEY");
-  const gatewayBase=Netlify.env.get("NETLIFY_AI_GATEWAY_BASE_URL")||Netlify.env.get("NETLIFY_AI_GATEWAY_URL");
-  const gatewayKey=Netlify.env.get("NETLIFY_AI_GATEWAY_KEY");
-  if(req.method==="GET")return Response.json({
-    ok:true,
-    gatewayReady:Boolean(gatewayBase&&gatewayKey),
-    openaiReady:Boolean(openaiBase&&openaiKey),
-    model:"gpt-5-mini"
-  },{headers:{"cache-control":"no-store"}});
-  if(req.method!=="POST")return Response.json({error:"POST required"},{status:405});
-  try{
-    const body=await req.json();const messages=Array.isArray(body.messages)?body.messages.slice(-10):[];const context=body.context||{};
-    if(!messages.length)return Response.json({error:"Message required"},{status:400});
-    const base=openaiBase||gatewayBase,key=openaiKey||gatewayKey;
-    if(!base||!key)return Response.json({error:"AI Gateway unavailable"},{status:503});
-    const input=[{role:"system",content:SYSTEM+"\nCURRENT PULSE CONTEXT:\n"+JSON.stringify(context).slice(0,24000)},...messages.map(m=>({role:m.role==="assistant"?"assistant":"user",content:String(m.content||"").slice(0,4500)}))];
-    const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),9000);
-    let r;
-    try{
-      r=await fetch(base.replace(/\/$/,"")+"/v1/chat/completions",{method:"POST",headers:{"content-type":"application/json","authorization":"Bearer "+key},body:JSON.stringify({model:"gpt-5-mini",store:false,messages:input,max_completion_tokens:360}),signal:controller.signal});
-    }finally{clearTimeout(timer)}
-    const data=await r.json().catch(()=>null);if(!r.ok)throw new Error(data?.error?.message||"Model request failed");
-    const text=data?.choices?.[0]?.message?.content?.trim();if(!text)throw new Error("Empty model response");
-    return Response.json({ok:true,text,model:data.model||"gpt-5-mini"},{headers:{"cache-control":"no-store"}});
-  }catch(e){return Response.json({error:String(e)},{status:500})}
+const MODEL="gpt-5-mini";
+const baseUrl=()=>Netlify.env.get("OPENAI_BASE_URL")||Netlify.env.get("NETLIFY_AI_GATEWAY_BASE_URL")||Netlify.env.get("NETLIFY_AI_GATEWAY_URL");
+const apiKey=()=>Netlify.env.get("OPENAI_API_KEY")||Netlify.env.get("NETLIFY_AI_GATEWAY_KEY");
+const stripJson=s=>String(s||"").trim().replace(/^\`\`\`(?:json)?/i,"").replace(/\`\`\`$/,"").trim();
+
+const GOAL_SYSTEM=`You are the Goal Intelligence Engine for SWARM, an LSMG product.
+Convert a user's natural-language goal into a structured Project Blueprint.
+You may propose roles, resources, milestones and constraints, but NEVER produce match percentages, trust scores, candidate rankings, team scores, or invented people.
+Return ONLY valid JSON, no markdown and no commentary.
+Schema:
+{
+  "title": string,
+  "objective": string,
+  "category": string,
+  "location": string,
+  "remoteAllowed": boolean,
+  "budgetMin": number|null,
+  "budgetMax": number|null,
+  "startDate": "YYYY-MM-DD"|null,
+  "deadline": "YYYY-MM-DD"|null,
+  "requiredSkills": string[],
+  "requiredRoles": [{"title":string,"skills":string[],"budgetCap":number|null,"estimatedHours":number,"requiredLanguages":string[]}],
+  "optionalRoles": [{"title":string,"skills":string[],"budgetCap":number|null,"estimatedHours":number,"requiredLanguages":string[]}],
+  "resourcesNeeded": string[],
+  "milestones": string[],
+  "constraints": string[],
+  "preferredExperience": string[],
+  "preferredWorkingStyle": string[],
+  "teamSizeMin": number,
+  "teamSizeMax": number
 }
-export const config={path:"/api/ai",rateLimit:{windowLimit:12,windowSize:60,aggregateBy:["ip","domain"]}};
+Use practical assumptions. If budget or dates are absent, return null rather than inventing exact numbers. Keep roles proportional to the goal.`;
+
+const COORDINATOR_SYSTEM=`You are the SWARM AI Coordinator for an LSMG project workspace.
+Analyze only the supplied blueprint and Swarm Room state.
+You can identify schedule risk, budget risk, unassigned work, missing decisions, stalled milestones, and coordination options.
+Do not send messages, invite or remove people, spend money, change assignments, or make irreversible decisions.
+Do not invent activity that is not in the supplied data.
+Be concise: 3 to 6 short sentences, followed by at most 3 suggested next actions.`;
+
+async function callModel(messages,max=650){
+  const base=baseUrl(),key=apiKey();
+  if(!base||!key)throw new Error("AI Gateway unavailable");
+  const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),8500);
+  try{
+    const r=await fetch(base.replace(/\/$/,"")+"/v1/chat/completions",{
+      method:"POST",
+      headers:{"content-type":"application/json","authorization":"Bearer "+key},
+      body:JSON.stringify({model:MODEL,store:false,messages,max_completion_tokens:max}),
+      signal:controller.signal
+    });
+    const data=await r.json().catch(()=>null);
+    if(!r.ok)throw new Error(data?.error?.message||"Model request failed");
+    const text=data?.choices?.[0]?.message?.content?.trim();
+    if(!text)throw new Error("Empty model response");
+    return {text,model:data.model||MODEL};
+  }finally{clearTimeout(timer)}
+}
+
+export default async function(req){
+  if(req.method==="GET"){
+    return Response.json({ok:true,service:"SWARM AI",model:MODEL,gatewayReady:Boolean(baseUrl()&&apiKey())},{headers:{"cache-control":"no-store"}});
+  }
+  if(req.method!=="POST")return Response.json({error:"POST required"},{status:405});
+  let body;try{body=await req.json()}catch{return Response.json({error:"Invalid JSON"},{status:400})}
+  try{
+    const action=String(body?.action||"");
+    if(action==="parse_goal"){
+      const rawGoal=String(body?.rawGoal||"").trim();
+      if(rawGoal.length<8)return Response.json({error:"Goal too short"},{status:400});
+      const {text,model}=await callModel([{role:"system",content:GOAL_SYSTEM},{role:"user",content:rawGoal}],850);
+      let blueprint;try{blueprint=JSON.parse(stripJson(text))}catch{return Response.json({error:"Model returned invalid blueprint JSON"},{status:502})}
+      return Response.json({ok:true,blueprint,model},{headers:{"cache-control":"no-store"}});
+    }
+    if(action==="coordinate"){
+      const payload={project:body?.project||null,swarm:body?.swarm||null};
+      const {text,model}=await callModel([{role:"system",content:COORDINATOR_SYSTEM},{role:"user",content:JSON.stringify(payload).slice(0,22000)}],420);
+      return Response.json({ok:true,text,model},{headers:{"cache-control":"no-store"}});
+    }
+    return Response.json({error:"Unsupported AI action"},{status:400});
+  }catch(e){
+    const msg=String(e?.name==="AbortError"?"AI request timed out":e?.message||e);
+    return Response.json({error:msg},{status:503,headers:{"cache-control":"no-store"}});
+  }
+}
+export const config={path:"/api/ai",rateLimit:{windowLimit:20,windowSize:60,aggregateBy:["ip","domain"]}};

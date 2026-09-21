@@ -1,27 +1,23 @@
 {
-  "name": "PULSE — LSMG × LEDGERA",
-  "short_name": "PULSE",
-  "description": "Read LEDGERA, watch LSMG, browse live articles and magazines, track culture predictions, and use PULSE AI.",
+  "name": "SWARM — An LSMG System",
+  "short_name": "SWARM",
+  "description": "A goal-to-organization engine for turning outcomes into project blueprints, role maps, candidate matches, optimized teams, and Swarm Rooms.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#050505",
-  "theme_color": "#050505",
+  "background_color": "#090b0a",
+  "theme_color": "#090b0a",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/assets/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "/assets/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png"
+      "src": "/assets/swarm-mark.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     }
   ],
   "categories": [
-    "news",
-    "magazines",
-    "entertainment"
+    "productivity",
+    "business",
+    "utilities"
   ]
 }

@@ -1,4 +1,62 @@
-<!doctype html><html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#050506"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="PULSE"><meta name="description" content="PULSE by LSMG × LEDGERA — culture, video, live articles, magazines, prediction markets and PULSE AI."><link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/assets/icon-192.png"><link rel="icon" href="/assets/icon-192.png"><link rel="stylesheet" href="/styles.css"><title>PULSE — LSMG × LEDGERA</title></head><body>
-<div id="splash" class="splash"><div class="splash-brand">LSMG <span>×</span> LEDGERA</div><div class="splash-pulse">PULSE<span>.</span></div><div class="splash-heart"><svg class="splash-wave" viewBox="0 0 340 60"><path class="pulse-ghost" d="M4 31h88l11-15 14 30 18-40 19 25h182" fill="none"/><path class="pulse-live" d="M4 31h88l11-15 14 30 18-40 19 25h182" fill="none"/></svg><i></i></div><div class="splash-tag">THE RECORD OF WHAT'S NEXT</div><button class="intro-enter" id="enterPulse">ENTER PULSE</button></div>
-<div id="app" class="app-shell"><header class="topbar"><div><div class="eyebrow">LSMG <span>×</span> LEDGERA</div><div class="wordmark">PULSE<span class="dot">.</span></div></div><div class="top-actions"><button class="icon-btn" id="searchBtn" aria-label="Search"><svg viewBox="0 0 24 24"><path d="m21 21-4.5-4.5m2-5A7 7 0 1 1 4.5 11.5a7 7 0 0 1 14 0Z"/></svg></button><button class="avatar" aria-label="Profile">ZH</button></div></header><main id="view" class="view"></main><nav class="bottom-nav"><button class="nav-item active" data-tab="feed"><span class="nav-icon">⌁</span><span>HOME</span></button><button class="nav-item" data-tab="watch"><span class="nav-icon">▶</span><span>WATCH</span></button><button class="nav-item predict-nav" data-tab="predict"><span class="nav-pulse">⌁</span><span>PREDICT</span></button><button class="nav-item" data-tab="me"><span class="nav-icon">◎</span><span>ME</span></button></nav></div><dialog id="modal" class="modal"><div class="modal-card" id="modalCard"></div></dialog><script src="/app.js" defer></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#090b0a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SWARM">
+  <meta name="description" content="SWARM by LSMG — a goal-to-organization engine that turns outcomes into project blueprints, role maps, matches, and complete teams.">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/assets/swarm-mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <title>SWARM — An LSMG System</title>
+</head>
+<body>
+  <div id="splash" class="splash">
+    <div class="splash-brand">LSMG / SYSTEMS</div>
+    <div class="splash-mark">
+      <span>SWARM</span>
+      <svg viewBox="0 0 420 210" aria-hidden="true">
+        <g class="splash-lines">
+          <line x1="210" y1="105" x2="58" y2="44"/><line x1="210" y1="105" x2="94" y2="166"/>
+          <line x1="210" y1="105" x2="330" y2="42"/><line x1="210" y1="105" x2="350" y2="155"/>
+          <line x1="210" y1="105" x2="211" y2="22"/><line x1="210" y1="105" x2="212" y2="190"/>
+        </g>
+        <g class="splash-nodes">
+          <circle cx="210" cy="105" r="16"/><circle cx="58" cy="44" r="8"/><circle cx="94" cy="166" r="8"/>
+          <circle cx="330" cy="42" r="8"/><circle cx="350" cy="155" r="8"/><circle cx="211" cy="22" r="8"/><circle cx="212" cy="190" r="8"/>
+        </g>
+      </svg>
+    </div>
+    <p>DESCRIBE AN OUTCOME.<br>SWARM CALCULATES THE HUMAN ORGANIZATION REQUIRED.</p>
+    <button id="enterSwarm">ENTER SWARM <b>↗</b></button>
+  </div>
+
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand-lockup">
+        <div class="brand-kicker">AN LSMG SYSTEM</div>
+        <div class="wordmark">SWARM<span>///</span></div>
+      </div>
+      <div class="top-actions">
+        <button id="notifyBtn" class="icon-btn" aria-label="Notifications">◌</button>
+        <button class="avatar" aria-label="Profile">S</button>
+      </div>
+    </header>
+
+    <main id="view" class="view"></main>
+
+    <nav class="bottom-nav">
+      <button class="nav-item active" data-tab="home"><i>⌂</i><span>HOME</span></button>
+      <button class="nav-item" data-tab="projects"><i>◇</i><span>PROJECTS</span></button>
+      <button class="nav-item" data-tab="discover"><i>⌕</i><span>DISCOVER</span></button>
+      <button class="nav-item" data-tab="profile"><i>◎</i><span>YOU</span></button>
+    </nav>
+  </div>
+
+  <dialog id="modal" class="modal"><div id="modalCard" class="modal-card"></div></dialog>
+  <script type="module" src="/src/app.mjs"></script>
+</body>
+</html>
