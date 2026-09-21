@@ -231,7 +231,7 @@ function predict(){
   </section>
 
   <section class="bucks-strip app-card">
-    <div><small>PULSE BUCKS</small><strong>₱${Number(state.wallet.pulse_bucks||0).toLocaleString()}</strong><span>NON-CASH APP REWARDS</span></div>
+    <div><small>PULSE BUCKS</small><strong>₱${Number(state.wallet.pulse_bucks||0).toLocaleString()}</strong><span>PULSE DIGITAL CURRENCY</span></div>
     <button class="wallet-btn" id="tradeBucks">TRADE IN</button>
   </section>
 
@@ -284,7 +284,7 @@ function me(){
   <div class="section-kicker"><span><b>WALLET</b> / PULSE BUCKS</span></div>
   <section class="bucks-wallet app-card">
     <div class="bucks-balance"><div><small>AVAILABLE</small><strong>₱${Number(state.wallet.pulse_bucks||0).toLocaleString()}</strong></div><span>PULSE BUCKS</span></div>
-    <div class="bucks-actions"><button id="claimDaily">CLAIM +50 DAILY</button><button id="tradeBucks">TRADE IN</button></div>
+    <div class="bucks-actions"><button id="claimDaily">DAILY DROP +50</button><button id="tradeBucks">TRADE IN</button></div>
   </section>
 
   <div class="section-kicker"><span><b>CASH</b> / WALLET RAIL</span></div>
@@ -338,8 +338,8 @@ function tradeModal(){
   ];
   openModal(`<button class="modal-close" data-close>×</button><span class="category">PULSE BUCKS</span><h2>TRADE IN.</h2>
   <div class="modal-balance">AVAILABLE <strong>₱${Number(state.wallet.pulse_bucks||0).toLocaleString()}</strong></div>
-  <p>Pulse Bucks are app reward points. They are not cash, are not withdrawable, and can be traded in for PULSE / LEDGERA / LSMG app perks.</p>
-  <div class="reward-list">${catalog.map(([key,r])=>`<button data-redeem="${esc(key)}"><span><b>${esc(r.label)}</b><small>TRADE-IN REWARD</small></span><strong>₱${Number(r.cost)}</strong></button>`).join('')}</div>`);
+  <p>Pulse Bucks are PULSE's digital currency inside the app. Earn them, hold them, and trade them for PULSE / LEDGERA / LSMG drops, access, boosts, and experiences. They are separate from your cash wallet.</p>
+  <div class="reward-list">${catalog.map(([key,r])=>`<button data-redeem="${esc(key)}"><span><b>${esc(r.label)}</b><small>PULSE BUCKS MARKET</small></span><strong>₱${Number(r.cost)}</strong></button>`).join('')}</div>`);
 }
 
 function marketModal(id){
