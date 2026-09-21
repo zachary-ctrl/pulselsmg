@@ -50,9 +50,9 @@ const sessionPromise=Cloud.session().then(s=>{state.session=s;return s}).catch((
 function showSplash(){
   const splash=$("#splash");if(!splash)return;
   setTimeout(()=>splash.classList.add("ready"),120);
-  $("#enterSwarm")?.addEventListener("click",async()=>{
-    splash.classList.add("leaving");haptic();await sessionPromise;
-    setTimeout(async()=>{splash.remove();state.session?await start():showAuth("create")},420);
+  $("#enterSwarm")?.addEventListener("click",()=>{
+    splash.classList.add("leaving");haptic();
+    setTimeout(()=>{splash.remove();startGuest()},420);
   });
 }
 function showAuth(mode="create",message=""){
@@ -328,7 +328,7 @@ function profilePage(){
   <div class="section-head"><div><small>TRUST</small><h2>VISIBLE SIGNALS, NOT A SOCIAL SCORE</h2></div></div><div class="trust-grid">${trust.map(s=>`<div><b>${s.value===true?"VERIFIED":s.value===false?"NOT VERIFIED":s.value??"NO DATA"}</b><span>${esc(s.label)}</span></div>`).join("")}</div>
   <div class="section-head"><div><small>PRIVACY</small><h2>YOU CONTROL WHAT IS SHARED</h2></div></div>
   <div class="privacy-card"><span>Profile visibility <b>${esc(p.visibility||"private")}</b></span><span>Exact location <b>NEVER EXPOSED</b></span><span>Rate visibility <b>${esc(p.rateVisibility||"private")}</b></span><span>Contact information <b>PRIVATE</b></span></div>
-  <div class="account-actions">${!appInstalled()?'<button id="installBtn">INSTALL SWARM</button>':""}${state.guest?'<button id="guestSignIn">SIGN IN / CREATE CLOUD ACCOUNT</button>':""}<button id="signOut">${state.guest?"EXIT GUEST MODE":"SIGN OUT"}</button></div>`;
+  <div class="account-actions">${!appInstalled()?'<button id="installBtn">INSTALL SWARM</button>':""}</div>`;
 }
 async function notificationsModal(){
   const notes=state.notifications;
