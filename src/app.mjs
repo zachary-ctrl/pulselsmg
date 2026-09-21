@@ -28,9 +28,19 @@ function currentProject(){return state.projectId?state.projects.find(p=>p.id===s
 function currentSwarm(){return state.projectId?state.swarms.find(s=>s.projectId===state.projectId)||null:null}
 function appInstalled(){return matchMedia("(display-mode: standalone)").matches||navigator.standalone===true}
 function setTab(tab){state.tab=tab;render();window.scrollTo({top:0,behavior:"smooth"});haptic()}
+async function loadPersistedMatches(projectId=state.projectId){
+  if(!projectId)return;
+  try{
+    const saved=await Cloud.loadMatchState(projectId);
+    state.candidates=Object.keys(saved.candidates||{}).length?saved.candidates:null;
+    state.teams=(saved.teams||[]).length?saved.teams:null;
+  }catch{}
+}
 async function openProject(id,stage="blueprint"){
   state.projectId=id;state.stage=stage;state.tab="projects";state.candidates=null;state.teams=null;state.room=null;
-  if(stage==="room")await loadCurrentRoom();render();window.scrollTo({top:0,behavior:"smooth"});
+  if(stage==="room")await loadCurrentRoom();
+  if(stage==="matches"||stage==="teams")await loadPersistedMatches(id);
+  render();window.scrollTo({top:0,behavior:"smooth"});
 }
 function upsert(list,item){const i=list.findIndex(x=>x.id===item.id);if(i>=0)list[i]=item;else list.unshift(item);return list}
 function sessionName(){return state.profile?.name||state.session?.user?.user_metadata?.name||String(state.session?.user?.email||"").split("@")[0]||"SWARM User"}
@@ -109,6 +119,7 @@ async function hydrateCloud({keepRoom=false}={}){
   state.projects=projects;state.swarms=swarms;state.invitations=invitations;state.notifications=notifications;state.publicProfiles=publicProfiles;
   if(state.projectId&&!state.projects.some(p=>p.id===state.projectId))state.projectId=null;
   if(keepRoom&&state.stage==="room")await loadCurrentRoom();
+  if(keepRoom&&(state.stage==="matches"||state.stage==="teams"))await loadPersistedMatches(state.projectId);
 }
 async function loadCurrentRoom(){
   const p=currentProject(),s=currentSwarm();if(!p||!s){state.room=null;return}
@@ -440,7 +451,7 @@ function bind(){
     try{let p=await AIService.parseGoal(goal);p=normalizeBlueprint(p,goal);p.creatorId=state.profile.id;p.status="blueprint";p.visibility="private";p=await Cloud.saveProject(p);upsert(state.projects,p);state.projectId=p.id;state.stage="blueprint";state.tab="projects";state.candidates=null;state.teams=null;render();toast(p.source==="ai"?"Blueprint generated with SWARM AI":"Blueprint generated with deterministic fallback")}catch(err){toast(err?.message||"Could not create project");btn.disabled=false;btn.textContent="BUILD BLUEPRINT ↗"}});
   $$("[data-example]").forEach(b=>b.onclick=()=>{const i=$("#goalInput");i.value=b.dataset.example;i.focus()});$$("[data-project]").forEach(b=>b.onclick=()=>openProject(b.dataset.project));$$("[data-open-invite-project]").forEach(b=>b.onclick=()=>openProject(b.dataset.openInviteProject));
   $("#backProjects")?.addEventListener("click",()=>{state.projectId=null;state.room=null;render()});
-  $$("[data-stage]").forEach(b=>b.onclick=async()=>{state.stage=b.dataset.stage;if(state.stage==="room")await loadCurrentRoom();render()});$$("[data-stage-go]").forEach(b=>b.onclick=async()=>{state.stage=b.dataset.stageGo;if(state.stage==="room")await loadCurrentRoom();render()});
+  $("[data-stage]").forEach(b=>b.onclick=async()=>{state.stage=b.dataset.stage;if(state.stage==="room")await loadCurrentRoom();if(state.stage==="matches"||state.stage==="teams")await loadPersistedMatches();render()});$("[data-stage-go]").forEach(b=>b.onclick=async()=>{state.stage=b.dataset.stageGo;if(state.stage==="room")await loadCurrentRoom();if(state.stage==="matches"||state.stage==="teams")await loadPersistedMatches();render()});
   $("#saveBlueprint")?.addEventListener("click",async()=>{const p=currentProject();try{const saved=await Cloud.saveProject(collectBlueprint(p));upsert(state.projects,saved);state.candidates=null;state.teams=null;render();toast("Blueprint synced to SWARM Cloud")}catch(err){toast(err?.message||"Could not save blueprint")}});
   $("#addRole")?.addEventListener("click",()=>{const list=$(".role-editor-list");list.insertAdjacentHTML("beforeend",`<article class="role-editor" data-role-editor data-type="optional" data-id="${tempId("role")}"><div class="role-editor-head"><select data-role-type><option value="required">REQUIRED</option><option value="optional" selected>OPTIONAL</option></select><button type="button" data-remove-role>REMOVE</button></div><label>ROLE<input data-role-title value="New Specialist"></label><label>SKILLS<input data-role-skills value=""></label><div class="two-col"><label>BUDGET CAP<input data-role-budget type="number"></label><label>HOURS<input data-role-hours type="number" value="24"></label></div><label>LANGUAGES<input data-role-languages value="English"></label></article>`);bindDynamicBlueprint()});
   $("#addMilestone")?.addEventListener("click",()=>{$("#milestoneEditors").insertAdjacentHTML("beforeend",`<div class="milestone-edit" data-ms-id="${tempId("ms")}"><input value="New milestone"><button type="button" data-remove-ms>×</button></div>`);bindDynamicBlueprint()});bindDynamicBlueprint();

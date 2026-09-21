@@ -152,6 +152,34 @@ export const Cloud={
     if(error)throw error;return data||[];
   },
   async markNotificationRead(id){const {error}=await supabase.from("notifications").update({read_at:new Date().toISOString()}).eq("id",id);if(error)throw error},
+  async loadMatchState(projectId){
+    const [matchesRes,teamsRes]=await Promise.all([
+      supabase.from("matches").select("*,profile:profiles!matches_profile_id_fkey(*)").eq("project_id",projectId).eq("eligible",true).order("score",{ascending:false}),
+      supabase.from("team_candidates").select("*").eq("project_id",projectId).order("score",{ascending:false})
+    ]);
+    if(matchesRes.error)throw matchesRes.error;if(teamsRes.error)throw teamsRes.error;
+    const ids=(matchesRes.data||[]).map(m=>m.id);
+    let components=[];
+    if(ids.length){
+      const r=await supabase.from("match_score_components").select("*").in("match_id",ids);
+      if(r.error)throw r.error;components=r.data||[];
+    }
+    const byMatch=new Map();
+    for(const c of components){
+      if(!byMatch.has(c.match_id))byMatch.set(c.match_id,{});
+      byMatch.get(c.match_id)[c.component]=Number(c.normalized_value);
+    }
+    const candidates={};
+    for(const m of matchesRes.data||[]){
+      if(!candidates[m.role_id])candidates[m.role_id]=[];
+      candidates[m.role_id].push({
+        profile:profileFromRow(m.profile),
+        match:{profileId:m.profile_id,roleId:m.role_id,eligible:m.eligible,score:Number(m.score),percent:Math.round(Number(m.score)*100),breakdown:byMatch.get(m.id)||{},estimatedCost:Number(m.estimated_cost||0),hardConstraints:m.hard_constraints||[],reasons:m.reasons||[],concerns:m.concerns||[]}
+      });
+    }
+    const teams=(teamsRes.data||[]).map(t=>({id:t.id,label:t.label,score:Number(t.score),metrics:t.metrics||{},assignments:t.assignments||[],projected_cost:Number(t.projected_cost||0)}));
+    return {candidates,teams};
+  },
   async runMatching(projectId){
     const {data,error}=await supabase.functions.invoke("swarm-match",{body:{action:"match_team",projectId}});
     if(error)throw error;if(data?.error)throw new Error(data.error);return data;
