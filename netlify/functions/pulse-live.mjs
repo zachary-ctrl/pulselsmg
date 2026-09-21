@@ -6,7 +6,7 @@ export default async function(req){
   const json=async u=>{const r=await fetch(u,{headers:{"user-agent":"PULSE/1.0"}});if(!r.ok)throw new Error(String(r.status));return r.json()};
   const markets=[]; let articles=[]; let podcast=[];
   const jobs=await Promise.allSettled([
-    json("https://raw.githubusercontent.com/zachary-ctrl/theledgeramagazine/main/feed.json?ts="+Date.now()),
+    json("https://ledgeramagazine.com/feed.json?ts="+Date.now()),
     json("https://gamma-api.polymarket.com/markets?active=true&closed=false&limit=250&order=volume24hr&ascending=false"),
     json("https://api.elections.kalshi.com/trade-api/v2/markets?limit=300&status=open"),
     json("https://itunes.apple.com/lookup?id=1494831568&entity=podcastEpisode&limit=12&country=US")

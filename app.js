@@ -33,7 +33,6 @@ const creators = [
 ];
 
 const LEDGERA = 'https://ledgeramagazine.com';
-const LEDGERA_RAW = 'https://raw.githubusercontent.com/zachary-ctrl/theledgeramagazine/main/';
 function storageJSON(key,fallback){try{const raw=localStorage.getItem(key);return raw===null?fallback:JSON.parse(raw)}catch{return fallback}}
 const fallbackArticles = [
   {title:'The NFL Cutdown Is Where the Season Gets Real',summary:'For hundreds of players, the 53-man deadline turns a summer audition into a career decision.',category:'SPORTS / NFL',url:LEDGERA+'/articles/nfl-roster-cuts-2026-53-man-deadline.html',image:''},
@@ -477,66 +476,12 @@ function tradeModal(){
 }
 
 
-function ledgeraSourcePath(url){
-  try{let p=new URL(url,LEDGERA).pathname.replace(/^\/+/,'');if(p.endsWith('/'))p+='index.html';return p}catch{return ''}
+function ledgeraFilename(url){
+  try{const parts=new URL(url,LEDGERA).pathname.split('/').filter(Boolean);return parts[parts.length-1]||''}catch{return ''}
 }
-function absoluteLedgera(value){
-  if(!value)return '';
-  try{return new URL(value,LEDGERA).href}catch{return value}
+function nativeBodyHtml(body){
+  return (body||[]).map(([tag,text])=>tag==='h2'?`<h2>${esc(text)}</h2>`:`<p>${esc(text)}</p>`).join('');
 }
-function sanitizeOwnedHTML(node){
-  const clone=node.cloneNode(true);
-  $('script,style,iframe,form,nav,footer,button,input,textarea,select',clone).forEach(n=>n.remove());
-  $('*',clone).forEach(el=>{
-    [...el.attributes].forEach(a=>{if(/^on/i.test(a.name))el.removeAttribute(a.name)});
-    if(el.hasAttribute('src'))el.setAttribute('src',absoluteLedgera(el.getAttribute('src')));
-    if(el.hasAttribute('href')){
-      const h=el.getAttribute('href');
-      if(/^javascript:/i.test(h||''))el.removeAttribute('href');
-      else{el.setAttribute('href',absoluteLedgera(h));if(el.tagName==='A'){el.target='_blank';el.rel='noopener'}}
-    }
-  });
-  return clone.innerHTML;
-}
-async function fetchRawDocument(url,timeout=9000){
-  const path=ledgeraSourcePath(url);if(!path)throw new Error('source path');
-  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeout);
-  try{
-    const r=await fetch(LEDGERA_RAW+path+'?ts='+Date.now(),{cache:'no-store',signal:controller.signal});
-    if(!r.ok)throw new Error('source '+r.status);
-    return new DOMParser().parseFromString(await r.text(),'text/html');
-  }finally{clearTimeout(timer)}
-}
-async function directArticleData(a){
-  const doc=await fetchRawDocument(a.url);
-  const hero=doc.querySelector('.article-hero');
-  const body=doc.querySelector('article.body,main article,.article-body');
-  if(!body)throw new Error('article body');
-  const heroNode=doc.querySelector('.article-image img,.article-hero img,.tribute-visual img');
-  return {
-    type:'article',
-    title:hero?.querySelector('h1')?.textContent?.trim()||a.title,
-    dek:hero?.querySelector('.dek')?.textContent?.trim()||a.summary||'',
-    byline:hero?.querySelector('.byline')?.textContent?.trim()||'LEDGERA',
-    kicker:hero?.querySelector('.kicker')?.textContent?.trim()||a.category||'LEDGERA',
-    hero:absoluteLedgera(heroNode?.getAttribute('src')||a.image||''),
-    bodyHtml:sanitizeOwnedHTML(body)
-  };
-}
-async function directIssueData(x){
-  const doc=await fetchRawDocument(x.url);
-  const script=doc.querySelector('script.reader-pages');
-  let pages=[];if(script){try{pages=JSON.parse(script.textContent||'[]')}catch{}}
-  pages=pages.map(p=>({...p,src:absoluteLedgera(p.src)}));
-  if(!pages.length){
-    const cover=absoluteLedgera(doc.querySelector('meta[property="og:image"]')?.content||doc.querySelector('.cover img,.edition-cover img,.reader-sheet img')?.getAttribute('src')||x.cover);
-    const m=ledgeraSourcePath(x.url).match(/issue-(\d+)/),issue=m?.[1]||'';
-    const member=['01','02','03'].includes(issue);
-    pages=[{src:cover,title:x.title,short:'Cover',chapter:member?'Member Preview':'Archive Preview',alt:x.title,unlockUrl:member?LEDGERA+'/subscribe/?issue='+issue:'',previewOnly:!member,originalUrl:x.url}];
-  }
-  return {type:'issue',pages};
-}
-
 function readerShell(title,label,url){
   const layer=document.createElement('div');layer.className='reader-overlay pulse-reader';
   layer.innerHTML=`<header class="reader-bar pulse-reader-bar"><button class="reader-back" aria-label="Back">‹</button><div><small>${esc(label)}</small><b>${esc(title)}</b></div><a href="${esc(url)}" target="_blank" rel="noopener">↗</a></header><main class="native-reader"><div class="native-loading"><i></i><b>PULSE IS BUILDING THE READER…</b></div></main>`;
@@ -548,10 +493,15 @@ async function openArticleReader(a){
   try{
     let d=null;
     if(a.bodyHtml){d={type:'article',title:a.title,dek:a.summary||'',byline:a.byline||'LEDGERA',kicker:a.category||'LEDGERA',hero:a.image||'',bodyHtml:a.bodyHtml,paragraphs:a.paragraphs||[]};}
-    if(!d){try{d=await directArticleData(a)}catch{}}
     if(!d){
-      const r=await fetch('/api/content?url='+encodeURIComponent(a.url),{cache:'no-store'});
-      if(r.ok)d=await r.json();
+      try{
+        const r=await fetch('/api/content?url='+encodeURIComponent(a.url),{cache:'no-store'});
+        if(r.ok)d=await r.json();
+      }catch{}
+    }
+    if(!d||d.type!=='article'||(!d.bodyHtml&&!d.paragraphs?.length)){
+      const owned=nativeArticleData[ledgeraFilename(a.url)];
+      if(owned)d={type:'article',title:a.title,dek:owned.dek||a.summary||'',byline:owned.byline||'LEDGERA',kicker:a.category||'LEDGERA',hero:a.image||'',bodyHtml:nativeBodyHtml(owned.body)};
     }
     if(!d||d.type!=='article'||(!d.bodyHtml&&!d.paragraphs?.length))throw new Error('reader');
     main.innerHTML=`<article class="pulse-article">
@@ -577,8 +527,9 @@ function renderMagazinePage(layer,pages,index){
 async function openIssueReader(x){
   const layer=readerShell(x.title,x.label,x.url),main=$('.native-reader',layer);
   try{
-    let d=null;try{d=await directIssueData(x)}catch{}
-    if(!d){const r=await fetch('/api/content?url='+encodeURIComponent(x.url),{cache:'no-store'});if(r.ok)d=await r.json();}
+    let d=null;
+    const r=await fetch('/api/content?url='+encodeURIComponent(x.url),{cache:'no-store'});
+    if(r.ok)d=await r.json();
     if(!d||d.type!=='issue'||!d.pages?.length)throw new Error('reader');
     const pages=d.pages;main.innerHTML=`<section class="pulse-magazine">
       <div class="mag-top"><span>LEDGERA / PULSE MAGAZINE MODE</span><div><button data-mag-fit>FIT</button><button data-mag-full>FULL</button></div></div>
@@ -737,7 +688,6 @@ function bind(){
   $$('[data-read-issue]').forEach(b=>b.onclick=()=>{closeModal();readIssue(b.dataset.readIssue);});
   $('#allIssues')?.addEventListener('click',issuesModal);
   $('#allStories')?.addEventListener('click',allStoriesModal);
-  $('[data-creator-nav]').forEach(b=>b.onclick=()=>browseCreator(b.dataset.creatorNav));
   $$('#installApp, #installSettings').forEach(b=>b.onclick=installApp);
   $('#openAISettings')?.addEventListener('click',()=>aiModal());
   $('#profileStories')?.addEventListener('click',allStoriesModal);
