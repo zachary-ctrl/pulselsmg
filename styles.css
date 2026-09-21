@@ -114,3 +114,19 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .guest-banner{display:flex;align-items:center;gap:10px;margin:12px 0;border:1px solid #5d6f37;border-radius:15px;background:#151c11;padding:11px 12px}.guest-banner b{color:var(--acid);font-size:7px;letter-spacing:.11em}.guest-banner span{flex:1;color:#a0ad96;font-size:8px;line-height:1.45}.guest-banner button{border:1px solid var(--acid);border-radius:10px;background:var(--acid);color:#071009;padding:8px 10px;font-size:7px;font-weight:950}
 .cloud-status.guest{border-color:#665b33}.cloud-status.guest i{background:var(--warn);box-shadow:0 0 0 5px rgba(255,207,90,.08)}.cloud-status.guest b{color:var(--warn)}
 @media(max-width:700px){.guest-banner{align-items:stretch;flex-direction:column}.guest-banner button{width:100%}}
+
+/* Feature hub — exposes the full SWARM system from Home */
+.feature-hub{margin:14px 0 8px;border:1px solid var(--line);border-radius:20px;background:linear-gradient(145deg,#0e130f,#0a0d0b);padding:12px}
+.feature-hub .section-head{margin:2px 2px 12px;align-items:center}
+.feature-mode{border:1px solid var(--line2);border-radius:999px;padding:6px 8px;color:var(--cyan);font-size:6px;font-weight:950;letter-spacing:.08em}
+.feature-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.feature-card{position:relative;min-height:145px;border:1px solid var(--line);border-radius:15px;background:#101511;padding:13px;text-align:left;overflow:hidden}
+.feature-card::after{content:"";position:absolute;width:70px;height:70px;border:1px solid rgba(92,225,230,.16);border-radius:50%;right:-30px;top:-25px}
+.feature-card:hover{border-color:#4a6254;background:#121913}
+.feature-card small{display:block;color:var(--acid);font-size:7px;font-weight:950;letter-spacing:.12em}
+.feature-card b{display:block;margin-top:10px;font-family:Impact,"Arial Narrow",sans-serif;font-size:22px;line-height:.95}
+.feature-card p{margin:7px 0 12px;color:#849087;font-size:8px;line-height:1.45}
+.feature-card span{position:absolute;bottom:11px;left:13px;color:var(--cyan);font-size:6px;font-weight:950;letter-spacing:.07em}
+.guest-banner{display:flex;align-items:center;gap:10px;margin:12px 0;border:1px solid #5d6f37;border-radius:15px;background:#151c11;padding:11px 12px}.guest-banner b{color:var(--acid);font-size:7px;letter-spacing:.11em}.guest-banner span{flex:1;color:#a0ad96;font-size:8px;line-height:1.45}
+@media(min-width:760px){.feature-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:520px){.feature-card{min-height:155px}.feature-card b{font-size:20px}}

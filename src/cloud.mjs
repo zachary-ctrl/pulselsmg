@@ -82,6 +82,12 @@ async function requireUser(){
 
 export const Cloud={
   async session(){const {data:{session}}=await supabase.auth.getSession();return session},
+  async ensureAnonymousSession(){
+    const current=await this.session();if(current)return current;
+    const {data,error}=await supabase.auth.signInAnonymously({options:{data:{name:"SWARM User"}}});
+    if(error)return null;
+    return data?.session||null;
+  },
   onAuth(callback){return supabase.auth.onAuthStateChange(callback)},
   async signUp(name,email,password){
     const {data,error}=await supabase.auth.signUp({email,password,options:{data:{name}}});

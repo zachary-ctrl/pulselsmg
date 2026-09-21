@@ -1,5 +1,5 @@
 import {Store,makeId} from "./store.mjs";
-import {AIService,TrustService} from "./services.mjs";
+import {AIService,TrustService,ProfileService,GoalService,BlueprintService,ProjectService} from "./services.mjs";
 import {normalizeBlueprint} from "./goal-engine.mjs";
 import {Cloud} from "./cloud.mjs";
 
@@ -16,7 +16,7 @@ const tempId=(p="tmp")=>p+"_"+makeId(p).slice(-12);
 const state={
   session:null,profile:null,projects:[],swarms:[],invitations:[],notifications:[],publicProfiles:[],room:null,
   tab:"home",projectId:null,stage:"blueprint",candidates:null,teams:null,networkSize:0,
-  toastTimer:null,deferredInstall:null,unsubscribeRealtime:null,hydrateTimer:null,loading:false
+  toastTimer:null,deferredInstall:null,unsubscribeRealtime:null,hydrateTimer:null,loading:false,guest:false
 };
 
 function toast(message){
@@ -86,8 +86,29 @@ function showAuth(mode="create",message=""){
       wrap.remove();await start();
     }catch(err){toast(err?.message||"Authentication failed");btn.disabled=false;btn.textContent=create?"CREATE SWARM ACCOUNT":"SIGN IN"}
   };
+} 
+function startGuest(){
+  state.guest=true;
+  state.session=null;
+  state.profile=ProfileService.ensure({name:"SWARM User"});
+  state.projects=Store.getProjects();
+  state.swarms=Store.getSwarms();
+  state.invitations=Store.getInvitations();
+  state.notifications=Store.getNotifications();
+  state.publicProfiles=[];
+  state.room=null;
+  $(".avatar").textContent=initials(state.profile.name);
+  render();
+  // Try to upgrade to an anonymous cloud session without blocking access.
+  Cloud.ensureAnonymousSession?.().then(async session=>{
+    if(!session)return;
+    state.session=session;
+    await start();
+    toast("SWARM Cloud connected — no signup required");
+  }).catch(()=>{});
 }
 async function start(){
+  state.guest=false;
   $("#view").innerHTML=`<div class="cloud-loader"><i></i><b>CONNECTING TO SWARM CLOUD</b><span>Loading your profile, projects and invitations…</span></div>`;
   try{
     state.profile=await Cloud.loadProfile();
@@ -103,7 +124,7 @@ async function start(){
     state.unsubscribeRealtime?.();
     state.unsubscribeRealtime=Cloud.subscribe(()=>scheduleHydrate());
     render();
-  }catch(err){console.error(err);showAuth("signin","SWARM Cloud could not load your account. Sign in again to reconnect.")}
+  }catch(err){console.error(err);if(!state.profile)startGuest();else{state.guest=true;render();toast("Using SWARM locally on this device")}}
 }
 function scheduleHydrate(){
   clearTimeout(state.hydrateTimer);
@@ -136,8 +157,9 @@ function graphMoment(project,team,done){
 
 function incomingInvites(){return state.invitations.filter(i=>i.profileId===state.profile?.id&&i.status==="pending")}
 function home(){
-  const projects=state.projects.filter(p=>p.creatorId===state.profile?.id).slice(0,4),active=state.swarms.filter(s=>s.status==="active").length,invites=incomingInvites();
-  const needsProfile=!(state.profile.skills||[]).length||!(state.profile.desiredRoles||[]).length||state.profile.visibility!=="public";
+  const projects=state.projects.filter(p=>p.creatorId===state.profile?.id).slice(0,4),active=state.swarms.filter(s=>s.status==="active").length,invites=state.guest?[]:incomingInvites();
+  const needsProfile=!state.guest&&(!(state.profile.skills||[]).length||!(state.profile.desiredRoles||[]).length||state.profile.visibility!=="public");
+  const latest=projects[0]||state.projects[0]||null;
   return `<section class="hero">
     <div class="hero-ambient"><i></i><i></i><i></i><i></i><i></i></div>
     <div class="eyebrow">SWARM / LIVE GOAL-TO-ORGANIZATION ENGINE</div>
@@ -148,6 +170,22 @@ function home(){
       <div><span>SWARM AI → editable blueprint → deterministic matching</span><button class="primary-btn">BUILD BLUEPRINT <b>↗</b></button></div>
     </form>
     <div class="goal-examples">${["Build an iOS fitness app","Launch a clothing brand","Shoot a short film","Start a podcast","Organize a 300-person event","Launch a food truck"].map(x=>`<button data-example="${esc(x)}">${esc(x)}</button>`).join("")}</div>
+  </section>
+  ${state.guest?`<section class="guest-banner"><b>NO LOGIN MODE</b><span>SWARM is open. Build goals, Blueprints, Role Maps and use AI immediately. Cloud-only systems activate automatically when an anonymous cloud session is available.</span></section>`:""}
+  <section class="feature-hub">
+    <div class="section-head"><div><small>SWARM SYSTEMS</small><h2>EVERY FEATURE</h2></div><span class="feature-mode">${state.guest?"LOCAL / NO LOGIN":"CLOUD CONNECTED"}</span></div>
+    <div class="feature-grid">
+      ${[
+        ["blueprint","PROJECT BLUEPRINT","Turn any goal into editable roles, resources, constraints and milestones.","01"],
+        ["roles","ROLE MAP","Visualize the human organization required for the project.","02"],
+        ["matches","MATCH LAB","Score people against roles with transparent component breakdowns.","03"],
+        ["teams","TEAM ASSEMBLY","Optimize complete team combinations instead of isolated recommendations.","04"],
+        ["invites","INVITATIONS","Send, accept, decline and replace members without restarting.","05"],
+        ["room","SWARM ROOM","Tasks, milestones, chat, files, decisions and coordination.","06"],
+        ["ai","AI COORDINATOR","Analyze project risk, schedule, budget and next actions.","07"],
+        ["discover","DISCOVERY","Browse the capability network and public projects.","08"]
+      ].map(([key,title,desc,num])=>`<button class="feature-card" data-feature="${key}" data-project-ready="${latest?"true":"false"}"><small>${num}</small><b>${title}</b><p>${desc}</p><span>${latest||key==="discover"?"OPEN →":"CREATE A GOAL FIRST"}</span></button>`).join("")}
+    </div>
   </section>
   ${needsProfile?`<section class="onboarding-callout"><div><small>MAKE YOUR PROFILE MATCHABLE</small><b>COMPLETE YOUR CAPABILITY PROFILE</b><p>Add skills, roles, availability and rates. You choose when to make the profile public to the SWARM Match Engine.</p></div><button id="completeProfile">COMPLETE PROFILE →</button></section>`:""}
   <section class="system-strip"><div><b>${projects.length}</b><span>YOUR PROJECTS</span></div><div><b>${active}</b><span>ACTIVE SWARMS</span></div><div><b>${state.publicProfiles.filter(p=>p.id!==state.profile?.id).length}</b><span>LIVE PROFILES</span></div><div><b>${invites.length}</b><span>INVITES</span></div></section>
@@ -355,11 +393,11 @@ async function invitationQuestionModal(id){
       $("#modalCard").innerHTML=`<div class="modal-head"><div><small>INVITATION THREAD · ${esc(invite.roleTitle)}</small><h2>${esc(invite.project?.title||"SWARM PROJECT")}</h2></div><button data-close>×</button></div>
         <div class="invite-thread">${messages.length?messages.map(m=>`<div class="${m.sender_id===state.profile.id?"mine":""}"><b>${esc(m.sender_id===state.profile.id?"YOU":m.sender?.name||"SWARM USER")}</b><p>${esc(m.body)}</p><small>${new Date(m.created_at).toLocaleString()}</small></div>`).join(""):"<p>No questions yet. Start the conversation before accepting or declining.</p>"}</div>
         <form id="inviteMessageForm" class="room-composer"><input id="inviteMessageInput" maxlength="1000" placeholder="Ask about expectations, schedule, compensation…" required><button>SEND</button></form>`;
-      $("[data-close]",$("#modal")).forEach(b=>b.onclick=()=>$("#modal").close());
+      $("#modal").querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>$("#modal").close());
       $("#inviteMessageForm").onsubmit=async e=>{e.preventDefault();const input=$("#inviteMessageInput"),body=input.value.trim();if(!body)return;try{await Cloud.addInvitationMessage(id,body);const fresh=await Cloud.loadInvitationMessages(id);messages.splice(0,messages.length,...fresh);draw()}catch(err){toast(err?.message||"Could not send message")}};
     };
     draw();
-  }catch(err){$("#modalCard").innerHTML=`<div class="modal-head"><div><small>INVITATION THREAD</small><h2>COULD NOT LOAD</h2></div><button data-close>×</button></div><p class="modal-lead">${esc(err?.message||"Try again.")}</p>`;$("[data-close]",$("#modal")).forEach(b=>b.onclick=()=>$("#modal").close())}
+  }catch(err){$("#modalCard").innerHTML=`<div class="modal-head"><div><small>INVITATION THREAD</small><h2>COULD NOT LOAD</h2></div><button data-close>×</button></div><p class="modal-lead">${esc(err?.message||"Try again.")}</p>`;$("#modal").querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>$("#modal").close())}
 }
 
 function openModal(html){const dlg=$("#modal");$("#modalCard").innerHTML=html;dlg.showModal();$$("[data-close]",dlg).forEach(b=>b.onclick=()=>dlg.close())}
@@ -387,7 +425,8 @@ function editProfileModal(){
         availability:{start:String(f.get("availableStart")||""),end:String(f.get("availableEnd")||""),hoursPerWeek:Number(f.get("hoursPerWeek")||10)},
         goals:split("goals"),preferredProjectTypes:split("projectTypes"),workingStyle:split("workingStyle"),communicationPreferences:split("communication"),languages:split("languages"),
         visibility:String(f.get("visibility")||"private")};
-      state.profile=await Cloud.saveProfile(next);await hydrateCloud();$(".avatar").textContent=initials(next.name);$("#modal").close();render();toast(next.visibility==="public"?"Profile live in SWARM matching network":"Profile saved privately");
+      if(state.guest){state.profile=ProfileService.save({...next,visibility:"private"});$(".avatar").textContent=initials(next.name);$("#modal").close();render();toast("Profile saved on this device")}
+      else{state.profile=await Cloud.saveProfile(next);await hydrateCloud();$(".avatar").textContent=initials(next.name);$("#modal").close();render();toast(next.visibility==="public"?"Profile live in SWARM matching network":"Profile saved privately")}
     }catch(err){toast(err?.message||"Could not save profile");btn.disabled=false;btn.textContent="SAVE TO SWARM CLOUD"}
   };
 }
@@ -408,7 +447,7 @@ function outcomeModal(p){
 }
 async function coordinatorModal(p){
   openModal(`<div class="modal-head"><div><small>AI COORDINATOR</small><h2>PROJECT CHECK</h2></div><button data-close>×</button></div><div class="ai-wait"><i></i><p>Analyzing live blueprint, room state, tasks and budget…</p></div>`);
-  const result=await AIService.coordinate(p,{...currentSwarm(),room:state.room});$("#modalCard").innerHTML=`<div class="modal-head"><div><small>AI COORDINATOR · ${esc(result.source)}</small><h2>PROJECT CHECK</h2></div><button data-close>×</button></div><div class="coordinator-report"><p>${esc(result.text)}</p><small>SWARM AI identifies risks and options. It cannot send invitations, spend money, remove people, or make irreversible decisions without user action.</small></div>`;$$("[data-close]",$("#modal")).forEach(b=>b.onclick=()=>$("#modal").close());
+  const result=await AIService.coordinate(p,{...currentSwarm(),room:state.room});$("#modalCard").innerHTML=`<div class="modal-head"><div><small>AI COORDINATOR · ${esc(result.source)}</small><h2>PROJECT CHECK</h2></div><button data-close>×</button></div><div class="coordinator-report"><p>${esc(result.text)}</p><small>SWARM AI identifies risks and options. It cannot send invitations, spend money, remove people, or make irreversible decisions without user action.</small></div>`;$$("#modal").querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>$("#modal").close());
 }
 function collectBlueprint(p){
   const form=$("#blueprintForm"),f=new FormData(form),req=[],opt=[];
@@ -421,6 +460,7 @@ function collectBlueprint(p){
     preferredWorkingStyle:String(f.get("preferredWorkingStyle")||"").split(",").map(x=>x.trim()).filter(Boolean),preferredExperience:String(f.get("preferredExperience")||"").split(",").map(x=>x.trim()).filter(Boolean),milestones,updatedAt:new Date().toISOString()};
 }
 async function runMatchingLive(){
+  if(state.guest){toast("Match Lab is visible, but live people matching needs the SWARM cloud identity session.");state.stage="matches";render();return}
   const p=currentProject();if(!p||!isCreator(p))return;
   state.loading=true;openModal(`<div class="ai-wait"><i></i><p>Filtering the live SWARM network, scoring candidates and optimizing complete teams…</p></div>`);
   try{
@@ -443,26 +483,39 @@ function render(){
   const unread=state.notifications.filter(n=>!n.read_at).length;$("#notifyBtn")?.classList.toggle("has-unread",unread>0);$("#notifyBtn")?.setAttribute("data-count",String(unread));
 }
 function bind(){
-  $$("[data-tab]").forEach(b=>b.onclick=()=>setTab(b.dataset.tab));$$("[data-tab-jump]").forEach(b=>b.onclick=()=>setTab(b.dataset.tabJump));$(".avatar")?.addEventListener("click",()=>setTab("profile"));$("#notifyBtn")?.addEventListener("click",notificationsModal);
+  document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>setTab(b.dataset.tab));document.querySelectorAll("[data-tab-jump]").forEach(b=>b.onclick=()=>setTab(b.dataset.tabJump));$(".avatar")?.addEventListener("click",()=>setTab("profile"));$("#notifyBtn")?.addEventListener("click",notificationsModal);
+  document.querySelectorAll("[data-feature]").forEach(b=>b.onclick=async()=>{
+    const key=b.dataset.feature;
+    if(key==="discover"){setTab("discover");return}
+    const p=state.projects.find(x=>x.creatorId===state.profile?.id)||state.projects[0];
+    if(!p){$("#goalInput")?.focus();toast("Create a goal first — SWARM will unlock the project systems.");return}
+    if(key==="ai"){state.projectId=p.id;await coordinatorModal(p);return}
+    await openProject(p.id,key);
+  });
   $("#goalForm")?.addEventListener("submit",async e=>{e.preventDefault();const goal=$("#goalInput").value.trim();if(!goal)return;const btn=$("button",e.currentTarget);btn.disabled=true;btn.textContent="UNDERSTANDING GOAL…";
-    try{let p=await AIService.parseGoal(goal);p=normalizeBlueprint(p,goal);p.creatorId=state.profile.id;p.status="blueprint";p.visibility="private";p=await Cloud.saveProject(p);upsert(state.projects,p);state.projectId=p.id;state.stage="blueprint";state.tab="projects";state.candidates=null;state.teams=null;render();toast(p.source==="ai"?"Blueprint generated with SWARM AI":"Blueprint generated with deterministic fallback")}catch(err){toast(err?.message||"Could not create project");btn.disabled=false;btn.textContent="BUILD BLUEPRINT ↗"}});
+    try{
+      let p;
+      if(state.guest){p=await GoalService.create(goal,state.profile.id);p.visibility="private";}
+      else{p=await AIService.parseGoal(goal);p=normalizeBlueprint(p,goal);p.creatorId=state.profile.id;p.status="blueprint";p.visibility="private";p=await Cloud.saveProject(p)}
+      upsert(state.projects,p);state.projectId=p.id;state.stage="blueprint";state.tab="projects";state.candidates=null;state.teams=null;render();toast(p.source==="ai"?"Blueprint generated with SWARM AI":"Blueprint ready")
+    }catch(err){toast(err?.message||"Could not create project");btn.disabled=false;btn.textContent="BUILD BLUEPRINT ↗"}});
   $$("[data-example]").forEach(b=>b.onclick=()=>{const i=$("#goalInput");i.value=b.dataset.example;i.focus()});$$("[data-project]").forEach(b=>b.onclick=()=>openProject(b.dataset.project));$$("[data-open-invite-project]").forEach(b=>b.onclick=()=>openProject(b.dataset.openInviteProject));
   $("#backProjects")?.addEventListener("click",()=>{state.projectId=null;state.room=null;render()});
-  $("[data-stage]").forEach(b=>b.onclick=async()=>{state.stage=b.dataset.stage;if(state.stage==="room")await loadCurrentRoom();if(state.stage==="matches"||state.stage==="teams")await loadPersistedMatches();render()});$("[data-stage-go]").forEach(b=>b.onclick=async()=>{state.stage=b.dataset.stageGo;if(state.stage==="room")await loadCurrentRoom();if(state.stage==="matches"||state.stage==="teams")await loadPersistedMatches();render()});
-  $("#saveBlueprint")?.addEventListener("click",async()=>{const p=currentProject();try{const saved=await Cloud.saveProject(collectBlueprint(p));upsert(state.projects,saved);state.candidates=null;state.teams=null;render();toast("Blueprint synced to SWARM Cloud")}catch(err){toast(err?.message||"Could not save blueprint")}});
+  document.querySelectorAll("[data-stage]").forEach(b=>b.onclick=async()=>{state.stage=b.dataset.stage;if(state.stage==="room"&&!state.guest)await loadCurrentRoom();if((state.stage==="matches"||state.stage==="teams")&&!state.guest)await loadPersistedMatches();render()});document.querySelectorAll("[data-stage-go]").forEach(b=>b.onclick=async()=>{state.stage=b.dataset.stageGo;if(state.stage==="room"&&!state.guest)await loadCurrentRoom();if((state.stage==="matches"||state.stage==="teams")&&!state.guest)await loadPersistedMatches();render()});
+  $("#saveBlueprint")?.addEventListener("click",async()=>{const p=currentProject();try{let saved;if(state.guest){saved=BlueprintService.update(p,collectBlueprint(p))}else{saved=await Cloud.saveProject(collectBlueprint(p))}upsert(state.projects,saved);state.candidates=null;state.teams=null;render();toast(state.guest?"Blueprint saved on this device":"Blueprint synced to SWARM Cloud")}catch(err){toast(err?.message||"Could not save blueprint")}});
   $("#addRole")?.addEventListener("click",()=>{const list=$(".role-editor-list");list.insertAdjacentHTML("beforeend",`<article class="role-editor" data-role-editor data-type="optional" data-id="${tempId("role")}"><div class="role-editor-head"><select data-role-type><option value="required">REQUIRED</option><option value="optional" selected>OPTIONAL</option></select><button type="button" data-remove-role>REMOVE</button></div><label>ROLE<input data-role-title value="New Specialist"></label><label>SKILLS<input data-role-skills value=""></label><div class="two-col"><label>BUDGET CAP<input data-role-budget type="number"></label><label>HOURS<input data-role-hours type="number" value="24"></label></div><label>LANGUAGES<input data-role-languages value="English"></label></article>`);bindDynamicBlueprint()});
   $("#addMilestone")?.addEventListener("click",()=>{$("#milestoneEditors").insertAdjacentHTML("beforeend",`<div class="milestone-edit" data-ms-id="${tempId("ms")}"><input value="New milestone"><button type="button" data-remove-ms>×</button></div>`);bindDynamicBlueprint()});bindDynamicBlueprint();
   $("#runMatching")?.addEventListener("click",runMatchingLive);$$("[data-role-detail],[data-role-node]").forEach(b=>b.onclick=()=>roleModal(currentProject(),b.dataset.roleDetail||b.dataset.roleNode));$$("[data-profile-live]").forEach(b=>b.onclick=()=>profileModal(b.dataset.profileLive));
   $$("[data-build-team]").forEach(b=>b.onclick=async()=>{const p=currentProject(),team=(state.teams||[])[Number(b.dataset.buildTeam)];if(!team?.id)return toast("Team configuration is not persisted yet");try{await Cloud.formSwarm(team.id);graphMoment(p,team,async()=>{await hydrateCloud();state.stage="invites";render();toast("Real invitations created")})}catch(err){toast(err?.message||"Could not form Swarm")}});
   $$("[data-live-invite]").forEach(b=>b.onclick=()=>respondInvite(b.dataset.liveInvite,b.dataset.response));
-  $$("[data-ms-check]").forEach(c=>c.onchange=async()=>{const p=currentProject();p.milestones=(p.milestones||[]).map(m=>m.id===c.dataset.msCheck?{...m,status:c.checked?"done":"todo"}:m);try{const saved=await Cloud.saveProject(p);upsert(state.projects,saved);render()}catch(err){toast(err?.message||"Could not update milestone")}});
+  document.querySelectorAll("[data-ms-check]").forEach(c=>c.onchange=async()=>{const p=currentProject();p.milestones=(p.milestones||[]).map(m=>m.id===c.dataset.msCheck?{...m,status:c.checked?"done":"todo"}:m);try{let saved;if(state.guest){saved=ProjectService.save(p)}else{saved=await Cloud.saveProject(p)}upsert(state.projects,saved);render()}catch(err){toast(err?.message||"Could not update milestone")}});
   $("#addTask")?.addEventListener("click",taskModal);$$("[data-task-check]").forEach(c=>c.onchange=async()=>{try{await Cloud.updateTask(c.dataset.taskCheck,c.checked?"done":"todo");await loadCurrentRoom();render()}catch(err){toast(err?.message||"Could not update task")}});
   $("#addDecision")?.addEventListener("click",decisionModal);$("#messageForm")?.addEventListener("submit",async e=>{e.preventDefault();const text=$("#messageInput").value.trim();if(!text)return;try{await Cloud.addMessage(currentSwarm().id,text);$("#messageInput").value="";await loadCurrentRoom();render()}catch(err){toast(err?.message||"Could not post message")}});
   $("#fileUpload")?.addEventListener("change",async e=>{const file=e.target.files?.[0];if(!file)return;if(file.size>26214400)return toast("Files are limited to 25 MB");try{toast("Uploading "+file.name+"…");await Cloud.uploadProjectFile(currentProject().id,currentSwarm()?.id||null,file);await loadCurrentRoom();render();toast("File uploaded")}catch(err){toast(err?.message||"Upload failed")}});
   $$("[data-file-path]").forEach(b=>b.onclick=async()=>{try{const url=await Cloud.signedFileUrl(b.dataset.filePath);window.open(url,"_blank","noopener")}catch(err){toast(err?.message||"Could not open file")}});
   $("#runCoordinator")?.addEventListener("click",()=>coordinatorModal(currentProject()));$("#projectOutcome")?.addEventListener("click",()=>outcomeModal(currentProject()));
   $("#discoverySearch")?.addEventListener("input",filterDiscovery);$("#discoveryFilter")?.addEventListener("change",filterDiscovery);$("#shareSwarm")?.addEventListener("click",shareSwarm);
-  $("[data-invite-question]").forEach(b=>b.onclick=()=>invitationQuestionModal(b.dataset.inviteQuestion));
+  document.querySelectorAll("[data-invite-question]").forEach(b=>b.onclick=()=>invitationQuestionModal(b.dataset.inviteQuestion));
   $("#completeProfile")?.addEventListener("click",editProfileModal);
   $("#editProfile")?.addEventListener("click",editProfileModal);$("#installBtn")?.addEventListener("click",installApp);
   $("#signOut")?.addEventListener("click",async()=>{state.unsubscribeRealtime?.();await Cloud.signOut();state.session=null;state.profile=null;showAuth("signin","Signed out of SWARM Cloud.")});
@@ -472,6 +525,6 @@ function filterDiscovery(){const q=($("#discoverySearch")?.value||"").toLowerCas
 async function shareSwarm(){const url=location.origin,title="Join SWARM — An LSMG System";try{if(navigator.share)await navigator.share({title,text:"Build a capability profile so SWARM can assemble real project teams.",url});else{await navigator.clipboard.writeText(url);toast("SWARM link copied")}}catch{}}
 async function installApp(){if(state.deferredInstall){state.deferredInstall.prompt();await state.deferredInstall.userChoice;state.deferredInstall=null}else toast("Use your browser's Add to Home Screen option.")}
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();state.deferredInstall=e});window.addEventListener("appinstalled",()=>toast("SWARM installed"));
-Cloud.onAuth((_event,session)=>{state.session=session;if(!session&&state.profile){state.profile=null;showAuth("signin")}});
+Cloud.onAuth((_event,session)=>{if(state.guest&&!session)return;state.session=session});
 showSplash();
 if("serviceWorker" in navigator)navigator.serviceWorker.register("/sw.js",{updateViaCache:"none"}).then(r=>r.update()).catch(()=>{});
