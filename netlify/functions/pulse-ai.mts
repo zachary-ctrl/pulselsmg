@@ -44,34 +44,34 @@ export default async (req: Request) => {
   const context = body.context || {};
   if (!prompt) return json({ error: "missing_prompt" }, 400);
 
-  const apiKey = Netlify.env.get("OPENAI_API_KEY");
-  if (!apiKey) {
+  const safeContext = JSON.stringify({
+    markets: Array.isArray(context.markets) ? context.markets.slice(0, 12) : [],
+    news: Array.isArray(context.news) ? context.news.slice(0, 12) : []
+  }).slice(0, 12000);
+
+  try {
+    const client = new OpenAI();
+    const response = await client.responses.create({
+      model: "gpt-5",
+      store: false,
+      max_output_tokens: 450,
+      instructions:
+        "You are PULSE AI inside an LSMG x LEDGERA culture app. Be concise, energetic, and factual. Use the supplied live context when relevant. Clearly distinguish public prediction-market prices from facts or forecasts. Never tell users what cash wager to place, never promise profit, and never imply a crowd price guarantees an outcome. For politics or elections, stay neutral and factual and do not recommend candidates or outcomes.",
+      input: "LIVE CONTEXT:\n" + safeContext + "\n\nUSER:\n" + prompt
+    });
+
+    return json({
+      mode: "ai",
+      connected: true,
+      answer: response.output_text || fallbackAnswer(prompt, context)
+    });
+  } catch (error) {
     return json({
       mode: "signal",
       connected: false,
       answer: fallbackAnswer(prompt, context)
     });
   }
-
-  const client = new OpenAI({ apiKey });
-  const safeContext = JSON.stringify({
-    markets: Array.isArray(context.markets) ? context.markets.slice(0, 12) : [],
-    news: Array.isArray(context.news) ? context.news.slice(0, 12) : []
-  }).slice(0, 12000);
-
-  const response = await client.responses.create({
-    model: "gpt-5",
-    store: false,
-    instructions:
-      "You are PULSE AI inside an LSMG x LEDGERA culture app. Be concise, energetic, and factual. Use the supplied live context when relevant. Clearly distinguish public prediction-market prices from facts or forecasts. Never tell users what cash wager to place, never promise profit, and never imply a crowd price guarantees an outcome. For politics or elections, stay neutral and factual and do not recommend candidates or outcomes.",
-    input: "LIVE CONTEXT:\n" + safeContext + "\n\nUSER:\n" + prompt
-  });
-
-  return json({
-    mode: "ai",
-    connected: true,
-    answer: response.output_text || "No response generated."
-  });
 };
 
 export const config = {
