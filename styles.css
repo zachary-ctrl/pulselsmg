@@ -239,3 +239,7 @@ img{image-orientation:from-image}
 .mag-top>div{display:flex;gap:5px}.mag-top button{color:#fff}
 .mag-page-shell{position:relative;width:100%;height:100%;display:grid;place-items:center;min-height:0}.mag-page-shell>img{display:block;width:auto!important;height:100%!important;max-width:100%!important;object-fit:contain!important}
 .mag-access-banner{position:absolute;left:12px;right:12px;bottom:12px;margin:auto;max-width:430px;border:1px solid #6c2732;border-radius:14px;background:rgba(8,8,10,.94);backdrop-filter:blur(16px);padding:12px;color:#fff;box-shadow:0 14px 45px #000a}.mag-access-banner.preview{border-color:#38383e}.mag-access-banner small{display:block;color:#e51d36;font-size:7px;font-weight:950;letter-spacing:.11em}.mag-access-banner b{display:block;margin:5px 0 9px;font:900 20px/.95 Impact,"Arial Narrow",sans-serif}.mag-access-banner a{display:inline-flex;min-height:36px;align-items:center;border-radius:10px;background:#fff;color:#050506;padding:8px 10px;text-decoration:none;font-size:7px;font-weight:950}
+
+/* PULSE v10 reader reliability */
+.reader-error{gap:12px}.reader-error .reader-secondary{display:inline-flex;align-items:center;justify-content:center;min-height:42px;color:#555;text-decoration:underline;text-underline-offset:4px;font-size:8px;font-weight:950;letter-spacing:.08em}
+.native-loading b{letter-spacing:.1em}.pulse-story-body{overflow-wrap:anywhere}.pulse-story-body p,.pulse-story-body h2{max-width:100%}

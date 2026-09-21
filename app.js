@@ -33,6 +33,7 @@ const creators = [
 ];
 
 const LEDGERA = 'https://ledgeramagazine.com';
+const LEDGERA_RAW = 'https://raw.githubusercontent.com/zachary-ctrl/theledgeramagazine/main/';
 function storageJSON(key,fallback){try{const raw=localStorage.getItem(key);return raw===null?fallback:JSON.parse(raw)}catch{return fallback}}
 const fallbackArticles = [
   {title:'The NFL Cutdown Is Where the Season Gets Real',summary:'For hundreds of players, the 53-man deadline turns a summer audition into a career decision.',category:'SPORTS / NFL',url:LEDGERA+'/articles/nfl-roster-cuts-2026-53-man-deadline.html',image:''},
@@ -505,6 +506,67 @@ function tradeModal(){
   <div class="reward-list">${catalog.map(([key,r])=>`<button data-redeem="${esc(key)}"><span><b>${esc(r.label)}</b><small>PULSE BUCKS MARKET</small></span><strong>₱${Number(r.cost)}</strong></button>`).join('')}</div>`);
 }
 
+
+function ledgeraSourcePath(url){
+  try{let p=new URL(url,LEDGERA).pathname.replace(/^\/+/,'');if(p.endsWith('/'))p+='index.html';return p}catch{return ''}
+}
+function absoluteLedgera(value){
+  if(!value)return '';
+  try{return new URL(value,LEDGERA).href}catch{return value}
+}
+function sanitizeOwnedHTML(node){
+  const clone=node.cloneNode(true);
+  $('script,style,iframe,form,nav,footer,button,input,textarea,select',clone).forEach(n=>n.remove());
+  $('*',clone).forEach(el=>{
+    [...el.attributes].forEach(a=>{if(/^on/i.test(a.name))el.removeAttribute(a.name)});
+    if(el.hasAttribute('src'))el.setAttribute('src',absoluteLedgera(el.getAttribute('src')));
+    if(el.hasAttribute('href')){
+      const h=el.getAttribute('href');
+      if(/^javascript:/i.test(h||''))el.removeAttribute('href');
+      else{el.setAttribute('href',absoluteLedgera(h));if(el.tagName==='A'){el.target='_blank';el.rel='noopener'}}
+    }
+  });
+  return clone.innerHTML;
+}
+async function fetchRawDocument(url,timeout=9000){
+  const path=ledgeraSourcePath(url);if(!path)throw new Error('source path');
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeout);
+  try{
+    const r=await fetch(LEDGERA_RAW+path+'?ts='+Date.now(),{cache:'no-store',signal:controller.signal});
+    if(!r.ok)throw new Error('source '+r.status);
+    return new DOMParser().parseFromString(await r.text(),'text/html');
+  }finally{clearTimeout(timer)}
+}
+async function directArticleData(a){
+  const doc=await fetchRawDocument(a.url);
+  const hero=doc.querySelector('.article-hero');
+  const body=doc.querySelector('article.body,main article,.article-body');
+  if(!body)throw new Error('article body');
+  const heroNode=doc.querySelector('.article-image img,.article-hero img,.tribute-visual img');
+  return {
+    type:'article',
+    title:hero?.querySelector('h1')?.textContent?.trim()||a.title,
+    dek:hero?.querySelector('.dek')?.textContent?.trim()||a.summary||'',
+    byline:hero?.querySelector('.byline')?.textContent?.trim()||'LEDGERA',
+    kicker:hero?.querySelector('.kicker')?.textContent?.trim()||a.category||'LEDGERA',
+    hero:absoluteLedgera(heroNode?.getAttribute('src')||a.image||''),
+    bodyHtml:sanitizeOwnedHTML(body)
+  };
+}
+async function directIssueData(x){
+  const doc=await fetchRawDocument(x.url);
+  const script=doc.querySelector('script.reader-pages');
+  let pages=[];if(script){try{pages=JSON.parse(script.textContent||'[]')}catch{}}
+  pages=pages.map(p=>({...p,src:absoluteLedgera(p.src)}));
+  if(!pages.length){
+    const cover=absoluteLedgera(doc.querySelector('meta[property="og:image"]')?.content||doc.querySelector('.cover img,.edition-cover img,.reader-sheet img')?.getAttribute('src')||x.cover);
+    const m=ledgeraSourcePath(x.url).match(/issue-(\d+)/),issue=m?.[1]||'';
+    const member=['01','02','03'].includes(issue);
+    pages=[{src:cover,title:x.title,short:'Cover',chapter:member?'Member Preview':'Archive Preview',alt:x.title,unlockUrl:member?LEDGERA+'/subscribe/?issue='+issue:'',previewOnly:!member,originalUrl:x.url}];
+  }
+  return {type:'issue',pages};
+}
+
 function readerShell(title,label,url){
   const layer=document.createElement('div');layer.className='reader-overlay pulse-reader';
   layer.innerHTML=`<header class="reader-bar pulse-reader-bar"><button class="reader-back" aria-label="Back">‹</button><div><small>${esc(label)}</small><b>${esc(title)}</b></div><a href="${esc(url)}" target="_blank" rel="noopener">↗</a></header><main class="native-reader"><div class="native-loading"><i></i><b>PULSE IS BUILDING THE READER…</b></div></main>`;
@@ -514,8 +576,14 @@ function closeNativeReader(layer){layer?.classList.add('closing');setTimeout(()=
 async function openArticleReader(a){
   const layer=readerShell(a.title,a.category||'LEDGERA ARTICLE',a.url),main=$('.native-reader',layer);
   try{
-    const r=await fetch('/api/content?url='+encodeURIComponent(a.url),{cache:'no-store'});if(!r.ok)throw new Error('reader');
-    const d=await r.json();if(d.type!=='article'||(!d.bodyHtml&&!d.paragraphs?.length))throw new Error('reader');
+    let d=null;
+    if(a.bodyHtml){d={type:'article',title:a.title,dek:a.summary||'',byline:a.byline||'LEDGERA',kicker:a.category||'LEDGERA',hero:a.image||'',bodyHtml:a.bodyHtml,paragraphs:a.paragraphs||[]};}
+    if(!d){try{d=await directArticleData(a)}catch{}}
+    if(!d){
+      const r=await fetch('/api/content?url='+encodeURIComponent(a.url),{cache:'no-store'});
+      if(r.ok)d=await r.json();
+    }
+    if(!d||d.type!=='article'||(!d.bodyHtml&&!d.paragraphs?.length))throw new Error('reader');
     main.innerHTML=`<article class="pulse-article">
       <div class="article-progress"><i></i></div>
       <header>${d.hero?`<img class="pulse-article-hero" src="${esc(d.hero)}" alt="">`:''}<span class="pulse-article-kicker">${esc(d.kicker||a.category||'LEDGERA')}</span><h1>${esc(d.title||a.title)}</h1>${d.dek?`<p class="pulse-dek">${esc(d.dek)}</p>`:''}${d.byline?`<p class="pulse-byline">${esc(d.byline)}</p>`:''}</header>
@@ -525,7 +593,8 @@ async function openArticleReader(a){
     $('[data-reader-close]',main).onclick=()=>closeNativeReader(layer);
     const progress=$('.article-progress i',main);main.addEventListener('scroll',()=>{const max=main.scrollHeight-main.clientHeight;progress.style.width=(max?Math.min(100,main.scrollTop/max*100):100)+'%'},{passive:true});
   }catch{
-    main.innerHTML=`<div class="reader-error"><b>THIS STORY COULDN'T BE REFORMATTED.</b><p>Open the original LEDGERA story without leaving your reading flow.</p><a class="btn primary" href="${esc(a.url)}" target="_blank" rel="noopener">OPEN ORIGINAL ↗</a></div>`;
+    main.innerHTML=`<div class="reader-error"><b>PULSE COULDN'T LOAD THIS STORY YET.</b><p>The reader will retry the live LEDGERA source first.</p><button class="btn primary" data-reader-retry>TRY AGAIN</button><a class="reader-secondary" href="${esc(a.url)}" target="_blank" rel="noopener">OPEN ORIGINAL ↗</a></div>`;
+    $('[data-reader-retry]',main).onclick=()=>{closeNativeReader(layer);setTimeout(()=>openArticleReader(a),200)};
   }
 }
 function renderMagazinePage(layer,pages,index){
@@ -538,7 +607,9 @@ function renderMagazinePage(layer,pages,index){
 async function openIssueReader(x){
   const layer=readerShell(x.title,x.label,x.url),main=$('.native-reader',layer);
   try{
-    const r=await fetch('/api/content?url='+encodeURIComponent(x.url),{cache:'no-store'});if(!r.ok)throw new Error('reader');const d=await r.json();if(d.type!=='issue'||!d.pages?.length)throw new Error('reader');
+    let d=null;try{d=await directIssueData(x)}catch{}
+    if(!d){const r=await fetch('/api/content?url='+encodeURIComponent(x.url),{cache:'no-store'});if(r.ok)d=await r.json();}
+    if(!d||d.type!=='issue'||!d.pages?.length)throw new Error('reader');
     const pages=d.pages;main.innerHTML=`<section class="pulse-magazine">
       <div class="mag-top"><span>LEDGERA / PULSE MAGAZINE MODE</span><div><button data-mag-fit>FIT</button><button data-mag-full>FULL</button></div></div>
       <div class="mag-stage"></div>
@@ -652,14 +723,14 @@ async function sendAI(prompt){
   try{
     const context={
       generatedAt:state.live.generatedAt,
-      articles:state.articles.slice(0,12).map(a=>({title:a.title,category:a.category,summary:a.summary})),
+      articles:state.articles.slice(0,7).map(a=>({title:a.title,category:a.category,summary:a.summary})),
       issues:issues.map(x=>({title:x.title,label:x.label,subtitle:x.subtitle})),
-      markets:(state.live.markets.length?state.live.markets:fallbackMarkets).slice(0,10).map(m=>({title:m.title,source:m.source,yes:m.yes,no:m.no,volume24h:m.volume24h,endDate:m.endDate})),
-      podcast:(state.podcast.episodes||[]).slice(0,6).map(e=>({title:e.title,date:e.date,description:e.description})),
+      markets:(state.live.markets.length?state.live.markets:fallbackMarkets).slice(0,6).map(m=>({title:m.title,source:m.source,yes:m.yes,no:m.no,volume24h:m.volume24h,endDate:m.endDate})),
+      podcast:(state.podcast.episodes||[]).slice(0,3).map(e=>({title:e.title,date:e.date,description:e.description})),
       creators:creators.map(c=>({name:c.name,role:c.role,location:c.loc,skills:c.skills}))
     };
     const messages=state.aiMessages.slice(-10).map(m=>({role:m.role,content:m.text}));
-    const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),28000);const r=await fetch('/api/ai',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({messages,context}),signal:controller.signal});clearTimeout(timer);
+    const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),12000);const r=await fetch('/api/ai',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({messages,context}),signal:controller.signal});clearTimeout(timer);
     if(r.ok){const d=await r.json();if(d.text)answer={text:d.text,action:route.action};}
   }catch{}
   if(!answer){const generated=await browserAIAnswer(p);if(generated){answer={text:generated,action:route.action};mode='browser-ai'}else{answer=route;mode='signal-fallback'}}

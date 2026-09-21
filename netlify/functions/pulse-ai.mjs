@@ -7,10 +7,10 @@ export default async function(req){
     const base=Netlify.env.get("OPENAI_BASE_URL"),key=Netlify.env.get("OPENAI_API_KEY");
     if(!base||!key)return Response.json({error:"AI Gateway unavailable"},{status:503});
     const input=[{role:"system",content:SYSTEM+"\nCURRENT PULSE CONTEXT:\n"+JSON.stringify(context).slice(0,24000)},...messages.map(m=>({role:m.role==="assistant"?"assistant":"user",content:String(m.content||"").slice(0,4500)}))];
-    const r=await fetch(base.replace(/\/$/,"")+"/v1/chat/completions",{method:"POST",headers:{"content-type":"application/json","authorization":"Bearer "+key},body:JSON.stringify({model:"gpt-5",store:false,messages:input,max_completion_tokens:650})});
+    const r=await fetch(base.replace(/\/$/,"")+"/v1/chat/completions",{method:"POST",headers:{"content-type":"application/json","authorization":"Bearer "+key},body:JSON.stringify({model:"gpt-5.6-luna",store:false,messages:input,max_completion_tokens:360})});
     const data=await r.json().catch(()=>null);if(!r.ok)throw new Error(data?.error?.message||"Model request failed");
     const text=data?.choices?.[0]?.message?.content?.trim();if(!text)throw new Error("Empty model response");
-    return Response.json({ok:true,text,model:data.model||"gpt-5"},{headers:{"cache-control":"no-store"}});
+    return Response.json({ok:true,text,model:data.model||"gpt-5.6-luna"},{headers:{"cache-control":"no-store"}});
   }catch(e){return Response.json({error:String(e)},{status:500})}
 }
 export const config={path:"/api/ai",method:"POST",rateLimit:{windowLimit:12,windowSize:60,aggregateBy:["ip","domain"]}};

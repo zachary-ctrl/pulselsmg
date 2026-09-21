@@ -18,7 +18,8 @@ export default async function(req){
     const parsed=new URL(u);
     let path=parsed.pathname.replace(/^\/+/,"");
     if(path.endsWith("/"))path+="index.html";
-    const r=await fetch(RAW+path+"?ts="+Date.now(),{headers:{"user-agent":"PULSE Reader/2.0"}});
+    let r=await fetch(RAW+path+"?ts="+Date.now(),{headers:{"user-agent":"PULSE Reader/2.1"}});
+    if(!r.ok)r=await fetch(u,{headers:{"user-agent":"PULSE Reader/2.1"}});
     if(!r.ok)throw new Error("Source "+r.status);
     const h=await r.text();
     if(parsed.pathname.includes("/magazine/")){
