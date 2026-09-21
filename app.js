@@ -12,6 +12,28 @@ const creators = [
   {name:'SOPHIA',role:'MODEL',loc:'LEDGERA FACES',image:'https://gcdn.picsart.com/editing-temp/d1210a97-37b9-4dc3-b9b0-091c0879171a.jpeg',skills:['STREETWEAR','LIFESTYLE','EDITORIAL'],need:'Fashion, streetwear, lifestyle and editorial collaborations.',url:'https://ledgeramagazine.com/new-faces/sophia'}
 ];
 
+const LEDGERA = 'https://ledgeramagazine.com';
+const fallbackArticles = [
+  {title:'The NFL Cutdown Is Where the Season Gets Real',summary:'For hundreds of players, the 53-man deadline turns a summer audition into a career decision.',category:'SPORTS / NFL',url:LEDGERA+'/articles/nfl-roster-cuts-2026-53-man-deadline.html',image:''},
+  {title:'College Sports Eligibility Is Colliding With the Courts',summary:'Conference rules, court orders and athlete rights are forcing the sport to redraw the line between college and pro.',category:'SPORTS / COLLEGE ATHLETICS',url:LEDGERA+'/articles/college-sports-eligibility-sec-court-fight-2026.html',image:''},
+  {title:'The U.S. Open Is Getting the RedZone Treatment',summary:'ESPN is turning 16 courts into one fast-moving live feed and testing the future of sports television.',category:'SPORTS / MEDIA',url:LEDGERA+'/articles/us-open-redzone-espn-sports-broadcast-2026.html',image:''},
+  {title:'Remembering Dolly Parton, 1946–2026',summary:'The songs made her immortal. The generosity, business instinct and radical warmth made her something even bigger.',category:'REMEMBRANCE / MUSIC / CULTURE',url:LEDGERA+'/articles/remembering-dolly-parton-1946-2026.html',image:'https://cdn.prod.website-files.com/6a8deb242351864903af5057/6a8dfd7b4e874c9803980efe_Dolly%20Main.avif'},
+  {title:'Remembering Hayden Panettiere',summary:'The Heroes, Nashville and Scream star leaves behind more than three decades of work across television, film and music.',category:'REMEMBRANCE / CULTURE',url:LEDGERA+'/articles/hayden-panettiere-dies-at-36.html',image:''},
+  {title:'How to Feed a Dictator',summary:'Andrew Neel’s documentary turns private kitchens into a study of power, complicity and survival.',category:'FILM / TRIBECA',url:LEDGERA+'/articles/how-to-feed-a-dictator-tribeca-2026.html',image:''},
+  {title:'The Robin Byrd Story',summary:'New York cable-access history finally gets the documentary spotlight it deserves.',category:'CULTURE / TRIBECA',url:LEDGERA+'/articles/the-robin-byrd-story-tribeca-2026.html',image:''},
+  {title:'Met Gala 2026',summary:'Fashion’s biggest night, the politics of the guest list, and who gets to define the room.',category:'FASHION',url:LEDGERA+'/articles/met-gala-2026-predictions-and-politics.html',image:''},
+  {title:'Why Vinyl Keeps Climbing',summary:'Physical media is not nostalgia anymore — it is identity, ritual and a billion-dollar signal.',category:'MUSIC',url:LEDGERA+'/articles/why-vinyl-sales-keep-climbing.html',image:''},
+  {title:'Celebrity Brand Deals in 2026: Who Is Actually Cashing In',summary:'From equity stakes to co-ownership, the smartest celebrities are building businesses — not just collecting checks.',category:'BUSINESS / CULTURE',url:LEDGERA+'/articles/celebrity-brand-deals-2026-who-is-cashing-in.html',image:''}
+];
+const issues = [
+  {title:'RUNWAY SEVEN.',subtitle:'37 pages from Runway 7 at New York Fashion Week.',label:'SPECIAL EDITION / NYFW / SEPT. 2026',url:LEDGERA+'/magazine/runway-7-nyfw/',cover:'https://gcdn.picsart.com/editing-temp/38a8dae5-d809-42ae-bfa4-e953de41b213.jpeg'},
+  {title:'TOWER OF ELEGANCE.',subtitle:'M by Elegance on championship gold, pressure, branding and presence.',label:'ISSUE NO. 05 / 2026',url:LEDGERA+'/magazine/issue-05/',cover:'https://gcdn.picsart.com/editing-temp/fac7efda-c422-4bfa-9bea-5cda7afc3e82.jpeg'},
+  {title:'WIND SHIFTS',subtitle:'A New Direction · The Same Purpose · Culture in Motion',label:'ISSUE NO. 04',url:LEDGERA+'/magazine/issue-04/',cover:LEDGERA+'/assets/covers/ledgera-issue-04-wind-shifts.jpeg'},
+  {title:'THE NIGHT ISSUE',subtitle:'Monster Squad · New Energy · Summer After Dark',label:'ISSUE NO. 03',url:LEDGERA+'/magazine/issue-03/',cover:LEDGERA+'/assets/covers/ledgera-issue-03-monster-squad-cover.jpeg'},
+  {title:'THE POWER ISSUE',subtitle:'Karmen Petrovic · Confidence · Discipline',label:'ISSUE NO. 02',url:LEDGERA+'/magazine/issue-02/',cover:LEDGERA+'/assets/covers/ledgera-issue-02-karmen-petrovic-cover.png'},
+  {title:'THE SUMMER ISSUE',subtitle:'New Faces · Culture · Tribeca',label:'ISSUE NO. 01',url:LEDGERA+'/magazine/issue-01/',cover:LEDGERA+'/assets/covers/ledgera-issue-01-cover.png'}
+];
+
 const fallbackMarkets = [
   {id:'fallback-film',source:'PULSE',title:'Will a major streaming title announce a renewal this month?',yes:63,no:37,volume24h:0,endDate:'2026-09-30T23:59:00-05:00'},
   {id:'fallback-music',source:'PULSE',title:'Will a major artist announce a surprise release before October?',yes:58,no:42,volume24h:0,endDate:'2026-10-01T00:00:00-05:00'}
@@ -28,7 +50,9 @@ const state = {
   transactions: [],
   aiMessages: [],
   aiMode: 'signal',
-  deferredInstall: null
+  deferredInstall: null,
+  articles: fallbackArticles,
+  session: JSON.parse(localStorage.getItem('pulse.session.v1') || 'null')
 };
 
 function getDeviceId(){
@@ -84,63 +108,62 @@ function appInstalled(){
   return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 }
 
-async function api(path, options={}){
-  const headers = {...(options.headers||{}),'x-pulse-device':DEVICE_ID};
-  const res = await fetch(path,{...options,headers});
-  let data={};
-  try{ data=await res.json(); }catch{}
-  if(!res.ok) throw Object.assign(new Error(data.message||data.error||'Request failed'),{data,status:res.status});
-  return data;
+function localWallet(){
+  const saved=JSON.parse(localStorage.getItem('pulse.wallet.local.v1') || 'null');
+  if(saved) state.wallet=saved;
+  else localStorage.setItem('pulse.wallet.local.v1',JSON.stringify(state.wallet));
+  state.rewards={
+    'after-dark-pass':{cost:100,label:'LEDGERA After Dark access badge'},
+    'creator-boost':{cost:250,label:'24-hour creator profile boost'},
+    'issue-drop':{cost:500,label:'LEDGERA digital issue drop'},
+    'profile-review':{cost:1000,label:'LSMG creative profile review request'}
+  };
 }
-
-async function loadWallet(){
-  try{
-    const data=await api('/api/wallet');
-    state.wallet=data.wallet||state.wallet;
-    state.rewards=data.rewards||{};
-    state.transactions=data.transactions||[];
-  }catch(e){
-    console.warn('wallet',e);
+function saveLocalWallet(){ localStorage.setItem('pulse.wallet.local.v1',JSON.stringify(state.wallet)); }
+async function walletAction(action,extra={}){
+  localWallet();
+  if(action==='deposit'||action==='withdraw'){ paymentRailModal(action); return null; }
+  if(action==='claim_daily'){
+    const today=new Date().toISOString().slice(0,10);
+    if(state.wallet.last_daily_claim===today){toast('Daily Pulse Bucks already claimed');return null;}
+    state.wallet.pulse_bucks=Number(state.wallet.pulse_bucks||0)+50; state.wallet.last_daily_claim=today; saveLocalWallet(); return {ok:true};
   }
-  if(state.tab==='me') render();
-}
-
-async function walletAction(action, extra={}){
-  try{
-    const data=await api('/api/wallet',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action,...extra})});
-    await loadWallet();
-    return data;
-  }catch(e){
-    if(e?.data?.error==='payment_provider_required'){
-      paymentRailModal(action);
-      return null;
-    }
-    if(e?.data?.error==='already_claimed_today'){ toast('Daily Pulse Bucks already claimed'); return null; }
-    if(e?.data?.error==='insufficient_pulse_bucks'){ toast('Not enough Pulse Bucks'); return null; }
-    toast(e?.message||'Could not complete that action');
-    return null;
+  if(action==='redeem'){
+    const reward=state.rewards[extra.reward_key]; if(!reward) return null;
+    if(Number(state.wallet.pulse_bucks||0)<reward.cost){toast('Not enough Pulse Bucks');return null;}
+    state.wallet.pulse_bucks-=reward.cost; saveLocalWallet(); return {ok:true};
   }
+  return null;
 }
-
+function isCultureMarket(text=''){
+  const t=text.toLowerCase();
+  const culture=['movie','film','box office','oscar','grammy','emmy','album','song','music','artist','singer','rapper','concert','tour','billboard','spotify','netflix','hbo','disney','marvel','celebrity','actor','actress','television','streaming','fashion','runway','designer','wrestling','wwe','aew','tna','youtube','tiktok','creator','influencer','award'];
+  const blocked=['election','president','senate','congress','parliament','minister','governor','mayor','democrat','republican'];
+  return culture.some(x=>t.includes(x))&&!blocked.some(x=>t.includes(x));
+}
 async function loadLive(){
   state.liveStatus='loading';
-  if(state.tab==='feed'||state.tab==='predict') render();
+  const markets=[];
   try{
-    const data=await fetch('/api/pulse-feed',{cache:'no-store'}).then(r=>r.json());
-    state.live={
-      news:Array.isArray(data.news)?data.news:[],
-      markets:Array.isArray(data.markets)?data.markets:[],
-      generatedAt:data.generatedAt||new Date().toISOString(),
-      sources:data.sources||[]
-    };
-    state.liveStatus='live';
-  }catch(e){
-    state.liveStatus='fallback';
-    state.live={...state.live,markets:fallbackMarkets};
-  }
+    const r=await fetch('https://gamma-api.polymarket.com/markets?active=true&closed=false&limit=250&order=volume24hr&ascending=false',{cache:'no-store'});
+    if(r.ok){ const data=await r.json(); for(const m of data){
+      if(!isCultureMarket((m.question||'')+' '+(m.events?.[0]?.title||''))) continue;
+      let outcomes=[],prices=[]; try{outcomes=JSON.parse(m.outcomes||'[]')}catch{} try{prices=JSON.parse(m.outcomePrices||'[]')}catch{}
+      const yi=outcomes.findIndex(x=>String(x).toLowerCase()==='yes'); if(yi<0) continue;
+      const yes=Math.max(0,Math.min(100,Math.round(Number(prices[yi]||0)*100)));
+      markets.push({id:'poly-'+m.id,source:'POLYMARKET',title:m.question,yes,no:100-yes,volume24h:Number(m.volume24hr||0),change24h:Number(m.oneDayPriceChange||0)*100,endDate:m.endDate||m.endDateIso||'',image:m.image||m.icon||''});
+      if(markets.length>=14) break;
+    }}
+  }catch{}
+  try{
+    const r=await fetch(LEDGERA+'/feed.json',{cache:'no-store'});
+    if(r.ok){ const feed=await r.json(); if(Array.isArray(feed.items)) state.articles=feed.items.map(x=>({title:x.title||'LEDGERA',summary:x.summary||'',category:x._ledgera?.category||x.tags?.join(' / ')||'LEDGERA',url:x.url||x.id,image:x.image||''})); }
+  }catch{}
+  state.live={news:state.articles.map(a=>({title:a.title,url:a.url,domain:'LEDGERA',image:a.image||''})),markets:markets.length?markets:fallbackMarkets,generatedAt:new Date().toISOString(),sources:markets.length?['Polymarket']:['PULSE SNAPSHOT']};
+  state.liveStatus=markets.length?'live':'fallback';
   if(state.tab==='feed'||state.tab==='predict') render();
 }
-
+async function loadWallet(){ localWallet(); if(state.tab==='me') render(); }
 function installChip(){
   if(appInstalled()) return '<span class="app-mode-pill">APP MODE</span>';
   return '<button class="app-mode-pill install-chip" id="installApp">INSTALL APP</button>';
