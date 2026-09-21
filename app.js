@@ -196,11 +196,11 @@ function showAuth(mode='create'){
   <p class="auth-note">This no-Netlify-credit build stores the account securely on this device. Cross-device sync will use a separate auth backend before public launch.</p><button class="auth-guest" id="authGuest">CONTINUE AS GUEST</button></div>`;
   document.body.appendChild(wrap);
   $('[data-auth]',wrap).forEach(b=>b.onclick=()=>showAuth(b.dataset.auth));
-  $('#authGuest',wrap).onclick=()=>{state.session={name:'Guest',email:'guest@local'};localStorage.setItem('pulse.session.v1',JSON.stringify(state.session));wrap.remove();startPulse();};
+  $('#authGuest',wrap).onclick=()=>{state.session={name:'Guest',email:'guest@local'};localStorage.setItem('pulse.session.v1',JSON.stringify(state.session));wrap.remove();pulseStarted=false;startPulse();};
   $('#authForm',wrap).onsubmit=async e=>{ e.preventDefault(); const email=$('#authEmail',wrap).value.trim().toLowerCase(); const pass=$('#authPass',wrap).value; const accounts=JSON.parse(localStorage.getItem('pulse.accounts.v1')||'{}');
     if(create){ const name=$('#authName',wrap).value.trim(); if(accounts[email]){toast('Account already exists on this device');return;} const salt=crypto.getRandomValues(new Uint8Array(16)); accounts[email]={name,email,salt:bytesToB64(salt),hash:await passwordHash(pass,salt)}; localStorage.setItem('pulse.accounts.v1',JSON.stringify(accounts)); state.session={name,email}; }
     else { const acct=accounts[email]; if(!acct){toast('Account not found on this device');return;} if(await passwordHash(pass,b64ToBytes(acct.salt))!==acct.hash){toast('Password does not match');return;} state.session={name:acct.name,email}; }
-    localStorage.setItem('pulse.session.v1',JSON.stringify(state.session)); wrap.remove(); startPulse(); toast(create?'Welcome to PULSE':'Signed in');
+    localStorage.setItem('pulse.session.v1',JSON.stringify(state.session)); wrap.remove(); pulseStarted=false; startPulse(); toast(create?'Welcome to PULSE':'Signed in');
   };
 }
 function bootPulse(){
@@ -349,38 +349,20 @@ function connect(){
 }
 
 function me(){
+  const u=state.session||{name:'Guest',email:'guest@local'};
   return `
   <div class="screen-title"><div><small>PULSE ID</small><h1>YOU.</h1></div>${installChip()}</div>
-  <section class="profile-head app-card"><div class="profile-row"><div class="profile-avatar">ZH</div><div><h2>PULSE PROFILE</h2><p>LSMG × LEDGERA NETWORK</p></div></div></section>
-  <div class="profile-grid app-card">
-    <div class="profile-stat"><strong>${state.matches.length}</strong><span>CONNECTIONS</span></div>
-    <div class="profile-stat"><strong>₱${Number(state.wallet.pulse_bucks||0)}</strong><span>PULSE BUCKS</span></div>
-    <div class="profile-stat"><strong>${state.liveStatus==='live'?'LIVE':'ON'}</strong><span>SIGNAL</span></div>
-  </div>
-
+  <section class="profile-head app-card"><div class="profile-row"><div class="profile-avatar">${userInitials(u.name)}</div><div><h2>${esc(u.name)}</h2><p>${esc(u.email)}</p></div></div></section>
+  <div class="profile-grid app-card"><div class="profile-stat"><strong>${state.matches.length}</strong><span>CONNECTIONS</span></div><div class="profile-stat"><strong>₱${Number(state.wallet.pulse_bucks||0)}</strong><span>PULSE BUCKS</span></div><div class="profile-stat"><strong>${state.liveStatus==='live'?'LIVE':'ON'}</strong><span>SIGNAL</span></div></div>
+  <div class="section-kicker"><span><b>READ</b> / LEDGERA LIBRARY</span></div>
+  <div class="settings-list app-card"><button id="profileStories"><span>Articles</span><b>${state.articles.length}</b></button><button id="profileIssues"><span>Magazine editions</span><b>${issues.length}</b></button><button id="openAISettings"><span>PULSE AI</span><b>ON-DEVICE</b></button></div>
   <div class="section-kicker"><span><b>WALLET</b> / PULSE BUCKS</span></div>
-  <section class="bucks-wallet app-card">
-    <div class="bucks-balance"><div><small>AVAILABLE</small><strong>₱${Number(state.wallet.pulse_bucks||0).toLocaleString()}</strong></div><span>PULSE BUCKS</span></div>
-    <div class="bucks-actions"><button id="claimDaily">DAILY DROP +50</button><button id="tradeBucks">TRADE IN</button></div>
-  </section>
-
+  <section class="bucks-wallet app-card"><div class="bucks-balance"><div><small>AVAILABLE</small><strong>₱${Number(state.wallet.pulse_bucks||0).toLocaleString()}</strong></div><span>PULSE BUCKS</span></div><div class="bucks-actions"><button id="claimDaily">DAILY DROP +50</button><button id="tradeBucks">TRADE IN</button></div></section>
   <div class="section-kicker"><span><b>CASH</b> / WALLET RAIL</span></div>
-  <section class="cash-wallet app-card">
-    <div><small>AVAILABLE CASH</small><strong>${moneyCents(state.wallet.cash_cents)}</strong><span>Provider connection required before funds can move.</span></div>
-    <div><button data-cash="deposit">DEPOSIT</button><button data-cash="withdraw">WITHDRAW</button></div>
-  </section>
-
+  <section class="cash-wallet app-card"><div><small>AVAILABLE CASH</small><strong>${moneyCents(state.wallet.cash_cents)}</strong><span>External payment rail required before funds can move.</span></div><div><button data-cash="deposit">DEPOSIT</button><button data-cash="withdraw">WITHDRAW</button></div></section>
   <div class="section-kicker"><span>ACCOUNT</span></div>
-  <div class="settings-list app-card">
-    <button id="openAISettings"><span>PULSE AI</span><b>${state.aiMode==='ai'?'CONNECTED':'SIGNAL MODE'}</b></button>
-    <button><span>Creative connections</span><b>${state.matches.length}</b></button>
-    <button><span>Live culture alerts</span><b>ON</b></button>
-    <button id="installSettings"><span>Install PULSE to home screen</span><b>${appInstalled()?'INSTALLED':'›'}</b></button>
-  </div>
-
-  ${state.transactions.length?`<div class="section-kicker"><span>RECENT ACTIVITY</span></div><div class="tx-list">${state.transactions.slice(0,6).map(tx=>`<div><span><b>${esc(String(tx.kind||'activity').replaceAll('_',' ').toUpperCase())}</b><small>${new Date(tx.created_at).toLocaleDateString()}</small></span><strong class="${Number(tx.amount)>=0?'pos':''}">${tx.currency==='PB'?'₱':''}${Number(tx.amount)>=0?'+':''}${Number(tx.amount)}</strong></div>`).join('')}</div>`:''}`;
+  <div class="settings-list app-card"><button id="installSettings"><span>Install PULSE to Home Screen</span><b>${appInstalled()?'INSTALLED':'›'}</b></button><button id="signOut"><span>Sign out</span><b>›</b></button></div>`;
 }
-
 function render(){
   const view=$('#view');
   view.classList.remove('view-enter');
@@ -535,6 +517,9 @@ function bind(){
   });
   $$('#installApp, #installSettings').forEach(b=>b.onclick=installApp);
   $('#openAISettings')?.addEventListener('click',()=>aiModal());
+  $('#profileStories')?.addEventListener('click',allStoriesModal);
+  $('#profileIssues')?.addEventListener('click',issuesModal);
+  $('#signOut')?.addEventListener('click',()=>{localStorage.removeItem('pulse.session.v1');state.session=null;pulseStarted=false;showAuth('signin');});
 }
 
 $('#searchBtn')?.addEventListener('click',()=>{
