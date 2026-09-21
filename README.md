@@ -11,7 +11,7 @@ A user describes an outcome. SWARM creates a Project Blueprint, identifies the r
 - `src/services.mjs` — Goal, Blueprint, Profile, Matching, Team Optimizer, Invitation, Swarm, Trust, Outcome, Notification and AI services.
 - `src/store.mjs` — device-local repository + event analytics for the current MVP.
 - `src/demo-data.mjs` — development seed network, clearly marked as demo.
-- `netlify/functions/pulse-ai.mjs` — server-side SWARM Goal Intelligence / AI Coordinator using Netlify AI Gateway.
+- `netlify/functions/swarm-ai.mjs` — server-side SWARM Goal Intelligence / AI Coordinator using Netlify AI Gateway.
 - `database/001_swarm_core.sql` — production database/RLS schema, intentionally not applied to an unrelated database.
 - `tests/match-engine.test.mjs` — deterministic engine tests.
 

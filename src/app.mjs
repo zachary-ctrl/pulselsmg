@@ -171,7 +171,7 @@ function blueprintView(p){
     </div>
     <div class="blueprint-section"><div class="subhead"><b>ROLE REQUIREMENTS</b><button type="button" id="addRole">+ ADD ROLE</button></div>
       <div class="role-editor-list">${all.map((r,i)=>`<article class="role-editor" data-role-editor data-type="${r._type}" data-id="${r.id}">
-        <div class="role-editor-head"><span>${r._type.toUpperCase()}</span><button type="button" data-remove-role>REMOVE</button></div>
+        <div class="role-editor-head"><select data-role-type><option value="required" ${r._type==="required"?"selected":""}>REQUIRED</option><option value="optional" ${r._type==="optional"?"selected":""}>OPTIONAL</option></select><button type="button" data-remove-role>REMOVE</button></div>
         <label>ROLE<input data-role-title value="${esc(r.title)}"></label>
         <label>SKILLS<input data-role-skills value="${esc((r.skills||[]).map(s=>s.name).join(", "))}"></label>
         <div class="two-col"><label>BUDGET CAP<input data-role-budget type="number" value="${r.budgetCap??""}"></label><label>HOURS<input data-role-hours type="number" value="${r.estimatedHours??24}"></label></div>
@@ -182,6 +182,7 @@ function blueprintView(p){
       <label class="span-2">RESOURCES NEEDED<textarea name="resourcesNeeded">${esc((p.resourcesNeeded||[]).join("\n"))}</textarea></label>
       <label class="span-2">CONSTRAINTS<textarea name="constraints">${esc((p.constraints||[]).join("\n"))}</textarea></label>
       <label class="span-2">PREFERRED WORKING STYLE<input name="preferredWorkingStyle" value="${esc((p.preferredWorkingStyle||[]).join(", "))}"></label>
+      <label class="span-2">PREFERRED EXPERIENCE<input name="preferredExperience" value="${esc((p.preferredExperience||[]).join(", "))}"></label>
     </div>
     <div class="blueprint-section"><div class="subhead"><b>MILESTONES</b><button type="button" id="addMilestone">+ ADD</button></div><div id="milestoneEditors">
       ${(p.milestones||[]).map(m=>`<div class="milestone-edit" data-ms-id="${m.id}"><input value="${esc(m.title)}"><button type="button" data-remove-ms>×</button></div>`).join("")}
@@ -371,11 +372,11 @@ function collectBlueprint(p){
   const form=$("#blueprintForm"),f=new FormData(form);
   const req=[],opt=[];
   $$("[data-role-editor]",form).forEach(el=>{
-    const role={id:el.dataset.id||makeId("role"),title:$("[data-role-title]",el).value.trim()||"Specialist",skills:$("[data-role-skills]",el).value.split(",").map(x=>x.trim()).filter(Boolean).map(name=>({name,required:true,weight:1})),budgetCap:Number($("[data-role-budget]",el).value||0)||null,estimatedHours:Number($("[data-role-hours]",el).value||24),requiredLanguages:$("[data-role-languages]",el).value.split(",").map(x=>x.trim()).filter(Boolean),certifications:[],notes:"",required:el.dataset.type==="required"};
+    const required=$("[data-role-type]",el)?.value==="required";const role={id:el.dataset.id||makeId("role"),title:$("[data-role-title]",el).value.trim()||"Specialist",skills:$("[data-role-skills]",el).value.split(",").map(x=>x.trim()).filter(Boolean).map(name=>({name,required:true,weight:1})),budgetCap:Number($("[data-role-budget]",el).value||0)||null,estimatedHours:Number($("[data-role-hours]",el).value||24),requiredLanguages:$("[data-role-languages]",el).value.split(",").map(x=>x.trim()).filter(Boolean),certifications:[],notes:"",required};
     (role.required?req:opt).push(role);
   });
   const milestones=$$("[data-ms-id]",form).map((el,i)=>({id:el.dataset.msId||makeId("ms"),title:$("input",el).value.trim()||"Milestone",status:(p.milestones||[]).find(m=>m.id===el.dataset.msId)?.status||"todo",order:i+1,dueDate:null}));
-  return {title:String(f.get("title")),category:String(f.get("category")),objective:String(f.get("objective")),location:String(f.get("location")),remoteAllowed:f.get("remoteAllowed")==="true",budgetMin:Number(f.get("budgetMin")||0)||null,budgetMax:Number(f.get("budgetMax")||0)||null,startDate:String(f.get("startDate")),deadline:String(f.get("deadline")),teamSizeMin:Number(f.get("teamSizeMin")||0)||null,teamSizeMax:Number(f.get("teamSizeMax")||0)||null,requiredRoles:req,optionalRoles:opt,resourcesNeeded:String(f.get("resourcesNeeded")||"").split("\n").map(x=>x.trim()).filter(Boolean),constraints:String(f.get("constraints")||"").split("\n").map(x=>x.trim()).filter(Boolean),preferredWorkingStyle:String(f.get("preferredWorkingStyle")||"").split(",").map(x=>x.trim()).filter(Boolean),milestones};
+  return {title:String(f.get("title")),category:String(f.get("category")),objective:String(f.get("objective")),location:String(f.get("location")),remoteAllowed:f.get("remoteAllowed")==="true",budgetMin:Number(f.get("budgetMin")||0)||null,budgetMax:Number(f.get("budgetMax")||0)||null,startDate:String(f.get("startDate")),deadline:String(f.get("deadline")),teamSizeMin:Number(f.get("teamSizeMin")||0)||null,teamSizeMax:Number(f.get("teamSizeMax")||0)||null,requiredRoles:req,optionalRoles:opt,resourcesNeeded:String(f.get("resourcesNeeded")||"").split("\n").map(x=>x.trim()).filter(Boolean),constraints:String(f.get("constraints")||"").split("\n").map(x=>x.trim()).filter(Boolean),preferredWorkingStyle:String(f.get("preferredWorkingStyle")||"").split(",").map(x=>x.trim()).filter(Boolean),preferredExperience:String(f.get("preferredExperience")||"").split(",").map(x=>x.trim()).filter(Boolean),milestones};
 }
 function bind(){
   $$("[data-tab]").forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
@@ -393,7 +394,7 @@ function bind(){
   $$("[data-stage]").forEach(b=>b.onclick=()=>{state.stage=b.dataset.stage;render()});
   $$("[data-stage-go]").forEach(b=>b.onclick=()=>{state.stage=b.dataset.stageGo;render()});
   $("#saveBlueprint")?.addEventListener("click",()=>{const p=currentProject(),next=BlueprintService.update(p,collectBlueprint(p));state.candidates=null;state.teams=null;render();toast("Blueprint saved")});
-  $("#addRole")?.addEventListener("click",()=>{const list=$(".role-editor-list");list.insertAdjacentHTML("beforeend",`<article class="role-editor" data-role-editor data-type="optional" data-id="${makeId("role")}"><div class="role-editor-head"><span>OPTIONAL</span><button type="button" data-remove-role>REMOVE</button></div><label>ROLE<input data-role-title value="New Specialist"></label><label>SKILLS<input data-role-skills value=""></label><div class="two-col"><label>BUDGET CAP<input data-role-budget type="number"></label><label>HOURS<input data-role-hours type="number" value="24"></label></div><label>LANGUAGES<input data-role-languages value="English"></label></article>`);bindDynamicBlueprint()});
+  $("#addRole")?.addEventListener("click",()=>{const list=$(".role-editor-list");list.insertAdjacentHTML("beforeend",`<article class="role-editor" data-role-editor data-type="optional" data-id="${makeId("role")}"><div class="role-editor-head"><select data-role-type><option value="required">REQUIRED</option><option value="optional" selected>OPTIONAL</option></select><button type="button" data-remove-role>REMOVE</button></div><label>ROLE<input data-role-title value="New Specialist"></label><label>SKILLS<input data-role-skills value=""></label><div class="two-col"><label>BUDGET CAP<input data-role-budget type="number"></label><label>HOURS<input data-role-hours type="number" value="24"></label></div><label>LANGUAGES<input data-role-languages value="English"></label></article>`);bindDynamicBlueprint()});
   $("#addMilestone")?.addEventListener("click",()=>{ $("#milestoneEditors").insertAdjacentHTML("beforeend",`<div class="milestone-edit" data-ms-id="${makeId("ms")}"><input value="New milestone"><button type="button" data-remove-ms>×</button></div>`);bindDynamicBlueprint()});
   bindDynamicBlueprint();
   $("#runMatching")?.addEventListener("click",()=>{state.stage="matches";state.candidates=null;render()});
