@@ -32,6 +32,13 @@ export const Store={
 export const makeId=uid;
 
 export function migratePulseSession(){
+  try{
+    const currentAccounts=Store.getAccounts();
+    if(!Object.keys(currentAccounts).length){
+      const legacyAccounts=JSON.parse(localStorage.getItem("pulse.accounts.v1")||"{}");
+      if(legacyAccounts&&typeof legacyAccounts==="object"&&Object.keys(legacyAccounts).length)Store.setAccounts(legacyAccounts);
+    }
+  }catch{}
   if(Store.getSession())return;
   try{
     const old=JSON.parse(localStorage.getItem("pulse.session.v1")||"null");
