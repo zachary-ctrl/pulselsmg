@@ -523,20 +523,19 @@ function bind(){
 }
 
 $('#searchBtn')?.addEventListener('click',()=>{
-  openModal(`<button class="modal-close" data-close>×</button><span class="category">PULSE SEARCH</span><h2>SEARCH EVERYTHING.</h2><input class="search-box" id="searchInput" placeholder="Creators, stories, live markets…"><div id="searchResults" class="search-results"></div>`);
+  openModal(`<button class="modal-close" data-close>×</button><span class="category">PULSE SEARCH</span><h2>SEARCH EVERYTHING.</h2><input class="search-box" id="searchInput" placeholder="Stories, issues, creators, markets…"><div id="searchResults" class="search-results"></div>`);
   $('#searchInput')?.addEventListener('input',e=>{
     const q=e.target.value.trim().toLowerCase(); const results=[];
     if(q){
-      state.live.news.filter(x=>String(x.title).toLowerCase().includes(q)).slice(0,4).forEach(x=>results.push(`<a class="search-result" target="_blank" href="${esc(x.url)}"><b>${esc(x.title)}</b><span>LIVE STORY · ${esc(x.domain)}</span></a>`));
-      state.live.markets.filter(x=>String(x.title).toLowerCase().includes(q)).slice(0,4).forEach(x=>results.push(`<button class="search-result" data-market="${esc(x.id)}"><b>${esc(x.title)}</b><span>${esc(x.source)} · ${Number(x.yes)}% YES</span></button>`));
-      creators.filter(x=>(x.name+x.role+x.skills.join(' ')).toLowerCase().includes(q)).forEach((x,i)=>results.push(`<button class="search-result" data-face-search="${creators.indexOf(x)}"><b>${esc(x.name)}</b><span>${esc(x.role)} · ${esc(x.loc)}</span></button>`));
+      state.articles.filter(a=>(a.title+' '+a.summary+' '+a.category).toLowerCase().includes(q)).slice(0,5).forEach(a=>results.push({type:'article',label:a.title,sub:a.category,index:state.articles.indexOf(a)}));
+      issues.filter(x=>(x.title+' '+x.subtitle+' '+x.label).toLowerCase().includes(q)).slice(0,4).forEach(x=>results.push({type:'issue',label:x.title,sub:x.label,index:issues.indexOf(x)}));
+      (state.live.markets||[]).filter(x=>String(x.title).toLowerCase().includes(q)).slice(0,4).forEach(x=>results.push({type:'market',label:x.title,sub:`${x.source} · ${Number(x.yes)}% YES`,id:x.id}));
+      creators.filter(x=>(x.name+' '+x.role+' '+x.skills.join(' ')).toLowerCase().includes(q)).slice(0,4).forEach(x=>results.push({type:'creator',label:x.name,sub:x.role,index:creators.indexOf(x)}));
     }
-    $('#searchResults').innerHTML=results.join('')||'<div class="empty">Type to search PULSE.</div>';
-    $$('[data-market]').forEach(b=>b.onclick=()=>marketModal(b.dataset.market));
-    $$('[data-face-search]').forEach(b=>b.onclick=()=>faceModal(b.dataset.faceSearch));
+    $('#searchResults').innerHTML=results.length?results.map((x,i)=>`<button class="search-result" data-search-result="${i}"><b>${esc(x.label)}</b><span>${esc(x.sub||'PULSE')}</span></button>`).join(''):'<div class="empty">Type to search PULSE.</div>';
+    $$('[data-search-result]').forEach(b=>b.onclick=()=>{ const x=results[Number(b.dataset.searchResult)]; closeModal(); if(x.type==='article')readArticle(x.index); if(x.type==='issue')readIssue(x.index); if(x.type==='market')marketModal(x.id); if(x.type==='creator'){state.creatorIndex=x.index;setTab('connect');} });
   });
 });
-
 $('#modal')?.addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
 document.addEventListener('click',e=>{
   if(e.target.closest('[data-close]')) closeModal();
