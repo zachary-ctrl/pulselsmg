@@ -3,263 +3,489 @@ const $$ = (s, r=document) => [...r.querySelectorAll(s)];
 
 const VIDEO_URL = 'https://gcdn.picsart.com/editing-temp/99c62c28-207d-4bde-8335-0ae90cffb03c.mp4';
 const VIDEO_POSTER = 'https://gcdn.picsart.com/cloud-storage/d861daf6-993d-4610-9f56-d8fdd904bca5.jpg';
-
-const seedMarkets = [
-  { id:'music-surprise', cat:'MUSIC', title:'Will a major artist announce a surprise release before October 1?', yes:61, no:39, closes:'2026-10-01T23:59:00-05:00', volume:18420 },
-  { id:'tv-renewal', cat:'TV + STREAMING', title:'Will a currently trending streaming series announce a renewal this month?', yes:68, no:32, closes:'2026-09-30T23:59:00-05:00', volume:12760 },
-  { id:'fashion-metallic', cat:'FASHION', title:'Will metallic tailoring remain a top-five runway trend through the end of September?', yes:72, no:28, closes:'2026-09-30T20:00:00-05:00', volume:9340 },
-  { id:'wrestling-return', cat:'WRESTLING', title:'Will a teased surprise return happen before the next premium event?', yes:57, no:43, closes:'2026-09-27T19:00:00-05:00', volume:16110 },
-];
+const TRIBECA_IMAGE = 'https://ledgeramagazine.com/assets/images/tribeca/lsmg-tribeca-2026-announcement.png';
 
 const creators = [
-  {name:'JADA R.',initials:'JR',role:'MODEL / ACTOR',loc:'DALLAS, TX',skills:['EDITORIAL','BEAUTY','UGC','FILM'],need:'Photographers, fashion designers, beauty campaigns and casting opportunities.'},
-  {name:'MAYA K.',initials:'MK',role:'PHOTOGRAPHER',loc:'AUSTIN, TX',skills:['FASHION','35MM','PORTRAIT','TOUR'],need:'Models, stylists, musicians and editorial commissions.'},
-  {name:'DEVON A.',initials:'DA',role:'DIRECTOR / EDITOR',loc:'ATLANTA, GA',skills:['MUSIC VIDEO','DOC','COLOR','SHORT FILM'],need:'Artists, producers, actors and branded-content partners.'},
-  {name:'SOL B.',initials:'SB',role:'STYLIST',loc:'NEW YORK, NY',skills:['EDITORIAL','RUNWAY','CELEBRITY','ARCHIVE'],need:'Photographers, publications and talent for experimental editorials.'}
+  {name:'HALIE',role:'MODEL',loc:'NEW YORK',image:'https://gcdn.picsart.com/editing-temp/6d834b75-cb57-42ca-a1b3-5772eab6d376.jpeg',skills:['EDITORIAL','COMMERCIAL','LEDGERA FACES'],need:'Editorials, fashion campaigns, photographers and creative collaborators.',url:'https://ledgeramagazine.com/new-faces/halie'},
+  {name:'JADA',role:'MODEL / LSMG TALENT',loc:'DALLAS',image:'https://gcdn.picsart.com/editing-temp/e3f21ce2-4650-4bf0-879e-9bc1ce1b9d4c.jpeg',skills:['EDITORIAL','BEAUTY','FASHION'],need:'Beauty, editorial, fashion and on-camera opportunities.',url:'https://ledgeramagazine.com/new-faces/jada'},
+  {name:'JANE TAYLOR',role:'MODEL / CREATOR',loc:'AUSTIN',image:'https://gcdn.picsart.com/editing-temp/dc8b7397-5f5f-4f8a-aebc-fc3731cdf71e.jpeg',skills:['MODEL','CREATOR','EDITORIAL'],need:'Commercial, UGC, acting, beauty and fashion opportunities.',url:'https://ledgeramagazine.com/new-faces/jane'},
+  {name:'SOPHIA',role:'MODEL',loc:'LEDGERA FACES',image:'https://gcdn.picsart.com/editing-temp/d1210a97-37b9-4dc3-b9b0-091c0879171a.jpeg',skills:['STREETWEAR','LIFESTYLE','EDITORIAL'],need:'Fashion, streetwear, lifestyle and editorial collaborations.',url:'https://ledgeramagazine.com/new-faces/sophia'}
+];
+
+const fallbackMarkets = [
+  {id:'fallback-film',source:'PULSE',title:'Will a major streaming title announce a renewal this month?',yes:63,no:37,volume24h:0,endDate:'2026-09-30T23:59:00-05:00'},
+  {id:'fallback-music',source:'PULSE',title:'Will a major artist announce a surprise release before October?',yes:58,no:42,volume24h:0,endDate:'2026-10-01T00:00:00-05:00'}
 ];
 
 const state = {
   tab: localStorage.getItem('pulse.tab') || 'feed',
   creatorIndex: Number(localStorage.getItem('pulse.creatorIndex') || 0),
   matches: JSON.parse(localStorage.getItem('pulse.matches') || '[]'),
-  wallet: JSON.parse(localStorage.getItem('pulse.wallet') || JSON.stringify({active:false,balance:0,state:null,age:false,location:false,identity:false})),
-  liveStories: [],
+  live: {news:[],markets:[],generatedAt:null,sources:[]},
   liveStatus: 'loading',
-  markets: seedMarkets,
+  wallet: {pulse_bucks:250,cash_cents:0,last_daily_claim:null},
+  rewards: {},
+  transactions: [],
+  aiMessages: [],
+  aiMode: 'signal',
+  deferredInstall: null
 };
+
+function getDeviceId(){
+  let id = localStorage.getItem('pulse.device');
+  if(!id){
+    const rand = crypto?.getRandomValues ? [...crypto.getRandomValues(new Uint8Array(16))].map(x=>x.toString(16).padStart(2,'0')).join('') : Math.random().toString(36).slice(2)+Date.now().toString(36);
+    id = 'pulse_' + rand.slice(0,36);
+    localStorage.setItem('pulse.device',id);
+  }
+  return id;
+}
+const DEVICE_ID = getDeviceId();
 
 function save(){
   localStorage.setItem('pulse.tab', state.tab);
   localStorage.setItem('pulse.creatorIndex', state.creatorIndex);
   localStorage.setItem('pulse.matches', JSON.stringify(state.matches));
-  localStorage.setItem('pulse.wallet', JSON.stringify(state.wallet));
 }
 
 function esc(v=''){ return String(v).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
-function money(n){ return Number(n||0).toLocaleString('en-US',{style:'currency',currency:'USD'}); }
-function compact(n){ return Intl.NumberFormat('en',{notation:'compact',maximumFractionDigits:1}).format(n); }
+function moneyCents(cents){ return (Number(cents||0)/100).toLocaleString('en-US',{style:'currency',currency:'USD'}); }
+function compact(n){ return Number(n||0) ? Intl.NumberFormat('en',{notation:'compact',maximumFractionDigits:1}).format(Number(n||0)) : '—'; }
+function haptic(){ if(navigator.vibrate) navigator.vibrate(8); }
 function toast(msg){
   let el=$('.toast'); if(!el){el=document.createElement('div');el.className='toast';document.body.appendChild(el)}
-  el.textContent=msg; el.classList.add('show'); clearTimeout(window.__pulseToast); window.__pulseToast=setTimeout(()=>el.classList.remove('show'),1900);
+  el.textContent=msg; el.classList.add('show'); clearTimeout(window.__pulseToast); window.__pulseToast=setTimeout(()=>el.classList.remove('show'),2200);
 }
-function openModal(html){ $('#modalCard').innerHTML=html; $('#modal').showModal(); }
-function closeModal(){ $('#modal').close(); }
+function openModal(html, cls=''){
+  $('#modalCard').className='modal-card '+cls;
+  $('#modalCard').innerHTML=html;
+  $('#modal').showModal();
+  haptic();
+}
+function closeModal(){ if($('#modal')?.open) $('#modal').close(); }
 
 function timeLeft(iso){
+  if(!iso) return 'LIVE';
   const ms = new Date(iso) - new Date();
-  if(ms <= 0) return 'CLOSED';
+  if(!Number.isFinite(ms) || ms <= 0) return 'CLOSING';
   const d=Math.floor(ms/86400000), h=Math.floor(ms%86400000/3600000), m=Math.floor(ms%3600000/60000);
-  if(d>0) return `${d}D ${h}H`;
-  return `${h}H ${m}M`;
+  if(d>0) return d+'D '+h+'H';
+  return h+'H '+m+'M';
+}
+function signed(n){
+  const x=Number(n||0);
+  if(!x) return '0.0';
+  return (x>0?'+':'')+x.toFixed(1);
+}
+function iconForSource(source){
+  return source==='POLYMARKET'?'P':source==='KALSHI'?'K':'●';
+}
+function appInstalled(){
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 }
 
-async function loadLiveStories(){
-  state.liveStatus='loading';
+async function api(path, options={}){
+  const headers = {...(options.headers||{}),'x-pulse-device':DEVICE_ID};
+  const res = await fetch(path,{...options,headers});
+  let data={};
+  try{ data=await res.json(); }catch{}
+  if(!res.ok) throw Object.assign(new Error(data.message||data.error||'Request failed'),{data,status:res.status});
+  return data;
+}
+
+async function loadWallet(){
   try{
-    const q = encodeURIComponent('(fashion OR music OR movie OR television OR celebrity OR wrestling) sourcelang:english');
-    const url = `https://api.gdeltproject.org/api/v2/doc/doc?query=${q}&mode=artlist&maxrecords=12&format=json&sort=hybridrel&timespan=24h`;
-    const r = await fetch(url,{cache:'no-store'});
-    if(!r.ok) throw new Error('feed');
-    const data = await r.json();
-    const articles = Array.isArray(data.articles) ? data.articles : [];
-    state.liveStories = articles.slice(0,10).map(a=>({
-      title:a.title || 'Culture update',
-      url:a.url || '#',
-      domain:a.domain || '',
-      seen:a.seendate || '',
-      image:(a.socialimage||'').startsWith('https://') ? a.socialimage : ''
-    }));
+    const data=await api('/api/wallet');
+    state.wallet=data.wallet||state.wallet;
+    state.rewards=data.rewards||{};
+    state.transactions=data.transactions||[];
+  }catch(e){
+    console.warn('wallet',e);
+  }
+  if(state.tab==='me') render();
+}
+
+async function walletAction(action, extra={}){
+  try{
+    const data=await api('/api/wallet',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action,...extra})});
+    await loadWallet();
+    return data;
+  }catch(e){
+    if(e?.data?.error==='payment_provider_required'){
+      paymentRailModal(action);
+      return null;
+    }
+    if(e?.data?.error==='already_claimed_today'){ toast('Daily Pulse Bucks already claimed'); return null; }
+    if(e?.data?.error==='insufficient_pulse_bucks'){ toast('Not enough Pulse Bucks'); return null; }
+    toast(e?.message||'Could not complete that action');
+    return null;
+  }
+}
+
+async function loadLive(){
+  state.liveStatus='loading';
+  if(state.tab==='feed'||state.tab==='predict') render();
+  try{
+    const data=await fetch('/api/pulse-feed',{cache:'no-store'}).then(r=>r.json());
+    state.live={
+      news:Array.isArray(data.news)?data.news:[],
+      markets:Array.isArray(data.markets)?data.markets:[],
+      generatedAt:data.generatedAt||new Date().toISOString(),
+      sources:data.sources||[]
+    };
     state.liveStatus='live';
   }catch(e){
     state.liveStatus='fallback';
-    state.liveStories=[];
+    state.live={...state.live,markets:fallbackMarkets};
   }
-  if(state.tab==='feed') render();
+  if(state.tab==='feed'||state.tab==='predict') render();
+}
+
+function installChip(){
+  if(appInstalled()) return '<span class="app-mode-pill">APP MODE</span>';
+  return '<button class="app-mode-pill install-chip" id="installApp">INSTALL APP</button>';
 }
 
 function feed(){
-  const live = state.liveStories.length ? state.liveStories.map((a,i)=>`
+  const liveNews = state.live.news.length ? state.live.news.slice(0,8).map((a,i)=>`
     <a class="live-story" href="${esc(a.url)}" target="_blank" rel="noopener">
-      <div class="live-story-img" ${a.image?`style="background-image:linear-gradient(180deg,transparent 35%,rgba(0,0,0,.8)),url('${esc(a.image)}')"`:''}>
-        <span>${i<3?'BREAKING':'LIVE'}</span>
+      <div class="live-story-img" ${a.image?`style="background-image:linear-gradient(180deg,transparent 28%,rgba(0,0,0,.88)),url('${esc(a.image)}')"`:''}>
+        <span>${i<2?'BREAKING':'NOW'}</span>
       </div>
-      <div class="live-story-copy"><b>${esc(a.title)}</b><small>${esc(a.domain||'LIVE SOURCE')} · UPDATED</small></div>
+      <div class="live-story-copy"><b>${esc(a.title)}</b><small>${esc(a.domain||'LIVE SOURCE')} · AUTO-UPDATED</small></div>
     </a>`).join('') : `
-    <div class="live-fallback">
-      <b>${state.liveStatus==='loading'?'PULLING LIVE CULTURE HEADLINES…':'LIVE FEED TEMPORARILY UNAVAILABLE'}</b>
-      <span>PULSE automatically refreshes entertainment, fashion, music, film and wrestling headlines.</span>
-    </div>`;
+      <div class="live-fallback"><div class="skeleton sk-line"></div><div class="skeleton sk-line short"></div><span>${state.liveStatus==='loading'?'SYNCING LIVE CULTURE…':'LIVE FEED WILL RETRY AUTOMATICALLY'}</span></div>`;
+
+  const pulseSignals=(state.live.markets.length?state.live.markets:fallbackMarkets).slice(0,3).map(m=>`
+    <button class="signal-mini" data-market="${esc(m.id)}">
+      <span class="source-badge">${iconForSource(m.source)}</span>
+      <div><b>${esc(m.title)}</b><small>${esc(m.source)} · ${compact(m.volume24h)} 24H VOL</small></div>
+      <strong>${Number(m.yes||0)}%</strong>
+    </button>`).join('');
+
+  const faceRail=creators.map((c,i)=>`
+    <button class="face-tile" data-face="${i}">
+      <img src="${c.image}" alt="${esc(c.name)}" loading="lazy">
+      <span><b>${esc(c.name)}</b><small>${esc(c.role)}</small></span>
+    </button>`).join('');
 
   return `
-  <section class="hero">
-    <div class="hero-grid"></div><div class="live-pill"><i></i> LIVE CULTURE SIGNAL</div>
+  <section class="hero app-card">
+    <div class="hero-grid"></div>
+    <div class="hero-topline"><div class="live-pill"><i></i> PULSE LIVE</div>${installChip()}</div>
     <div class="brand-lockup"><span>LSMG</span><em>×</em><span>LEDGERA</span></div>
-    <h1>WHAT'S HAPPENING.<br><mark>WHAT'S NEXT.</mark></h1>
-    <p>Watch LSMG × LEDGERA content, follow culture in real time, make market calls and connect with the creatives shaping the next wave.</p>
-    <div class="cta-row"><button class="btn primary" data-go="predict">OPEN MARKETS</button><button class="btn ghost" data-go="watch">WATCH NOW</button></div>
+    <h1>THE CULTURE<br><mark>IN MOTION.</mark></h1>
+    <p>Watch the network. Track live public prediction signals. Find collaborators. Ask PULSE AI what is moving.</p>
+    <div class="cta-row"><button class="btn primary" data-go="predict">LIVE SIGNALS</button><button class="btn ghost" data-go="watch">WATCH</button></div>
   </section>
-  <div class="ticker"><span class="ticker-label">PULSE LIVE</span><div class="ticker-track"><span>ENTERTAINMENT</span><b>•</b><span>FASHION</span><b>•</b><span>MUSIC</span><b>•</b><span>FILM</span><b>•</b><span>WRESTLING</span><b>•</b><span>CREATOR ECONOMY</span></div></div>
-  <div class="section-kicker"><span><b>NOW</b> / LIVE UPDATES</span><button class="text-btn" id="refreshLive">REFRESH ↻</button></div>
-  <div class="live-grid">${live}</div>
-  <div class="section-kicker"><span><b>FEATURED</b> / LSMG × LEDGERA</span><span>THE RECORD OF CULTURE</span></div>
-  <article class="feature-video-card" data-go="watch">
-    <div class="feature-video-poster" style="background-image:linear-gradient(180deg,transparent 20%,rgba(0,0,0,.88)),url('${VIDEO_POSTER}')">
-      <div class="play-orb">▶</div><div class="feature-tag">LEDGERA FASHION EDIT · NEW</div>
-      <h2>WATCH THE<br>NEW CUT.</h2>
+
+  <div class="ticker"><span class="ticker-label">LIVE</span><div class="ticker-track"><span>ENTERTAINMENT</span><b>•</b><span>FASHION</span><b>•</b><span>MUSIC</span><b>•</b><span>FILM</span><b>•</b><span>WRESTLING</span><b>•</b><span>CREATORS</span><b>•</b><span>PREDICTIONS</span></div></div>
+
+  <div class="section-kicker"><span><b>PULSE SIGNAL</b> / LIVE PREDICTIONS</span><button class="text-btn" data-go="predict">SEE ALL →</button></div>
+  <div class="signal-stack">${pulseSignals}</div>
+
+  <div class="section-kicker"><span><b>NOW</b> / CULTURE WIRE</span><button class="text-btn" id="refreshLive">REFRESH ↻</button></div>
+  <div class="live-grid">${liveNews}</div>
+
+  <div class="section-kicker"><span><b>WATCH</b> / NEW CUT</span><span>LSMG × LEDGERA</span></div>
+  <article class="feature-video-card app-card" data-go="watch">
+    <div class="feature-video-poster" style="background-image:linear-gradient(180deg,transparent 18%,rgba(0,0,0,.9)),url('${VIDEO_POSTER}')">
+      <div class="play-orb">▶</div><div class="feature-tag">LEDGERA FASHION EDIT · NEW</div><h2>WATCH THE<br>NEW CUT.</h2>
     </div>
-  </article>`;
+  </article>
+
+  <div class="section-kicker"><span><b>CONNECT</b> / LEDGERA FACES</span><button class="text-btn" data-go="connect">DISCOVER →</button></div>
+  <div class="face-rail">${faceRail}</div>
+
+  <a class="network-banner" href="https://ledgeramagazine.com/coverage/" target="_blank" rel="noopener" style="background-image:linear-gradient(90deg,rgba(0,0,0,.92),rgba(0,0,0,.45)),url('${TRIBECA_IMAGE}')">
+    <span>FROM THE NETWORK</span><strong>LSMG FIELD ARCHIVE</strong><small>Interviews · Festivals · Fashion · Film · Culture →</small>
+  </a>`;
 }
 
-function watch(){ return `
-  <div class="section-kicker"><span><b>WATCH</b> / PULSE TV</span><span>LSMG × LEDGERA</span></div>
-  <article class="video-shell">
+function watch(){
+  return `
+  <div class="screen-title"><div><small>PULSE TV</small><h1>WATCH.</h1></div><span>LSMG × LEDGERA</span></div>
+  <article class="video-shell app-card">
     <video controls playsinline preload="metadata" poster="${VIDEO_POSTER}" src="${VIDEO_URL}"></video>
     <div class="video-copy"><div><span class="category">LEDGERA / FASHION</span><h2>LEDGERA FASHION EDIT</h2><p>New visual from the LSMG × LEDGERA network.</p></div><span class="live-badge">NEW</span></div>
   </article>
-  <div class="section-kicker"><span>CHANNELS</span><span>MORE COMING</span></div>
+  <div class="section-kicker"><span>CHANNELS</span><span>SWIPE THROUGH PULSE</span></div>
   <div class="channel-grid">
-    <button class="channel-card"><small>LSMG</small><strong>ORIGINALS</strong><span>Interviews · Docs · BTS</span></button>
-    <button class="channel-card red"><small>LEDGERA</small><strong>AFTER DARK</strong><span>Fashion · Nightlife · Culture</span></button>
-    <button class="channel-card"><small>PARTNERS</small><strong>PREMIERES</strong><span>Approved partner programming</span></button>
-  </div>`; }
+    <a class="channel-card" href="https://lastshotmediagroup.com/watch" target="_blank"><small>LSMG</small><strong>ORIGINALS</strong><span>Podcast · Interviews · BTS</span></a>
+    <a class="channel-card red" href="https://ledgeramagazine.com/after-dark/" target="_blank"><small>LEDGERA</small><strong>AFTER DARK</strong><span>Night edition · Visual culture</span></a>
+    <a class="channel-card" href="https://ledgeramagazine.com/coverage/" target="_blank"><small>FIELD</small><strong>ARCHIVE</strong><span>Festivals · Sports · Film · Events</span></a>
+  </div>
+  <div class="section-kicker"><span>FROM LEDGERA</span></div>
+  <div class="face-rail">${creators.map((c,i)=>`<button class="face-tile" data-face="${i}"><img src="${c.image}" alt="${esc(c.name)}" loading="lazy"><span><b>${esc(c.name)}</b><small>${esc(c.role)}</small></span></button>`).join('')}</div>`;
+}
 
 function predict(){
-  const checks = [state.wallet.age,state.wallet.location,state.wallet.identity].filter(Boolean).length;
+  const markets=state.live.markets.length?state.live.markets:fallbackMarkets;
+  const updated=state.live.generatedAt?new Date(state.live.generatedAt).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}):'SYNCING';
   return `
-  <section class="wallet-hero">
-    <div><small>AVAILABLE CASH</small><strong>${money(state.wallet.balance)}</strong><span>${state.wallet.active?'CASH WALLET ACTIVE':'CASH WALLET NOT YET ACTIVATED'}</span></div>
-    <button class="wallet-btn" id="walletBtn">${state.wallet.active?'WALLET':'ACTIVATE'}</button>
+  <div class="screen-title"><div><small>PUBLIC MARKET DATA</small><h1>PREDICT.</h1></div><span><i class="live-dot"></i> ${updated}</span></div>
+
+  <section class="wallet-strip app-card">
+    <div><small>CASH WALLET</small><strong>${moneyCents(state.wallet.cash_cents)}</strong><span>PAYMENT RAIL REQUIRED</span></div>
+    <div class="wallet-mini-actions"><button data-cash="deposit">DEPOSIT</button><button data-cash="withdraw">WITHDRAW</button></div>
   </section>
-  <div class="compliance-strip"><span>${checks}/3 CHECKS</span><b>21+ · LOCATION · IDENTITY</b><span>${state.wallet.state||'TX / FL'}</span></div>
-  <div class="section-kicker"><span><b>PREDICT</b> / CASH MARKETS</span><span><i class="live-dot"></i> LIVE</span></div>
-  ${state.markets.map(m=>`
-    <article class="market-card">
-      <div class="market-top"><span class="category">${m.cat}</span><span class="close-time">${timeLeft(m.closes)}</span></div>
+
+  <section class="bucks-strip app-card">
+    <div><small>PULSE BUCKS</small><strong>₱${Number(state.wallet.pulse_bucks||0).toLocaleString()}</strong><span>NON-CASH APP REWARDS</span></div>
+    <button class="wallet-btn" id="tradeBucks">TRADE IN</button>
+  </section>
+
+  <div class="market-disclosure">LIVE PRICES BELOW ARE PUBLIC SIGNALS FROM EXTERNAL PREDICTION MARKETS. THEY MOVE IN REAL TIME AND ARE NOT GUARANTEES.</div>
+
+  <div class="section-kicker"><span><b>LIVE</b> / CULTURE MARKETS</span><button class="text-btn" id="refreshPredictions">REFRESH ↻</button></div>
+  <div class="market-list">
+  ${markets.map(m=>`
+    <article class="market-card app-card">
+      <div class="market-top"><span class="source-pill">${esc(m.source||'PULSE')}</span><span class="close-time">${timeLeft(m.endDate)}</span></div>
+      ${m.image?`<div class="market-image" style="background-image:linear-gradient(180deg,transparent,rgba(0,0,0,.75)),url('${esc(m.image)}')"></div>`:''}
       <h3>${esc(m.title)}</h3>
-      <div class="market-volume">${compact(m.volume)} MARKET VOLUME</div>
-      <div class="market-sides">
-        <button class="market-side yes" data-bet="${m.id}" data-side="YES" data-price="${m.yes}"><span>YES</span><strong>${m.yes}¢</strong></button>
-        <button class="market-side no" data-bet="${m.id}" data-side="NO" data-price="${m.no}"><span>NO</span><strong>${m.no}¢</strong></button>
-      </div>
-      <div class="market-bar"><span style="width:${m.yes}%"></span></div>
-      <div class="market-foot"><span>YES ${m.yes}%</span><span>NO ${m.no}%</span></div>
+      <div class="market-meta"><span>${compact(m.volume24h)} 24H VOL</span><span>${signed(m.change24h)} PTS 24H</span></div>
+      <div class="market-prob"><div><small>YES</small><strong>${Number(m.yes||0)}%</strong></div><div class="prob-track"><span style="width:${Math.max(2,Math.min(98,Number(m.yes||0)))}%"></span></div><div class="no"><small>NO</small><strong>${Number(m.no||0)}%</strong></div></div>
+      <div class="market-actions"><button data-market="${esc(m.id)}">DETAILS</button><button class="ai-market" data-ai-market="${esc(m.id)}">ASK AI ✦</button></div>
     </article>`).join('')}
-  <div class="cash-note"><b>CASH MODE</b><span>Real-money settlement is designed for licensed operation only and remains gated by identity, location, payment/settlement and license-scope verification.</span></div>`;
+  </div>
+  <div class="market-source-note">Market data: ${esc((state.live.sources||[]).filter(s=>s!=='GDELT').join(' + ')||'live public sources')}. PULSE is displaying market information; it is not routing orders to those services.</div>`;
 }
 
 function connect(){
   const c=creators[state.creatorIndex%creators.length];
   return `
-  <div class="section-kicker"><span><b>CONNECT</b> / DISCOVER</span><span>${state.creatorIndex%creators.length+1} OF ${creators.length}</span></div>
-  <div class="connect-wrap"><article class="creator-card" id="creatorCard">
-    <div class="creator-visual" data-initials="${c.initials}"><span class="creator-role">${c.role}</span></div>
-    <div class="creator-copy"><h2>${c.name}</h2><div class="creator-location">${c.loc}</div><div class="chips">${c.skills.map(s=>`<span class="chip">${s}</span>`).join('')}</div><div class="need"><b>LOOKING FOR</b>${c.need}</div></div>
-  </article><div class="connect-actions"><button class="round-action" data-swipe="skip">×</button><button class="round-action star" data-swipe="save">☆</button><button class="round-action like" data-swipe="like">♡</button></div></div>`;
+  <div class="screen-title"><div><small>CREATIVE NETWORK</small><h1>CONNECT.</h1></div><span>${state.creatorIndex%creators.length+1} / ${creators.length}</span></div>
+  <div class="connect-wrap">
+    <article class="creator-card app-card" id="creatorCard">
+      <div class="creator-visual" style="background-image:linear-gradient(180deg,transparent 35%,rgba(0,0,0,.85)),url('${c.image}')">
+        <div><span class="creator-role">${esc(c.role)}</span><h2>${esc(c.name)}</h2><div class="creator-location">${esc(c.loc)}</div></div>
+      </div>
+      <div class="creator-copy">
+        <div class="chips">${c.skills.map(s=>`<span class="chip">${esc(s)}</span>`).join('')}</div>
+        <div class="need"><b>LOOKING FOR</b>${esc(c.need)}</div>
+        <a href="${c.url}" target="_blank" rel="noopener" class="profile-link">VIEW LEDGERA PROFILE ↗</a>
+      </div>
+    </article>
+    <div class="connect-actions"><button class="round-action" data-swipe-card="skip">×</button><button class="round-action star" data-swipe-card="save">☆</button><button class="round-action like" data-swipe-card="like">♡</button></div>
+  </div>`;
 }
 
-function me(){ return `
-  <section class="profile-head"><div class="profile-row"><div class="profile-avatar">ZH</div><div><h2>PULSE PROFILE</h2><p>LSMG × LEDGERA CREATIVE NETWORK</p></div></div></section>
-  <div class="profile-grid"><div class="profile-stat"><strong>${state.matches.length}</strong><span>CONNECTIONS</span></div><div class="profile-stat"><strong>${state.wallet.state||'—'}</strong><span>MARKET STATE</span></div><div class="profile-stat"><strong>${state.liveStatus==='live'?'LIVE':'ON'}</strong><span>UPDATES</span></div></div>
+function me(){
+  return `
+  <div class="screen-title"><div><small>PULSE ID</small><h1>YOU.</h1></div>${installChip()}</div>
+  <section class="profile-head app-card"><div class="profile-row"><div class="profile-avatar">ZH</div><div><h2>PULSE PROFILE</h2><p>LSMG × LEDGERA NETWORK</p></div></div></section>
+  <div class="profile-grid app-card">
+    <div class="profile-stat"><strong>${state.matches.length}</strong><span>CONNECTIONS</span></div>
+    <div class="profile-stat"><strong>₱${Number(state.wallet.pulse_bucks||0)}</strong><span>PULSE BUCKS</span></div>
+    <div class="profile-stat"><strong>${state.liveStatus==='live'?'LIVE':'ON'}</strong><span>SIGNAL</span></div>
+  </div>
+
+  <div class="section-kicker"><span><b>WALLET</b> / PULSE BUCKS</span></div>
+  <section class="bucks-wallet app-card">
+    <div class="bucks-balance"><div><small>AVAILABLE</small><strong>₱${Number(state.wallet.pulse_bucks||0).toLocaleString()}</strong></div><span>PULSE BUCKS</span></div>
+    <div class="bucks-actions"><button id="claimDaily">CLAIM +50 DAILY</button><button id="tradeBucks">TRADE IN</button></div>
+  </section>
+
+  <div class="section-kicker"><span><b>CASH</b> / WALLET RAIL</span></div>
+  <section class="cash-wallet app-card">
+    <div><small>AVAILABLE CASH</small><strong>${moneyCents(state.wallet.cash_cents)}</strong><span>Provider connection required before funds can move.</span></div>
+    <div><button data-cash="deposit">DEPOSIT</button><button data-cash="withdraw">WITHDRAW</button></div>
+  </section>
+
   <div class="section-kicker"><span>ACCOUNT</span></div>
-  <div class="settings-list">
-    <button data-action="wallet"><span>Cash wallet & verification</span><b>›</b></button>
-    <button data-action="matches"><span>Creative connections</span><b>${state.matches.length}</b></button>
-    <button data-action="notifications"><span>Live culture alerts</span><b>ON</b></button>
-  </div>`; }
+  <div class="settings-list app-card">
+    <button id="openAISettings"><span>PULSE AI</span><b>${state.aiMode==='ai'?'CONNECTED':'SIGNAL MODE'}</b></button>
+    <button><span>Creative connections</span><b>${state.matches.length}</b></button>
+    <button><span>Live culture alerts</span><b>ON</b></button>
+    <button id="installSettings"><span>Install PULSE to home screen</span><b>${appInstalled()?'INSTALLED':'›'}</b></button>
+  </div>
+
+  ${state.transactions.length?`<div class="section-kicker"><span>RECENT ACTIVITY</span></div><div class="tx-list">${state.transactions.slice(0,6).map(tx=>`<div><span><b>${esc(String(tx.kind||'activity').replaceAll('_',' ').toUpperCase())}</b><small>${new Date(tx.created_at).toLocaleDateString()}</small></span><strong class="${Number(tx.amount)>=0?'pos':''}">${tx.currency==='PB'?'₱':''}${Number(tx.amount)>=0?'+':''}${Number(tx.amount)}</strong></div>`).join('')}</div>`:''}`;
+}
 
 function render(){
   const view=$('#view');
-  view.innerHTML = ({feed,watch,predict,connect,me}[state.tab]||feed)();
+  view.classList.remove('view-enter');
+  view.innerHTML=({feed,watch,predict,connect,me}[state.tab]||feed)();
+  requestAnimationFrame(()=>view.classList.add('view-enter'));
   $$('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.tab===state.tab));
   bind();
 }
 
-function setTab(t){ state.tab=t; save(); render(); window.scrollTo({top:0,behavior:'smooth'}); }
-
-function walletModal(){
-  openModal(`<button class="modal-close" data-close>×</button><span class="category">CASH ACCESS</span><h2>ACTIVATE WALLET</h2>
-  <p>PULSE cash markets require the operator's applicable authorization plus user identity, age and permitted-location checks. Choose your state and complete the checks below.</p>
-  <div class="state-picker"><button data-state="TX" class="${state.wallet.state==='TX'?'selected':''}">TEXAS</button><button data-state="FL" class="${state.wallet.state==='FL'?'selected':''}">FLORIDA</button></div>
-  <label class="verify-row"><input id="ageCheck" type="checkbox" ${state.wallet.age?'checked':''}><span><b>21+ AGE CHECK</b><small>I confirm I am at least 21.</small></span></label>
-  <button class="verify-action ${state.wallet.location?'done':''}" id="locationCheck"><span>${state.wallet.location?'✓':'○'}</span><div><b>LOCATION CHECK</b><small>${state.wallet.location?'Browser location permission granted':'Verify physical presence in an allowed state'}</small></div></button>
-  <button class="verify-action ${state.wallet.identity?'done':''}" id="identityCheck"><span>${state.wallet.identity?'✓':'○'}</span><div><b>IDENTITY / KYC</b><small>${state.wallet.identity?'Prototype status recorded':'Connect an approved identity provider before production'}</small></div></button>
-  <button class="btn primary full" id="completeWallet">COMPLETE SETUP</button>
-  <div class="legal-mini">Production cash deposits, withdrawals and wagers stay disabled until a licensed payment/settlement provider and the exact wagering authorization are connected.</div>`);
+function setTab(t){
+  if(t===state.tab) return;
+  haptic();
+  state.tab=t; save(); render();
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
-function betModal(id,side,price){
-  const m=state.markets.find(x=>x.id===id); if(!m) return;
-  openModal(`<button class="modal-close" data-close>×</button><span class="category">${m.cat} · ${side}</span><h2>PLACE CASH WAGER</h2><p>${esc(m.title)}</p>
-  <div class="bet-quote"><div><small>PRICE</small><strong>${price}¢</strong></div><div><small>AVAILABLE</small><strong>${money(state.wallet.balance)}</strong></div></div>
-  <label class="amount-label">WAGER AMOUNT<input id="betAmount" inputmode="decimal" type="number" min="1" step="1" placeholder="$25"></label>
-  <div id="payoutPreview" class="payout-preview">ENTER AN AMOUNT TO SEE ESTIMATED PAYOUT</div>
-  <button class="btn primary full" id="submitBet">REVIEW WAGER</button>
-  <div class="legal-mini">This build will not transmit real funds until the production wallet, geolocation/KYC stack, and license scope are verified and connected.</div>`);
-  const input=$('#betAmount');
-  input?.addEventListener('input',()=>{
-    const amt=Math.max(0,Number(input.value||0));
-    const contracts=price?amt/(price/100):0;
-    const gross=contracts;
-    $('#payoutPreview').textContent = amt ? `EST. GROSS RETURN IF ${side} RESOLVES TRUE: ${money(gross)}` : 'ENTER AN AMOUNT TO SEE ESTIMATED PAYOUT';
-  });
-  $('#submitBet')?.addEventListener('click',()=>{
-    if(!state.wallet.active){ closeModal(); walletModal(); return; }
-    toast('Cash settlement provider not connected yet');
-  });
+function paymentRailModal(action){
+  openModal(`<button class="modal-close" data-close>×</button><span class="category">CASH WALLET</span><h2>${String(action).toUpperCase()}</h2>
+  <div class="big-status">PAYMENT RAIL<br>NOT CONNECTED</div>
+  <p>The wallet interface and ledger are built. Real deposits and withdrawals stay locked until a payment/settlement provider that approves the operator's exact licensed prediction-wagering use case is connected.</p>
+  <div class="status-grid"><span><b>✓</b> WALLET UI</span><span><b>✓</b> SERVER LEDGER</span><span><b>✓</b> TX / FL GATING UI</span><span class="pending"><b>○</b> CASH PROVIDER</span></div>
+  <button class="btn primary full" data-close>GOT IT</button>`);
+}
+
+function tradeModal(){
+  const items=Object.entries(state.rewards||{});
+  const catalog=items.length?items:[
+    ['after-dark-pass',{cost:100,label:'LEDGERA After Dark access badge'}],
+    ['creator-boost',{cost:250,label:'24-hour creator profile boost'}],
+    ['issue-drop',{cost:500,label:'LEDGERA digital issue drop'}],
+    ['profile-review',{cost:1000,label:'LSMG creative profile review request'}]
+  ];
+  openModal(`<button class="modal-close" data-close>×</button><span class="category">PULSE BUCKS</span><h2>TRADE IN.</h2>
+  <div class="modal-balance">AVAILABLE <strong>₱${Number(state.wallet.pulse_bucks||0).toLocaleString()}</strong></div>
+  <p>Pulse Bucks are app reward points. They are not cash, are not withdrawable, and can be traded in for PULSE / LEDGERA / LSMG app perks.</p>
+  <div class="reward-list">${catalog.map(([key,r])=>`<button data-redeem="${esc(key)}"><span><b>${esc(r.label)}</b><small>TRADE-IN REWARD</small></span><strong>₱${Number(r.cost)}</strong></button>`).join('')}</div>`);
+}
+
+function marketModal(id){
+  const m=[...state.live.markets,...fallbackMarkets].find(x=>x.id===id);
+  if(!m) return;
+  openModal(`<button class="modal-close" data-close>×</button><span class="source-pill">${esc(m.source||'PULSE')}</span><h2>${esc(m.title)}</h2>
+  ${m.image?`<img class="modal-market-image" src="${esc(m.image)}" alt="">`:''}
+  <div class="detail-prob"><div><small>YES</small><strong>${Number(m.yes||0)}%</strong></div><div><small>NO</small><strong>${Number(m.no||0)}%</strong></div></div>
+  <div class="detail-stats"><span>24H VOLUME <b>${compact(m.volume24h)}</b></span><span>24H MOVE <b>${signed(m.change24h)} pts</b></span><span>CLOSES <b>${timeLeft(m.endDate)}</b></span></div>
+  <p>This is a live public prediction-market signal shown for context. Price is not certainty and PULSE does not route orders to this external market.</p>
+  <button class="btn primary full" data-ai-market="${esc(m.id)}">ASK PULSE AI ✦</button>`);
+}
+
+function faceModal(i){
+  const c=creators[Number(i)];
+  if(!c) return;
+  openModal(`<button class="modal-close" data-close>×</button><img class="face-modal-image" src="${c.image}" alt="${esc(c.name)}"><span class="category">LEDGERA FACES</span><h2>${esc(c.name)}</h2><p>${esc(c.need)}</p><div class="chips">${c.skills.map(x=>`<span class="chip">${esc(x)}</span>`).join('')}</div><a class="btn primary full link-btn" href="${c.url}" target="_blank" rel="noopener">VIEW PROFILE ↗</a>`);
+}
+
+function aiModal(prefill=''){
+  const msgs=state.aiMessages.slice(-6).map(m=>`<div class="ai-msg ${m.role}"><span>${m.role==='assistant'?'PULSE AI':'YOU'}</span><p>${esc(m.text)}</p></div>`).join('');
+  openModal(`<button class="modal-close" data-close>×</button><div class="ai-head"><span class="ai-orb">✦</span><div><small>PULSE AI</small><h2>ASK WHAT'S NEXT.</h2></div></div>
+    <div class="ai-mode"><i></i><span id="aiModeLabel">${state.aiMode==='ai'?'GENERATIVE AI':'LIVE SIGNAL ENGINE'}</span></div>
+    <div class="ai-chat" id="aiChat">${msgs||'<div class="ai-welcome">Ask about an artist, show, film, fashion trend, wrestling story, headline, or any live prediction on screen.</div>'}</div>
+    <div class="ai-quick"><button data-ai-quick="What are the biggest culture prediction signals right now?">BIGGEST SIGNALS</button><button data-ai-quick="What culture headlines should I know right now?">HEADLINES</button></div>
+    <form id="aiForm" class="ai-form"><input id="aiInput" autocomplete="off" placeholder="Ask PULSE AI…" value="${esc(prefill)}"><button>↑</button></form>`, 'ai-sheet');
+  setTimeout(()=>$('#aiInput')?.focus(),100);
+}
+
+async function sendAI(prompt){
+  const p=String(prompt||'').trim();
+  if(!p) return;
+  state.aiMessages.push({role:'user',text:p});
+  const chat=$('#aiChat');
+  if(chat) chat.innerHTML=state.aiMessages.slice(-6).map(m=>`<div class="ai-msg ${m.role}"><span>${m.role==='assistant'?'PULSE AI':'YOU'}</span><p>${esc(m.text)}</p></div>`).join('')+'<div class="ai-thinking">PULSE IS READING THE SIGNAL…</div>';
+  try{
+    const response=await fetch('/api/ai',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({prompt:p,context:{markets:state.live.markets.slice(0,12),news:state.live.news.slice(0,12)}})});
+    const data=await response.json();
+    state.aiMode=data.mode==='ai'?'ai':'signal';
+    state.aiMessages.push({role:'assistant',text:data.answer||'No answer returned.'});
+  }catch(e){
+    state.aiMessages.push({role:'assistant',text:'The AI endpoint is reconnecting. Live PULSE signals are still updating in the app.'});
+  }
+  const c=$('#aiChat');
+  if(c){c.innerHTML=state.aiMessages.slice(-7).map(m=>`<div class="ai-msg ${m.role}"><span>${m.role==='assistant'?'PULSE AI':'YOU'}</span><p>${esc(m.text)}</p></div>`).join('');c.scrollTop=c.scrollHeight;}
+  if($('#aiModeLabel')) $('#aiModeLabel').textContent=state.aiMode==='ai'?'GENERATIVE AI':'LIVE SIGNAL ENGINE';
+}
+
+function installApp(){
+  if(appInstalled()){toast('PULSE is already in app mode');return;}
+  if(state.deferredInstall){
+    state.deferredInstall.prompt();
+    state.deferredInstall.userChoice.finally(()=>{state.deferredInstall=null;});
+    return;
+  }
+  const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  openModal(`<button class="modal-close" data-close>×</button><span class="category">INSTALL PULSE</span><h2>MAKE IT AN APP.</h2><p>${ios?'On iPhone: tap the Share button in Safari, then choose “Add to Home Screen.” PULSE opens full-screen with its own app icon.':'Open your browser menu and choose “Install app” or “Add to Home screen.”'}</p><div class="install-preview"><img src="/assets/icon-192.png" alt=""><span><b>PULSE</b><small>LSMG × LEDGERA</small></span></div>`);
 }
 
 function bind(){
   $$('[data-go]').forEach(b=>b.onclick=()=>setTab(b.dataset.go));
-  $('#refreshLive')?.addEventListener('click',loadLiveStories);
-  $('#walletBtn')?.addEventListener('click',walletModal);
-  $$('[data-bet]').forEach(b=>b.addEventListener('click',()=>betModal(b.dataset.bet,b.dataset.side,Number(b.dataset.price))));
-  $$('[data-swipe]').forEach(b=>b.addEventListener('click',()=>{
-    const action=b.dataset.swipe; const c=creators[state.creatorIndex%creators.length];
-    if(action==='like' && !state.matches.includes(c.name)){ state.matches.push(c.name); toast('Connection request saved'); }
-    else if(action==='save') toast('Creative saved');
-    state.creatorIndex=(state.creatorIndex+1)%creators.length; save(); render();
-  }));
-  $$('[data-action="wallet"]').forEach(b=>b.onclick=walletModal);
+  $('#refreshLive')?.addEventListener('click',loadLive);
+  $('#refreshPredictions')?.addEventListener('click',loadLive);
+  $('#claimDaily')?.addEventListener('click',async()=>{const d=await walletAction('claim_daily');if(d){toast('+50 Pulse Bucks');render();}});
+  $$('#tradeBucks, #tradeBucks').forEach(b=>b.onclick=tradeModal);
+  $$('[data-cash]').forEach(b=>b.onclick=()=>walletAction(b.dataset.cash));
+  $$('[data-market]').forEach(b=>b.onclick=()=>marketModal(b.dataset.market));
+  $$('[data-ai-market]').forEach(b=>b.onclick=()=>{
+    const m=[...state.live.markets,...fallbackMarkets].find(x=>x.id===b.dataset.aiMarket);
+    closeModal(); aiModal(m?`Break down this live prediction signal: ${m.title}`:'Break down this market.');
+  });
+  $$('[data-face]').forEach(b=>b.onclick=()=>faceModal(b.dataset.face));
+  $$('[data-swipe-card]').forEach(b=>b.onclick=()=>{
+    const action=b.dataset.swipeCard; const c=creators[state.creatorIndex%creators.length];
+    if(action==='like' && !state.matches.includes(c.name)){state.matches.push(c.name);toast('Connection saved');}
+    else if(action==='save') toast('Profile saved');
+    state.creatorIndex=(state.creatorIndex+1)%creators.length;save();render();
+  });
+  $$('#installApp, #installSettings').forEach(b=>b.onclick=installApp);
+  $('#openAISettings')?.addEventListener('click',()=>aiModal());
 }
 
 $('#searchBtn')?.addEventListener('click',()=>{
-  openModal(`<button class="modal-close" data-close>×</button><span class="category">PULSE SEARCH</span><h2>SEARCH CULTURE</h2><input class="search-box" id="searchInput" placeholder="Creators, stories, markets…"><div id="searchResults" class="search-results"></div>`);
+  openModal(`<button class="modal-close" data-close>×</button><span class="category">PULSE SEARCH</span><h2>SEARCH EVERYTHING.</h2><input class="search-box" id="searchInput" placeholder="Creators, stories, live markets…"><div id="searchResults" class="search-results"></div>`);
   $('#searchInput')?.addEventListener('input',e=>{
-    const q=e.target.value.trim().toLowerCase();
-    const results=[];
+    const q=e.target.value.trim().toLowerCase(); const results=[];
     if(q){
-      state.liveStories.filter(x=>x.title.toLowerCase().includes(q)).slice(0,4).forEach(x=>results.push(`<a class="search-result" target="_blank" href="${esc(x.url)}"><b>${esc(x.title)}</b><span>LIVE STORY · ${esc(x.domain)}</span></a>`));
-      state.markets.filter(x=>x.title.toLowerCase().includes(q)).slice(0,4).forEach(x=>results.push(`<button class="search-result" data-jump="predict"><b>${esc(x.title)}</b><span>${x.cat} · CASH MARKET</span></button>`));
-      creators.filter(x=>(x.name+x.role+x.skills.join(' ')).toLowerCase().includes(q)).slice(0,4).forEach(x=>results.push(`<button class="search-result" data-jump="connect"><b>${x.name}</b><span>${x.role} · ${x.loc}</span></button>`));
+      state.live.news.filter(x=>String(x.title).toLowerCase().includes(q)).slice(0,4).forEach(x=>results.push(`<a class="search-result" target="_blank" href="${esc(x.url)}"><b>${esc(x.title)}</b><span>LIVE STORY · ${esc(x.domain)}</span></a>`));
+      state.live.markets.filter(x=>String(x.title).toLowerCase().includes(q)).slice(0,4).forEach(x=>results.push(`<button class="search-result" data-market="${esc(x.id)}"><b>${esc(x.title)}</b><span>${esc(x.source)} · ${Number(x.yes)}% YES</span></button>`));
+      creators.filter(x=>(x.name+x.role+x.skills.join(' ')).toLowerCase().includes(q)).forEach((x,i)=>results.push(`<button class="search-result" data-face-search="${creators.indexOf(x)}"><b>${esc(x.name)}</b><span>${esc(x.role)} · ${esc(x.loc)}</span></button>`));
     }
     $('#searchResults').innerHTML=results.join('')||'<div class="empty">Type to search PULSE.</div>';
-    $$('[data-jump]').forEach(b=>b.onclick=()=>{closeModal();setTab(b.dataset.jump)});
+    $$('[data-market]').forEach(b=>b.onclick=()=>marketModal(b.dataset.market));
+    $$('[data-face-search]').forEach(b=>b.onclick=()=>faceModal(b.dataset.faceSearch));
   });
 });
 
-$('#modal')?.addEventListener('click',e=>{ if(e.target===e.currentTarget) closeModal(); });
-document.addEventListener('click',e=>{ if(e.target.closest('[data-close]')) closeModal(); });
+$('#modal')?.addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
 document.addEventListener('click',e=>{
-  const s=e.target.closest('[data-state]'); if(s){state.wallet.state=s.dataset.state;save();walletModal();}
-});
-document.addEventListener('change',e=>{ if(e.target.id==='ageCheck'){state.wallet.age=e.target.checked;save();} });
-document.addEventListener('click',e=>{
-  if(e.target.closest('#locationCheck')){
-    if(!navigator.geolocation){ toast('Location is not available in this browser'); return; }
-    navigator.geolocation.getCurrentPosition(()=>{state.wallet.location=true;save();walletModal();},()=>toast('Location permission was not granted'),{enableHighAccuracy:true,timeout:9000});
+  if(e.target.closest('[data-close]')) closeModal();
+  const r=e.target.closest('[data-redeem]');
+  if(r){
+    walletAction('redeem',{reward_key:r.dataset.redeem}).then(d=>{if(d){toast('Pulse Bucks traded in');closeModal();render();}});
   }
-  if(e.target.closest('#identityCheck')){ state.wallet.identity=true; save(); walletModal(); }
-  if(e.target.closest('#completeWallet')){
-    if(!state.wallet.state || !state.wallet.age || !state.wallet.location || !state.wallet.identity){toast('Complete all verification checks first');return;}
-    state.wallet.active=true; save(); closeModal(); render(); toast('Wallet gate completed — funding provider still required');
+  const quick=e.target.closest('[data-ai-quick]');
+  if(quick){const p=quick.dataset.aiQuick;$('#aiInput').value=p;sendAI(p);$('#aiInput').value='';}
+});
+document.addEventListener('submit',e=>{
+  if(e.target.id==='aiForm'){
+    e.preventDefault();
+    const input=$('#aiInput');const p=input.value;input.value='';sendAI(p);
   }
 });
 
 $$('.nav-item').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
 $('.avatar')?.addEventListener('click',()=>setTab('me'));
 
+const aiButton=document.createElement('button');
+aiButton.className='floating-ai';
+aiButton.innerHTML='<span>✦</span><b>AI</b>';
+aiButton.setAttribute('aria-label','Open PULSE AI');
+aiButton.onclick=()=>aiModal();
+document.body.appendChild(aiButton);
+
+let touchStart=null;
+document.addEventListener('touchstart',e=>{
+  if(e.touches.length!==1 || $('#modal')?.open) return;
+  touchStart={x:e.touches[0].clientX,y:e.touches[0].clientY};
+},{passive:true});
+document.addEventListener('touchend',e=>{
+  if(!touchStart || $('#modal')?.open) return;
+  const t=e.changedTouches[0], dx=t.clientX-touchStart.x, dy=t.clientY-touchStart.y;
+  touchStart=null;
+  if(Math.abs(dx)>85 && Math.abs(dx)>Math.abs(dy)*1.5){
+    const tabs=['feed','watch','predict','connect','me'];
+    const i=tabs.indexOf(state.tab);
+    if(dx<0 && i<tabs.length-1) setTab(tabs[i+1]);
+    if(dx>0 && i>0) setTab(tabs[i-1]);
+  }
+},{passive:true});
+
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();state.deferredInstall=e;render();});
+window.addEventListener('appinstalled',()=>{state.deferredInstall=null;toast('PULSE installed');render();});
+
 render();
-loadLiveStories();
-setInterval(()=>{ if(state.tab==='feed') loadLiveStories(); else if(state.tab==='predict') render(); },60000);
-setTimeout(()=>$('#splash')?.classList.add('hide'),750);
+Promise.all([loadLive(),loadWallet()]);
+setInterval(loadLive,60000);
+setTimeout(()=>$('#splash')?.classList.add('hide'),650);
 if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
