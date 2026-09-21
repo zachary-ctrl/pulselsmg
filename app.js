@@ -5,6 +5,28 @@ const VIDEO_URL = 'https://gcdn.picsart.com/editing-temp/99c62c28-207d-4bde-8335
 const VIDEO_POSTER = 'https://gcdn.picsart.com/cloud-storage/d861daf6-993d-4610-9f56-d8fdd904bca5.jpg';
 const TRIBECA_IMAGE = 'https://ledgeramagazine.com/assets/images/tribeca/lsmg-tribeca-2026-announcement.png';
 
+const PODCAST_RSS = 'https://anchor.fm/s/127eeb74/podcast/rss';
+const PODCAST_APPLE = 'https://podcasts.apple.com/us/podcast/the-last-shot-podcast/id1494831568';
+const nyfwPhotos = [
+  {title:'ARIAHWOLF',subtitle:'RUNWAY 7 / NYFW',image:'https://gcdn.picsart.com/editing-temp/998803ae-4a5a-4f4d-a8eb-e53a3bf299df.jpeg'},
+  {title:'SHOP THE RUNWAY',subtitle:'RUNWAY 7 / NYFW',image:'https://gcdn.picsart.com/editing-temp/e4a257e4-259b-451e-9315-f5433ec478f2.jpeg'},
+  {title:'SHOP THE RUNWAY',subtitle:'RUNWAY 7 / NYFW',image:'https://gcdn.picsart.com/editing-temp/f3586a10-e2f0-4a49-af19-0906f4708e4c.jpeg'},
+  {title:'AJIM FASHION',subtitle:'RUNWAY 7 / NYFW',image:'https://gcdn.picsart.com/editing-temp/fbf93ad9-147b-41a9-b505-da856fdd891a.jpeg'},
+  {title:'HILIA SWIM',subtitle:'RUNWAY 7 / NYFW',image:'https://gcdn.picsart.com/editing-temp/20387fcd-8ee9-4046-bdd0-ce8b0f76bf90.jpeg'},
+  {title:'JANEKE LUXUEUSE',subtitle:'RUNWAY 7 / NYFW',image:'https://gcdn.picsart.com/editing-temp/67a88ecd-3b4b-4e7b-95a0-2c78820d0c27.jpeg'}
+];
+const stockVideos = [
+  {title:'RUNWAY STUDY 01',subtitle:'FASHION B-ROLL',src:'https://gcdn.picsart.com/editing-temp/8ac49354-c10a-4f75-818f-d0e64cf19135.mp4',poster:'https://images.pexels.com/videos/9512048/pexels-photo-9512048.jpeg?auto=compress&dpr=1&h=750&w=1260',credit:'cottonbro studio / Pexels',source:'https://www.pexels.com/video/fashion-model-walking-in-the-runway-9512048/'},
+  {title:'RUNWAY STUDY 02',subtitle:'FASHION B-ROLL',src:'https://videos.pexels.com/video-files/9511841/9511841-uhd_4096_2160_25fps.mp4',poster:'https://images.pexels.com/videos/9511841/pexels-photo-9511841.jpeg?auto=compress&dpr=1&h=750&w=1260',credit:'cottonbro studio / Pexels',source:'https://www.pexels.com/video/models-doing-a-catwalk-9511841/'},
+  {title:'RUNWAY STUDY 03',subtitle:'FASHION B-ROLL',src:'https://videos.pexels.com/video-files/9510025/9510025-uhd_4096_2160_25fps.mp4',poster:'https://images.pexels.com/videos/9510025/pexels-photo-9510025.jpeg?auto=compress&dpr=1&h=750&w=1260',credit:'cottonbro studio / Pexels',source:'https://www.pexels.com/video/a-female-model-walking-on-the-runway-9510025/'}
+];
+const fallbackEpisodes = [
+  {title:'An Interview With Jaylen Christie | Stink Bomb Man and the Brain Kids',date:'Sep 7, 2026',duration:'59:25',description:'Creativity, ownership, representation and building an independent comic-book universe.',link:PODCAST_APPLE,audio:''},
+  {title:'The Elegance Brand: M By Elegance | An Interview With Maggie Lee',date:'Sep 6, 2026',duration:'14:13',description:'M By Elegance on wrestling, presentation, branding and building a memorable presence.',link:PODCAST_APPLE,audio:''},
+  {title:'VQFF 2026: A Seat at the Table | Eli Morris on the Future of Queer Cinema',date:'Aug 27, 2026',duration:'',description:'A conversation about the future of queer cinema and the Vancouver Queer Film Festival.',link:PODCAST_APPLE,audio:''}
+];
+
+
 const creators = [
   {name:'HALIE',role:'MODEL',loc:'NEW YORK',image:'https://gcdn.picsart.com/editing-temp/6d834b75-cb57-42ca-a1b3-5772eab6d376.jpeg',skills:['EDITORIAL','COMMERCIAL','LEDGERA FACES'],need:'Editorials, fashion campaigns, photographers and creative collaborators.',url:'https://ledgeramagazine.com/new-faces/halie'},
   {name:'JADA',role:'MODEL / LSMG TALENT',loc:'DALLAS',image:'https://gcdn.picsart.com/editing-temp/e3f21ce2-4650-4bf0-879e-9bc1ce1b9d4c.jpeg',skills:['EDITORIAL','BEAUTY','FASHION'],need:'Beauty, editorial, fashion and on-camera opportunities.',url:'https://ledgeramagazine.com/new-faces/jada'},
@@ -52,7 +74,8 @@ const state = {
   aiMode: 'signal',
   deferredInstall: null,
   articles: fallbackArticles,
-  session: JSON.parse(localStorage.getItem('pulse.session.v1') || 'null')
+  session: JSON.parse(localStorage.getItem('pulse.session.v1') || 'null'),
+  podcast: {status:'loading',episodes:fallbackEpisodes}
 };
 
 function getDeviceId(){
@@ -173,6 +196,81 @@ async function loadLive(){
   if(state.tab==='feed'||state.tab==='predict') render();
 }
 async function loadWallet(){ localWallet(); if(state.tab==='me') render(); }
+
+function stripHTML(html=''){
+  const d=document.createElement('div'); d.innerHTML=html; return (d.textContent||'').replace(/\s+/g,' ').trim();
+}
+function episodeDate(raw=''){
+  const d=new Date(raw); return Number.isFinite(d.getTime())?d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}):raw;
+}
+function parsePodcastRSS(xml){
+  const doc=new DOMParser().parseFromString(xml,'text/xml');
+  if(doc.querySelector('parsererror')) throw new Error('Invalid RSS');
+  return [...doc.querySelectorAll('channel > item')].slice(0,8).map(item=>{
+    const enclosure=item.querySelector('enclosure');
+    const image=item.getElementsByTagName('itunes:image')[0];
+    const duration=item.getElementsByTagName('itunes:duration')[0]?.textContent||'';
+    return {
+      title:item.querySelector('title')?.textContent?.trim()||'The Last Shot Podcast',
+      date:episodeDate(item.querySelector('pubDate')?.textContent||''),
+      duration,
+      description:stripHTML(item.querySelector('description')?.textContent||'').slice(0,220),
+      link:item.querySelector('link')?.textContent?.trim()||PODCAST_APPLE,
+      audio:enclosure?.getAttribute('url')||'',
+      image:image?.getAttribute('href')||''
+    };
+  }).filter(x=>x.title);
+}
+async function loadPodcast(){
+  state.podcast.status='loading';
+  const sources=[
+    PODCAST_RSS,
+    'https://api.allorigins.win/raw?url='+encodeURIComponent(PODCAST_RSS)
+  ];
+  for(const url of sources){
+    try{
+      const r=await fetch(url,{cache:'no-store'});
+      if(!r.ok) continue;
+      const eps=parsePodcastRSS(await r.text());
+      if(eps.length){state.podcast={status:'live',episodes:eps};if(state.tab==='watch')render();return;}
+    }catch{}
+  }
+  try{
+    const r=await fetch('https://api.rss2json.com/v1/api.json?rss_url='+encodeURIComponent(PODCAST_RSS),{cache:'no-store'});
+    if(r.ok){
+      const j=await r.json();
+      if(Array.isArray(j.items)&&j.items.length){
+        state.podcast={status:'live',episodes:j.items.slice(0,8).map(x=>({
+          title:x.title||'The Last Shot Podcast',
+          date:episodeDate(x.pubDate||''),
+          duration:x.enclosure?.duration||'',
+          description:stripHTML(x.description||x.content||'').slice(0,220),
+          link:x.link||PODCAST_APPLE,
+          audio:x.enclosure?.link||x.enclosure?.url||'',
+          image:x.thumbnail||j.feed?.image||''
+        }))};
+        if(state.tab==='watch')render();return;
+      }
+    }
+  }catch{}
+  state.podcast={status:'fallback',episodes:fallbackEpisodes};
+  if(state.tab==='watch')render();
+}
+function podcastMarkup(limit=6){
+  const eps=(state.podcast.episodes||fallbackEpisodes).slice(0,limit);
+  return eps.map((e,i)=>`
+    <article class="podcast-card">
+      <div class="podcast-number">${String(i+1).padStart(2,'0')}</div>
+      <div class="podcast-body">
+        <div class="podcast-meta"><span>${esc(e.date||'THE LAST SHOT PODCAST')}</span><span>${esc(e.duration||'EPISODE')}</span></div>
+        <h3>${esc(e.title)}</h3>
+        <p>${esc(e.description||'The Last Shot Podcast from LSMG.')}</p>
+        ${e.audio?`<audio controls preload="none" src="${esc(e.audio)}"></audio>`:''}
+        <a href="${esc(e.link||PODCAST_APPLE)}" target="_blank" rel="noopener">OPEN EPISODE ↗</a>
+      </div>
+    </article>`).join('');
+}
+
 function userInitials(name='P'){ return String(name).trim().split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase()||'P'; }
 function bytesToB64(bytes){ return btoa(String.fromCharCode(...bytes)); }
 function b64ToBytes(s){ return Uint8Array.from(atob(s),c=>c.charCodeAt(0)); }
@@ -219,7 +317,7 @@ function bootPulse(){
 }
 let pulseStarted=false;
 function startPulse(){
-  if(pulseStarted)return; pulseStarted=true; const av=$('.avatar'); if(av)av.textContent=userInitials(state.session?.name||'PULSE'); render(); Promise.all([loadLive(),loadWallet()]); setInterval(loadLive,90000);
+  if(pulseStarted)return; pulseStarted=true; const av=$('.avatar'); if(av)av.textContent=userInitials(state.session?.name||'PULSE'); render(); Promise.all([loadLive(),loadWallet(),loadPodcast()]); setInterval(loadLive,90000);
 }
 
 function installChip(){
@@ -243,6 +341,8 @@ function feed(){
       <div><b>${esc(m.title)}</b><small>${esc(m.source)} · ${compact(m.volume24h)} 24H VOL</small></div>
       <strong>${Number(m.yes||0)}%</strong>
     </button>`).join('');
+
+  const nyfwRail=nyfwPhotos.map((p,i)=>`<button class="nyfw-card" data-photo="${i}"><img src="${p.image}" alt="${esc(p.title)} at NYFW" loading="lazy"><span><small>${esc(p.subtitle)}</small><b>${esc(p.title)}</b></span></button>`).join('');
 
   const faceRail=creators.map((c,i)=>`
     <button class="face-tile" data-face="${i}">
@@ -271,6 +371,9 @@ function feed(){
   <div class="section-kicker"><span><b>MAGAZINE</b> / READ FULL ISSUES</span><button class="text-btn" id="allIssues">ARCHIVE →</button></div>
   <div class="issue-rail">${issues.slice(0,4).map((x,i)=>`<button class="issue-card" data-read-issue="${i}"><img src="${esc(x.cover)}" alt="${esc(x.title)} cover" loading="lazy"><span><small>${esc(x.label)}</small><b>${esc(x.title)}</b><em>READ ISSUE →</em></span></button>`).join('')}</div>
 
+  <div class="section-kicker"><span><b>NYFW</b> / FROM THE LSMG DRIVE</span><span>RUNWAY 7</span></div>
+  <div class="nyfw-rail">${nyfwRail}</div>
+
   <div class="section-kicker"><span><b>WATCH</b> / NEW CUT</span><span>LSMG × LEDGERA</span></div>
   <article class="feature-video-card app-card" data-go="watch">
     <div class="feature-video-poster" style="background-image:linear-gradient(180deg,transparent 18%,rgba(0,0,0,.9)),url('${VIDEO_POSTER}')">
@@ -287,12 +390,30 @@ function feed(){
 }
 
 function watch(){
+  const stockRail=stockVideos.map((v,i)=>`
+    <article class="stock-video-card">
+      <video controls playsinline preload="metadata" poster="${esc(v.poster)}" src="${esc(v.src)}"></video>
+      <div><small>${esc(v.subtitle)}</small><b>${esc(v.title)}</b><a href="${esc(v.source)}" target="_blank" rel="noopener">${esc(v.credit)} ↗</a></div>
+    </article>`).join('');
   return `
-  <div class="screen-title"><div><small>PULSE TV</small><h1>WATCH.</h1></div><span>LSMG × LEDGERA</span></div>
+  <div class="screen-title"><div><small>PULSE TV + AUDIO</small><h1>WATCH.</h1></div><span>LSMG × LEDGERA</span></div>
   <article class="video-shell app-card">
     <video controls playsinline preload="metadata" poster="${VIDEO_POSTER}" src="${VIDEO_URL}"></video>
-    <div class="video-copy"><div><span class="category">LEDGERA / FASHION</span><h2>LEDGERA FASHION EDIT</h2><p>New visual from the LSMG × LEDGERA network.</p></div><span class="live-badge">NEW</span></div>
+    <div class="video-copy"><div><span class="category">LEDGERA / FASHION</span><h2>LEDGERA FASHION EDIT</h2><p>Original visual from the LSMG × LEDGERA network.</p></div><span class="live-badge">ORIGINAL</span></div>
   </article>
+
+  <div class="section-kicker"><span><b>NYFW MOTION</b> / STOCK B-ROLL</span><span>PULSE TV</span></div>
+  <div class="stock-video-rail">${stockRail}</div>
+
+  <section id="podcastSection">
+    <div class="section-kicker"><span><b>THE LAST SHOT PODCAST</b> / RSS</span><button class="text-btn" id="refreshPodcast">${state.podcast.status==='live'?'RSS LIVE':'REFRESH ↻'}</button></div>
+    <div class="podcast-hero app-card">
+      <div><small>LSMG AUDIO</small><h2>THE LAST SHOT<br>PODCAST.</h2><p>Latest episodes pulled from the show's RSS feed when available.</p></div>
+      <a href="${PODCAST_APPLE}" target="_blank" rel="noopener">FULL CATALOG ↗</a>
+    </div>
+    <div class="podcast-stack">${podcastMarkup(6)}</div>
+  </section>
+
   <div class="section-kicker"><span>CHANNELS</span><span>SWIPE THROUGH PULSE</span></div>
   <div class="channel-grid">
     <a class="channel-card" href="https://lastshotmediagroup.com/watch" target="_blank"><small>LSMG</small><strong>ORIGINALS</strong><span>Podcast · Interviews · BTS</span></a>
@@ -304,7 +425,6 @@ function watch(){
   <div class="section-kicker"><span>FROM LEDGERA</span></div>
   <div class="face-rail">${creators.map((c,i)=>`<button class="face-tile" data-face="${i}"><img src="${c.image}" alt="${esc(c.name)}" loading="lazy"><span><b>${esc(c.name)}</b><small>${esc(c.role)}</small></span></button>`).join('')}</div>`;
 }
-
 function predict(){
   const markets=state.live.markets.length?state.live.markets:fallbackMarkets;
   const updated=state.live.generatedAt?new Date(state.live.generatedAt).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}):'SYNCING';
@@ -427,6 +547,12 @@ function allStoriesModal(){
   $$('[data-read-article]',$('#modalCard')).forEach(b=>b.onclick=()=>{closeModal();readArticle(b.dataset.readArticle);});
 }
 
+
+function photoModal(i){
+  const p=nyfwPhotos[Number(i)]; if(!p)return;
+  openModal(`<button class="modal-close" data-close>×</button><span class="category">NYFW / RUNWAY 7</span><img class="photo-lightbox" src="${esc(p.image)}" alt="${esc(p.title)}"><h2>${esc(p.title)}</h2><p>${esc(p.subtitle)} · selected from the LSMG Google Drive archive.</p>`,'photo-modal');
+}
+
 function marketModal(id){
   const m=[...state.live.markets,...fallbackMarkets].find(x=>x.id===id);
   if(!m) return;
@@ -484,6 +610,10 @@ function buildAIAnswer(prompt){
     const best=ranked.find(x=>x.score>0)||ranked[0];
     if(best)return {text:`Start with “${best.a.title}.” ${best.a.summary}`,action:{label:'READ ARTICLE',run:()=>{closeModal();readArticle(best.i);}}};
   }
+  if(/podcast|episode|listen|audio/.test(q)){
+    const e=(state.podcast.episodes||fallbackEpisodes)[0];
+    return {text:`The latest Last Shot Podcast episode in PULSE is “${e.title}.” ${e.description||''}`,action:{label:'OPEN PODCAST',run:()=>{closeModal();setTab('watch');setTimeout(()=>document.getElementById('podcastSection')?.scrollIntoView({behavior:'smooth'}),180);}}};
+  }
   if(/model|creator|talent|connect|collab|photographer|stylist/.test(q)){
     const words=q.split(/\W+/).filter(w=>w.length>3);
     const c=creators.map((x,i)=>({x,i,score:words.filter(w=>(x.name+' '+x.role+' '+x.skills.join(' ')+' '+x.need).toLowerCase().includes(w)).length})).sort((a,b)=>b.score-a.score)[0]||{x:creators[0],i:0};
@@ -528,7 +658,9 @@ function bind(){
     const m=[...state.live.markets,...fallbackMarkets].find(x=>x.id===b.dataset.aiMarket);
     closeModal(); aiModal(m?`Break down this live prediction signal: ${m.title}`:'Break down this market.');
   });
-  $$('[data-face]').forEach(b=>b.onclick=()=>faceModal(b.dataset.face));
+  $('[data-face]').forEach(b=>b.onclick=()=>faceModal(b.dataset.face));
+  $('[data-photo]').forEach(b=>b.onclick=()=>photoModal(b.dataset.photo));
+  $('#refreshPodcast')?.addEventListener('click',()=>{loadPodcast();toast('Refreshing podcast RSS');});
   $$('[data-read-article]').forEach(b=>b.onclick=()=>{closeModal();readArticle(b.dataset.readArticle);});
   $$('[data-read-issue]').forEach(b=>b.onclick=()=>{closeModal();readIssue(b.dataset.readIssue);});
   $('#allIssues')?.addEventListener('click',issuesModal);
@@ -555,9 +687,10 @@ $('#searchBtn')?.addEventListener('click',()=>{
       issues.filter(x=>(x.title+' '+x.subtitle+' '+x.label).toLowerCase().includes(q)).slice(0,4).forEach(x=>results.push({type:'issue',label:x.title,sub:x.label,index:issues.indexOf(x)}));
       (state.live.markets||[]).filter(x=>String(x.title).toLowerCase().includes(q)).slice(0,4).forEach(x=>results.push({type:'market',label:x.title,sub:`${x.source} · ${Number(x.yes)}% YES`,id:x.id}));
       creators.filter(x=>(x.name+' '+x.role+' '+x.skills.join(' ')).toLowerCase().includes(q)).slice(0,4).forEach(x=>results.push({type:'creator',label:x.name,sub:x.role,index:creators.indexOf(x)}));
+      (state.podcast.episodes||[]).filter(x=>(x.title+' '+x.description).toLowerCase().includes(q)).slice(0,4).forEach(x=>results.push({type:'podcast',label:x.title,sub:'THE LAST SHOT PODCAST'}));
     }
     $('#searchResults').innerHTML=results.length?results.map((x,i)=>`<button class="search-result" data-search-result="${i}"><b>${esc(x.label)}</b><span>${esc(x.sub||'PULSE')}</span></button>`).join(''):'<div class="empty">Type to search PULSE.</div>';
-    $$('[data-search-result]').forEach(b=>b.onclick=()=>{ const x=results[Number(b.dataset.searchResult)]; closeModal(); if(x.type==='article')readArticle(x.index); if(x.type==='issue')readIssue(x.index); if(x.type==='market')marketModal(x.id); if(x.type==='creator'){state.creatorIndex=x.index;setTab('connect');} });
+    $$('[data-search-result]').forEach(b=>b.onclick=()=>{ const x=results[Number(b.dataset.searchResult)]; closeModal(); if(x.type==='article')readArticle(x.index); if(x.type==='issue')readIssue(x.index); if(x.type==='market')marketModal(x.id); if(x.type==='creator'){state.creatorIndex=x.index;setTab('connect');} if(x.type==='podcast'){setTab('watch');setTimeout(()=>document.getElementById('podcastSection')?.scrollIntoView({behavior:'smooth'}),180);} });
   });
 });
 $('#modal')?.addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});

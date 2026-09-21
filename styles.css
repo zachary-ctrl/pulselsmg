@@ -149,3 +149,20 @@ a{color:inherit}
   .modal-card{border-radius:24px 24px 0 0;border-left:0;border-right:0;border-bottom:0;padding-bottom:calc(18px + var(--safe-bottom))}
 }
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+/* PULSE media expansion: NYFW archive, stock motion, podcast RSS */
+.nyfw-rail{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding-bottom:4px}.nyfw-rail::-webkit-scrollbar{display:none}
+.nyfw-card{flex:0 0 72%;position:relative;height:390px;padding:0;border:1px solid var(--line);border-radius:20px;background:#0d0d0f;overflow:hidden;scroll-snap-align:start;text-align:left;box-shadow:0 16px 44px rgba(0,0,0,.28)}
+.nyfw-card::after{content:"";position:absolute;inset:35% 0 0;background:linear-gradient(transparent,rgba(0,0,0,.9))}
+.nyfw-card img{width:100%;height:100%;display:block;object-fit:cover}
+.nyfw-card span{position:absolute;z-index:2;left:14px;right:14px;bottom:14px}.nyfw-card small{display:block;color:#ff6679;font-size:7px;font-weight:950;letter-spacing:.11em}.nyfw-card b{display:block;margin-top:4px;font-family:Impact,"Arial Narrow",sans-serif;font-size:31px;line-height:.92;text-shadow:0 4px 18px #000}
+
+.stock-video-rail{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding-bottom:4px}.stock-video-rail::-webkit-scrollbar{display:none}
+.stock-video-card{flex:0 0 84%;border:1px solid var(--line);border-radius:20px;background:var(--surface);overflow:hidden;scroll-snap-align:start}
+.stock-video-card video{width:100%;height:260px;display:block;background:#000;object-fit:cover}
+.stock-video-card>div{padding:12px}.stock-video-card small{display:block;color:var(--red);font-size:7px;font-weight:950;letter-spacing:.11em}.stock-video-card b{display:block;margin:4px 0 8px;font-family:Impact,"Arial Narrow",sans-serif;font-size:28px}.stock-video-card a{color:#8c8c93;font-size:7px;font-weight:900;text-decoration:none}
+
+.podcast-hero{margin-bottom:9px;padding:18px;background:radial-gradient(circle at 88% 8%,rgba(229,29,54,.36),transparent 34%),linear-gradient(145deg,#1a1a1e,#0b0b0c);display:flex;align-items:flex-end;justify-content:space-between;gap:16px}
+.podcast-hero small{color:var(--red);font-size:8px;font-weight:950;letter-spacing:.13em}.podcast-hero h2{margin:5px 0 7px;font-family:Impact,"Arial Narrow",sans-serif;font-size:40px;line-height:.88}.podcast-hero p{margin:0;color:#a2a2a9;font-size:10px;line-height:1.45;max-width:330px}.podcast-hero>a{flex:0 0 auto;border:1px solid var(--line2);border-radius:12px;background:#151517;padding:10px;color:#fff;text-decoration:none;font-size:8px;font-weight:950}
+.podcast-stack{display:grid;gap:8px}.podcast-card{display:grid;grid-template-columns:44px 1fr;gap:11px;border:1px solid var(--line);border-radius:18px;background:var(--surface);padding:12px}.podcast-number{font-family:Impact,"Arial Narrow",sans-serif;font-size:29px;color:var(--red);line-height:1}.podcast-body{min-width:0}.podcast-meta{display:flex;justify-content:space-between;gap:10px;color:#77777e;font-size:7px;font-weight:900;letter-spacing:.06em}.podcast-card h3{margin:6px 0 5px;font-size:13px;line-height:1.3}.podcast-card p{margin:0 0 9px;color:#929299;font-size:9px;line-height:1.5}.podcast-card audio{display:block;width:100%;height:36px;margin:7px 0;color-scheme:dark}.podcast-card a{display:inline-block;color:#e9e9ed;text-decoration:none;font-size:8px;font-weight:950}
+.photo-modal{padding:0!important;overflow:hidden!important}.photo-lightbox{display:block;width:100%;max-height:68svh;object-fit:contain;background:#000}.photo-modal .category,.photo-modal h2,.photo-modal p{margin-left:16px;margin-right:16px}.photo-modal .category{display:block;margin-top:14px}.photo-modal h2{margin-bottom:4px}.photo-modal p{margin-top:0;margin-bottom:18px}
+@media(min-width:520px){.nyfw-card{flex-basis:46%}.stock-video-card{flex-basis:62%}}
