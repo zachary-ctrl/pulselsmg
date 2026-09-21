@@ -243,3 +243,14 @@ img{image-orientation:from-image}
 /* PULSE v10 reader reliability */
 .reader-error{gap:12px}.reader-error .reader-secondary{display:inline-flex;align-items:center;justify-content:center;min-height:42px;color:#555;text-decoration:underline;text-underline-offset:4px;font-size:8px;font-weight:950;letter-spacing:.08em}
 .native-loading b{letter-spacing:.1em}.pulse-story-body{overflow-wrap:anywhere}.pulse-story-body p,.pulse-story-body h2{max-width:100%}
+
+/* PULSE v11 — swipe gestures removed */
+.view{touch-action:auto!important;will-change:auto!important}
+.creator-card{touch-action:auto!important;will-change:auto!important;transform:none!important}
+.swipe-hint,.connect-actions{display:none!important}
+.connect-browser{display:grid;grid-template-columns:1fr 1.35fr 1fr;gap:8px;padding:14px 0 2px}
+.connect-browser button{min-height:48px;border-radius:13px;font-size:8px;font-weight:950;letter-spacing:.06em}
+.connect-nav-btn{border:1px solid var(--line2);background:#151517;color:#d0d0d5}
+.connect-save-btn{border:1px solid var(--red);background:var(--red);color:#fff}
+.mag-stage{touch-action:auto!important}
+@media(max-width:390px){.connect-browser{grid-template-columns:1fr 1fr}.connect-save-btn{grid-column:1/-1;grid-row:1}.connect-nav-btn{grid-row:2}}

@@ -448,8 +448,11 @@ function connect(){
         <a href="${c.url}" target="_blank" rel="noopener" class="profile-link">VIEW LEDGERA PROFILE ↗</a>
       </div>
     </article>
-    <div class="swipe-hint"><span>← SKIP</span><b>SWIPE THE CARD</b><span>LIKE →</span></div>
-    <div class="connect-actions"><button class="round-action" data-swipe-card="skip">×</button><button class="round-action star" data-swipe-card="save">☆</button><button class="round-action like" data-swipe-card="like">♡</button></div>
+    <div class="connect-browser">
+      <button class="connect-nav-btn" data-creator-nav="-1">‹ PREVIOUS</button>
+      <button class="connect-save-btn" data-creator-save>SAVE CONNECTION</button>
+      <button class="connect-nav-btn" data-creator-nav="1">NEXT ›</button>
+    </div>
   </div>`;
 }
 
@@ -621,8 +624,6 @@ async function openIssueReader(x){
     $('[data-mag-prev]',layer).onclick=()=>go(idx-1);$('[data-mag-next]',layer).onclick=()=>go(idx+1);
     $$('[data-page]',layer).forEach(b=>b.onclick=()=>go(Number(b.dataset.page)));
     $('[data-mag-fit]',layer).onclick=()=>layer.classList.toggle('mag-width');$('[data-mag-full]',layer).onclick=()=>layer.requestFullscreen?.().catch(()=>{});
-    let sx=0,sy=0;const stage=$('.mag-stage',layer);stage.addEventListener('pointerdown',e=>{sx=e.clientX;sy=e.clientY;try{stage.setPointerCapture(e.pointerId)}catch{}});
-    stage.addEventListener('pointerup',e=>{const dx=e.clientX-sx,dy=e.clientY-sy;if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.2)go(idx+(dx<0?1:-1));});
   }catch{main.innerHTML=`<div class="reader-error"><b>ISSUE READER IS RETRYING.</b><p>The original edition is still available.</p><a class="btn primary" href="${esc(x.url)}" target="_blank" rel="noopener">OPEN EDITION ↗</a></div>`;}
 }
 function readArticle(i){const a=state.articles[Number(i)];if(a)openArticleReader(a)}
@@ -750,53 +751,16 @@ function installApp(){
 }
 
 
-function creatorAction(action, animate=false){
-  const c=creators[state.creatorIndex%creators.length];
-  if(action==='like' && !state.matches.includes(c.name)){state.matches.push(c.name);toast('Connection saved');}
-  else if(action==='save') toast('Profile saved');
-  const card=$('#creatorCard');
-  const finish=()=>{state.creatorIndex=(state.creatorIndex+1)%creators.length;save();render();};
-  if(animate&&card){
-    const dir=action==='like'?1:-1;
-    card.style.transition='transform .18s ease, opacity .18s ease';
-    card.style.transform=`translateX(${dir*120}%) rotate(${dir*8}deg)`;
-    card.style.opacity='0';
-    setTimeout(finish,170);
-  }else finish();
+function browseCreator(delta){
+  const total=creators.length;
+  state.creatorIndex=(state.creatorIndex+Number(delta)+total)%total;
+  save();render();haptic();
 }
-function bindCreatorCardSwipe(){
-  const card=$('#creatorCard'); if(!card)return;
-  let g=null;
-  card.addEventListener('pointerdown',e=>{
-    if(e.pointerType==='mouse'&&e.button!==0)return;
-    if(e.target.closest('a,button,audio,video,input'))return;
-    g={id:e.pointerId,x:e.clientX,y:e.clientY,t:performance.now(),dx:0};
-    try{card.setPointerCapture(e.pointerId)}catch{}
-    card.classList.add('dragging');
-  });
-  card.addEventListener('pointermove',e=>{
-    if(!g||e.pointerId!==g.id)return;
-    const dx=e.clientX-g.x,dy=e.clientY-g.y;
-    if(Math.abs(dy)>Math.abs(dx)*1.4&&Math.abs(dy)>18)return;
-    g.dx=dx;
-    const limited=Math.max(-150,Math.min(150,dx));
-    card.style.transform=`translateX(${limited}px) rotate(${limited*.025}deg)`;
-    card.style.opacity=String(Math.max(.72,1-Math.abs(limited)/520));
-  });
-  const end=e=>{
-    if(!g||e.pointerId!==g.id)return;
-    const dx=e.clientX-g.x,dt=Math.max(1,performance.now()-g.t),velocity=Math.abs(dx)/dt;
-    g=null; card.classList.remove('dragging');
-    if(Math.abs(dx)>86||velocity>.55){
-      creatorAction(dx>0?'like':'skip',true);
-    }else{
-      card.style.transition='transform .22s cubic-bezier(.2,.8,.2,1), opacity .22s';
-      card.style.transform='';card.style.opacity='';
-      setTimeout(()=>card.style.transition='',230);
-    }
-  };
-  card.addEventListener('pointerup',end);
-  card.addEventListener('pointercancel',()=>{if(!g)return;g=null;card.classList.remove('dragging');card.style.transform='';card.style.opacity='';});
+function saveCreator(){
+  const c=creators[state.creatorIndex%creators.length];
+  if(!state.matches.includes(c.name)){state.matches.push(c.name);save();toast('Connection saved');}
+  else toast('Already saved');
+  render();
 }
 
 function bind(){
@@ -818,8 +782,8 @@ function bind(){
   $$('[data-read-issue]').forEach(b=>b.onclick=()=>{closeModal();readIssue(b.dataset.readIssue);});
   $('#allIssues')?.addEventListener('click',issuesModal);
   $('#allStories')?.addEventListener('click',allStoriesModal);
-  $$('[data-swipe-card]').forEach(b=>b.onclick=()=>creatorAction(b.dataset.swipeCard,false));
-  bindCreatorCardSwipe();
+  $('[data-creator-nav]').forEach(b=>b.onclick=()=>browseCreator(b.dataset.creatorNav));
+  $('[data-creator-save]')?.addEventListener('click',saveCreator);
   $$('#installApp, #installSettings').forEach(b=>b.onclick=installApp);
   $('#openAISettings')?.addEventListener('click',()=>aiModal());
   $('#profileStories')?.addEventListener('click',allStoriesModal);
@@ -868,51 +832,6 @@ aiButton.innerHTML='<span>✦</span><b>AI</b>';
 aiButton.setAttribute('aria-label','Open PULSE AI');
 aiButton.onclick=()=>aiModal();
 document.body.appendChild(aiButton);
-
-const swipeSurface=$('#view');
-let tabSwipe=null;
-let suppressClickUntil=0;
-const noTabSwipe=t=>!!t.closest('.nyfw-rail,.issue-rail,.face-rail,.stock-video-rail,.podcast-card,audio,video,input,textarea,select,.reader-overlay,.onboarding-layer,.auth-layer,#creatorCard');
-swipeSurface?.addEventListener('pointerdown',e=>{
-  if((e.pointerType==='mouse'&&e.button!==0)||$('#modal')?.open||noTabSwipe(e.target))return;
-  tabSwipe={id:e.pointerId,x:e.clientX,y:e.clientY,t:performance.now(),dx:0,dragging:false};
-  try{swipeSurface.setPointerCapture(e.pointerId)}catch{}
-});
-swipeSurface?.addEventListener('pointermove',e=>{
-  if(!tabSwipe||e.pointerId!==tabSwipe.id)return;
-  const dx=e.clientX-tabSwipe.x,dy=e.clientY-tabSwipe.y;
-  if(Math.abs(dx)>12&&Math.abs(dx)>Math.abs(dy)*1.15){
-    tabSwipe.dragging=true;tabSwipe.dx=dx;
-    const visual=Math.max(-28,Math.min(28,dx*.18));
-    swipeSurface.style.transition='none';
-    swipeSurface.style.transform=`translateX(${visual}px)`;
-    swipeSurface.style.opacity=String(Math.max(.9,1-Math.abs(visual)/220));
-  }
-});
-function endTabSwipe(e){
-  if(!tabSwipe||e.pointerId!==tabSwipe.id)return;
-  const g=tabSwipe;tabSwipe=null;
-  const dx=e.clientX-g.x,dy=e.clientY-g.y,dt=Math.max(1,performance.now()-g.t),velocity=Math.abs(dx)/dt;
-  swipeSurface.style.transition='transform .18s ease, opacity .18s ease';
-  swipeSurface.style.transform='';swipeSurface.style.opacity='';
-  setTimeout(()=>swipeSurface.style.transition='',190);
-  if(!g.dragging)return;
-  suppressClickUntil=Date.now()+260;
-  if(Math.abs(dx)>68&&Math.abs(dx)>Math.abs(dy)*1.18||velocity>.65&&Math.abs(dx)>38){
-    const tabs=['feed','watch','predict','connect','me'];
-    const i=tabs.indexOf(state.tab);
-    if(dx<0&&i<tabs.length-1)setTab(tabs[i+1]);
-    else if(dx>0&&i>0)setTab(tabs[i-1]);
-    else haptic();
-  }
-}
-swipeSurface?.addEventListener('pointerup',endTabSwipe);
-swipeSurface?.addEventListener('pointercancel',e=>{
-  tabSwipe=null;swipeSurface.style.transform='';swipeSurface.style.opacity='';
-});
-document.addEventListener('click',e=>{
-  if(Date.now()<suppressClickUntil){e.preventDefault();e.stopImmediatePropagation();}
-},true);
 
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();state.deferredInstall=e;render();});
 window.addEventListener('appinstalled',()=>{state.deferredInstall=null;toast('PULSE installed');render();});
