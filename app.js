@@ -33,6 +33,7 @@ const creators = [
 ];
 
 const LEDGERA = 'https://ledgeramagazine.com';
+function storageJSON(key,fallback){try{const raw=localStorage.getItem(key);return raw===null?fallback:JSON.parse(raw)}catch{return fallback}}
 const fallbackArticles = [
   {title:'The NFL Cutdown Is Where the Season Gets Real',summary:'For hundreds of players, the 53-man deadline turns a summer audition into a career decision.',category:'SPORTS / NFL',url:LEDGERA+'/articles/nfl-roster-cuts-2026-53-man-deadline.html',image:''},
   {title:'College Sports Eligibility Is Colliding With the Courts',summary:'Conference rules, court orders and athlete rights are forcing the sport to redraw the line between college and pro.',category:'SPORTS / COLLEGE ATHLETICS',url:LEDGERA+'/articles/college-sports-eligibility-sec-court-fight-2026.html',image:''},
@@ -66,7 +67,7 @@ const fallbackMarkets = [
 const state = {
   tab: localStorage.getItem('pulse.tab') || 'feed',
   creatorIndex: Number(localStorage.getItem('pulse.creatorIndex') || 0),
-  matches: JSON.parse(localStorage.getItem('pulse.matches') || '[]'),
+  matches: storageJSON('pulse.matches',[]),
   live: {news:[],markets:[],generatedAt:null,sources:[]},
   liveStatus: 'loading',
   wallet: {pulse_bucks:250,cash_cents:0,last_daily_claim:null},
@@ -76,7 +77,7 @@ const state = {
   aiMode: 'signal',
   deferredInstall: null,
   articles: fallbackArticles,
-  session: JSON.parse(localStorage.getItem('pulse.session.v1') || 'null'),
+  session: storageJSON('pulse.session.v1',null),
   podcast: {status:'loading',episodes:fallbackEpisodes}
 };
 
@@ -134,7 +135,7 @@ function appInstalled(){
 }
 
 function localWallet(){
-  const saved=JSON.parse(localStorage.getItem('pulse.wallet.local.v1') || 'null');
+  const saved=storageJSON('pulse.wallet.local.v1',null);
   if(saved) state.wallet=saved;
   else localStorage.setItem('pulse.wallet.local.v1',JSON.stringify(state.wallet));
   state.rewards={
@@ -315,7 +316,7 @@ function showAuth(mode='create'){
   document.body.appendChild(wrap);
   $$('[data-auth]',wrap).forEach(b=>b.onclick=()=>showAuth(b.dataset.auth));
   $('#authGuest',wrap).onclick=()=>{state.session={name:'Guest',email:'guest@local'};localStorage.setItem('pulse.session.v1',JSON.stringify(state.session));wrap.remove();pulseStarted=false;startPulse();};
-  $('#authForm',wrap).onsubmit=async e=>{ e.preventDefault(); const email=$('#authEmail',wrap).value.trim().toLowerCase(); const pass=$('#authPass',wrap).value; const accounts=JSON.parse(localStorage.getItem('pulse.accounts.v1')||'{}');
+  $('#authForm',wrap).onsubmit=async e=>{ e.preventDefault(); const email=$('#authEmail',wrap).value.trim().toLowerCase(); const pass=$('#authPass',wrap).value; const accounts=storageJSON('pulse.accounts.v1',{});
     if(create){ const name=$('#authName',wrap).value.trim(); if(accounts[email]){toast('Account already exists on this device');return;} const salt=crypto.getRandomValues(new Uint8Array(16)); accounts[email]={name,email,salt:bytesToB64(salt),hash:await passwordHash(pass,salt)}; localStorage.setItem('pulse.accounts.v1',JSON.stringify(accounts)); state.session={name,email}; }
     else { const acct=accounts[email]; if(!acct){toast('Account not found on this device');return;} if(await passwordHash(pass,b64ToBytes(acct.salt))!==acct.hash){toast('Password does not match');return;} state.session={name:acct.name,email}; }
     localStorage.setItem('pulse.session.v1',JSON.stringify(state.session)); wrap.remove(); pulseStarted=false; startPulse(); toast(create?'Welcome to PULSE':'Signed in');
@@ -352,7 +353,7 @@ function feed(){
  return `<section class="live-edition-head"><div><span class="live-dot"></span> LEDGERA LIVE</div><b>${state.liveStatus==='live'?'SYNCED NOW':'SYNCING'}</b></section>
  <button class="lead-story" data-read-article="0"><div class="lead-media">${lead.image?`<img src="${esc(lead.image)}" alt="" loading="eager">`:''}<span>TOP STORY</span></div><div class="lead-copy"><small>${esc(lead.category||'LEDGERA')}</small><h1>${esc(lead.title)}</h1><p>${esc(lead.summary||'')}</p><b>READ IN PULSE →</b></div></button>
  <div class="ticker"><span class="ticker-label">LIVE</span><div class="ticker-track"><span>ENTERTAINMENT</span><b>•</b><span>FASHION</span><b>•</b><span>MUSIC</span><b>•</b><span>FILM</span><b>•</b><span>WRESTLING</span><b>•</b><span>CREATORS</span></div></div>
- <div class="section-kicker"><span><b>LATEST</b> / LEDGERA NEWSROOM</span><button class="text-btn" id="refreshLive">REFRESH ↻</button></div><div class="news-stream">${articleStream}</div>
+ <div class="section-kicker"><span><b>LIVE ARTICLES</b> / LEDGERA NEWSROOM</span><button class="text-btn" id="refreshLive">SYNC NOW ↻</button></div><div class="news-stream">${articleStream}</div>
  <div class="section-kicker"><span><b>PULSE SIGNAL</b> / LIVE PREDICTIONS</span><button class="text-btn" data-go="predict">SEE ALL →</button></div><div class="signal-stack">${pulseSignals}</div>
  <div class="section-kicker"><span><b>MAGAZINE</b> / PULSE EDITION READER</span><button class="text-btn" id="allIssues">ARCHIVE →</button></div><div class="issue-rail">${issues.slice(0,4).map((x,i)=>`<button class="issue-card" data-read-issue="${i}"><img src="${esc(x.cover)}" alt="${esc(x.title)} cover" loading="lazy"><span><small>${esc(x.label)}</small><b>${esc(x.title)}</b><em>OPEN EDITION →</em></span></button>`).join('')}</div>
  <div class="section-kicker"><span><b>NYFW</b> / LSMG ARCHIVE</span><span>RUNWAY 7</span></div><div class="nyfw-rail">${nyfwRail}</div>
@@ -458,7 +459,7 @@ function me(){
   <section class="profile-head app-card"><div class="profile-row"><div class="profile-avatar">${userInitials(u.name)}</div><div><h2>${esc(u.name)}</h2><p>${esc(u.email)}</p></div></div></section>
   <div class="profile-grid app-card"><div class="profile-stat"><strong>${state.matches.length}</strong><span>CONNECTIONS</span></div><div class="profile-stat"><strong>₱${Number(state.wallet.pulse_bucks||0)}</strong><span>PULSE BUCKS</span></div><div class="profile-stat"><strong>${state.liveStatus==='live'?'LIVE':'ON'}</strong><span>SIGNAL</span></div></div>
   <div class="section-kicker"><span><b>READ</b> / LEDGERA LIBRARY</span></div>
-  <div class="settings-list app-card"><button id="profileStories"><span>Articles</span><b>${state.articles.length}</b></button><button id="profileIssues"><span>Magazine editions</span><b>${issues.length}</b></button><button id="openAISettings"><span>PULSE AI</span><b>ON-DEVICE</b></button></div>
+  <div class="settings-list app-card"><button id="profileStories"><span>Articles</span><b>${state.articles.length}</b></button><button id="profileIssues"><span>Magazine editions</span><b>${issues.length}</b></button><button id="openAISettings"><span>PULSE AI</span><b>LIVE LLM</b></button></div>
   <div class="section-kicker"><span><b>WALLET</b> / PULSE BUCKS</span></div>
   <section class="bucks-wallet app-card"><div class="bucks-balance"><div><small>AVAILABLE</small><strong>₱${Number(state.wallet.pulse_bucks||0).toLocaleString()}</strong></div><span>PULSE BUCKS</span></div><div class="bucks-actions"><button id="claimDaily">DAILY DROP +50</button><button id="tradeBucks">TRADE IN</button></div></section>
   <div class="section-kicker"><span><b>CASH</b> / WALLET RAIL</span></div>
@@ -514,11 +515,11 @@ async function openArticleReader(a){
   const layer=readerShell(a.title,a.category||'LEDGERA ARTICLE',a.url),main=$('.native-reader',layer);
   try{
     const r=await fetch('/api/content?url='+encodeURIComponent(a.url),{cache:'no-store'});if(!r.ok)throw new Error('reader');
-    const d=await r.json();if(d.type!=='article'||!d.paragraphs?.length)throw new Error('reader');
+    const d=await r.json();if(d.type!=='article'||(!d.bodyHtml&&!d.paragraphs?.length))throw new Error('reader');
     main.innerHTML=`<article class="pulse-article">
       <div class="article-progress"><i></i></div>
       <header>${d.hero?`<img class="pulse-article-hero" src="${esc(d.hero)}" alt="">`:''}<span class="pulse-article-kicker">${esc(d.kicker||a.category||'LEDGERA')}</span><h1>${esc(d.title||a.title)}</h1>${d.dek?`<p class="pulse-dek">${esc(d.dek)}</p>`:''}${d.byline?`<p class="pulse-byline">${esc(d.byline)}</p>`:''}</header>
-      <div class="pulse-story-body">${d.paragraphs.map((p,i)=>`<p class="${i===0?'lead':''}">${esc(p)}</p>`).join('')}</div>
+      <div class="pulse-story-body">${d.bodyHtml||d.paragraphs.map((p,i)=>`<p class="${i===0?'lead':''}">${esc(p)}</p>`).join('')}</div>
       <footer><span>LEDGERA</span><b>THE RECORD OF CULTURE.</b><button class="btn primary" data-reader-close>BACK TO PULSE</button></footer>
     </article>`;
     $('[data-reader-close]',main).onclick=()=>closeNativeReader(layer);
@@ -529,7 +530,7 @@ async function openArticleReader(a){
 }
 function renderMagazinePage(layer,pages,index){
   const stage=$('.mag-stage',layer),status=$('.mag-status',layer),strip=$('.mag-thumbs',layer);const p=pages[index];if(!p)return;
-  stage.innerHTML=`<img src="${esc(p.src)}" alt="${esc(p.alt||p.title||'Magazine page')}" draggable="false">`;
+  stage.innerHTML=`<div class="mag-page-shell"><img src="${esc(p.src)}" alt="${esc(p.alt||p.title||'Magazine page')}" draggable="false">${p.unlockUrl?`<div class="mag-access-banner"><small>MEMBER EDITION</small><b>KEEP READING ON LEDGERA</b><a href="${esc(p.unlockUrl)}" target="_blank" rel="noopener">UNLOCK ISSUE ↗</a></div>`:p.previewOnly?`<div class="mag-access-banner preview"><small>ARCHIVE PREVIEW</small><b>FULL PAGE SET NOT PUBLISHED YET</b><a href="${esc(p.originalUrl||'')}" target="_blank" rel="noopener">OPEN LEDGERA ↗</a></div>`:''}</div>`;
   status.innerHTML=`<small>PAGE ${String(index+1).padStart(2,'0')} / ${String(pages.length).padStart(2,'0')}</small><b>${esc(p.title||p.short||'LEDGERA')}</b><span>${esc(p.chapter||'')}</span>`;
   strip.querySelectorAll('button').forEach((b,i)=>b.classList.toggle('active',i===index));strip.querySelector(`button[data-page="${index}"]`)?.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
   layer.dataset.page=String(index);
@@ -539,7 +540,7 @@ async function openIssueReader(x){
   try{
     const r=await fetch('/api/content?url='+encodeURIComponent(x.url),{cache:'no-store'});if(!r.ok)throw new Error('reader');const d=await r.json();if(d.type!=='issue'||!d.pages?.length)throw new Error('reader');
     const pages=d.pages;main.innerHTML=`<section class="pulse-magazine">
-      <div class="mag-top"><span>LEDGERA / PULSE READER</span><button data-mag-fit>FIT</button></div>
+      <div class="mag-top"><span>LEDGERA / PULSE MAGAZINE MODE</span><div><button data-mag-fit>FIT</button><button data-mag-full>FULL</button></div></div>
       <div class="mag-stage"></div>
       <div class="mag-controls"><button data-mag-prev>‹</button><div class="mag-status"></div><button data-mag-next>›</button></div>
       <div class="mag-thumbs">${pages.map((p,i)=>`<button data-page="${i}"><img src="${esc(p.src)}" alt=""><span>${String(i+1).padStart(2,'0')}</span></button>`).join('')}</div>
@@ -548,7 +549,7 @@ async function openIssueReader(x){
     const go=n=>{idx=Math.max(0,Math.min(pages.length-1,n));renderMagazinePage(layer,pages,idx);haptic()};
     $('[data-mag-prev]',layer).onclick=()=>go(idx-1);$('[data-mag-next]',layer).onclick=()=>go(idx+1);
     $$('[data-page]',layer).forEach(b=>b.onclick=()=>go(Number(b.dataset.page)));
-    $('[data-mag-fit]',layer).onclick=()=>layer.classList.toggle('mag-width');
+    $('[data-mag-fit]',layer).onclick=()=>layer.classList.toggle('mag-width');$('[data-mag-full]',layer).onclick=()=>layer.requestFullscreen?.().catch(()=>{});
     let sx=0,sy=0;const stage=$('.mag-stage',layer);stage.addEventListener('pointerdown',e=>{sx=e.clientX;sy=e.clientY;try{stage.setPointerCapture(e.pointerId)}catch{}});
     stage.addEventListener('pointerup',e=>{const dx=e.clientX-sx,dy=e.clientY-sy;if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.2)go(idx+(dx<0?1:-1));});
   }catch{main.innerHTML=`<div class="reader-error"><b>ISSUE READER IS RETRYING.</b><p>The original edition is still available.</p><a class="btn primary" href="${esc(x.url)}" target="_blank" rel="noopener">OPEN EDITION ↗</a></div>`;}
@@ -597,7 +598,6 @@ function aiModal(prefill=''){
   setTimeout(()=>$('#aiInput')?.focus(),100);
 }
 
-async function serverAIAnswer(prompt){try{const context={articles:state.articles.slice(0,12),issues:issues.slice(0,6),markets:(state.live.markets.length?state.live.markets:fallbackMarkets).slice(0,10),podcast:(state.podcast.episodes||[]).slice(0,5)};const r=await fetch('/api/ai',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({prompt,context})});if(!r.ok)return null;const j=await r.json();return j.answer||j.text||null;}catch{return null;}}
 let browserAI=null;
 async function browserAIAnswer(prompt){
   if(!globalThis.LanguageModel) return null;
@@ -648,7 +648,7 @@ async function sendAI(prompt){
   const p=String(prompt||'').trim();if(!p)return;
   state.aiMessages.push({role:'user',text:p});
   const chat=$('#aiChat');const paintThinking=()=>{if(chat){chat.innerHTML=state.aiMessages.slice(-10).map(m=>`<div class="ai-msg ${m.role}"><span>${m.role==='assistant'?'PULSE AI':'YOU'}</span><p>${esc(m.text)}</p></div>`).join('')+'<div class="ai-thinking">PULSE LLM IS THINKING LIVE…</div>';chat.scrollTop=chat.scrollHeight}};paintThinking();
-  let answer=null,mode='live-llm';
+  const route=buildAIAnswer(p);let answer=null,mode='live-llm';
   try{
     const context={
       generatedAt:state.live.generatedAt,
@@ -659,10 +659,10 @@ async function sendAI(prompt){
       creators:creators.map(c=>({name:c.name,role:c.role,location:c.loc,skills:c.skills}))
     };
     const messages=state.aiMessages.slice(-10).map(m=>({role:m.role,content:m.text}));
-    const r=await fetch('/api/ai',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({messages,context})});
-    if(r.ok){const d=await r.json();if(d.text)answer={text:d.text};}
+    const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),28000);const r=await fetch('/api/ai',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({messages,context}),signal:controller.signal});clearTimeout(timer);
+    if(r.ok){const d=await r.json();if(d.text)answer={text:d.text,action:route.action};}
   }catch{}
-  if(!answer){const generated=await browserAIAnswer(p);if(generated){answer={text:generated};mode='browser-ai'}else{answer=buildAIAnswer(p);mode='signal-fallback'}}
+  if(!answer){const generated=await browserAIAnswer(p);if(generated){answer={text:generated,action:route.action};mode='browser-ai'}else{answer=route;mode='signal-fallback'}}
   state.aiMessages.push({role:'assistant',text:answer.text});state.aiMode=mode;
   if(chat){chat.innerHTML=state.aiMessages.slice(-10).map(m=>`<div class="ai-msg ${m.role}"><span>${m.role==='assistant'?'PULSE AI':'YOU'}</span><p>${esc(m.text)}</p></div>`).join('')+(answer.action?`<button class="ai-action" id="aiAction">${esc(answer.action.label)}</button>`:'');chat.scrollTop=chat.scrollHeight;if(answer.action)$('#aiAction').onclick=answer.action.run}
   if($('#aiModeLabel'))$('#aiModeLabel').textContent=mode==='live-llm'?'LIVE LLM · GPT · PULSE CONTEXT':mode==='browser-ai'?'BROWSER GENERATIVE AI':'SIGNAL FALLBACK · RETRY LIVE LLM';

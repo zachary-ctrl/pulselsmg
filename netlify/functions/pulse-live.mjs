@@ -1,12 +1,12 @@
 export default async function(req){
-  const headers={"content-type":"application/json","cache-control":"public, max-age=20, s-maxage=45, stale-while-revalidate=120"};
+  const headers={"content-type":"application/json","cache-control":"public, max-age=5, s-maxage=15, stale-while-revalidate=30"};
   const culture=["movie","film","box office","oscar","grammy","emmy","album","song","music","artist","singer","rapper","concert","tour","billboard","spotify","netflix","hbo","disney","marvel","celebrity","actor","actress","television","streaming","fashion","runway","designer","wrestling","wwe","aew","tna","youtube","tiktok","creator","influencer","award"];
   const blocked=["election","president","senate","congress","parliament","minister","governor","mayor","democrat","republican"];
   const ok=t=>{t=String(t||"").toLowerCase();return culture.some(x=>t.includes(x))&&!blocked.some(x=>t.includes(x))};
   const json=async u=>{const r=await fetch(u,{headers:{"user-agent":"PULSE/1.0"}});if(!r.ok)throw new Error(String(r.status));return r.json()};
   const markets=[]; let articles=[]; let podcast=[];
   const jobs=await Promise.allSettled([
-    json("https://ledgeramagazine.com/feed.json"),
+    json("https://raw.githubusercontent.com/zachary-ctrl/theledgeramagazine/main/feed.json?ts="+Date.now()),
     json("https://gamma-api.polymarket.com/markets?active=true&closed=false&limit=250&order=volume24hr&ascending=false"),
     json("https://api.elections.kalshi.com/trade-api/v2/markets?limit=300&status=open"),
     json("https://itunes.apple.com/lookup?id=1494831568&entity=podcastEpisode&limit=12&country=US")
