@@ -16,6 +16,10 @@ The live project also has the following applied Supabase migrations:
 - swarm_invitation_questions
 - swarm_teammate_profiles_and_response_notifications
 - swarm_realtime_projects_files
+- swarm_invitation_messages_realtime
+- swarm_invitation_counterpart_profiles
+- swarm_foreign_key_indexes
+- swarm_protect_trust_fields
 - swarm_member_milestone_updates
 
 These migrations harden RLS, create the private file bucket, add auth-profile creation, realtime tables, invitation notifications, cloud JSON state columns, and production matching permissions.

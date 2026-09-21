@@ -45,7 +45,7 @@ function profileToRow(p,userId){
     preferred_project_types:p.preferredProjectTypes||[],languages:p.languages||[],working_style:p.workingStyle||[],
     communication_preferences:p.communicationPreferences||[],portfolio:p.portfolio||[],social_links:p.socialLinks||[],
     visibility:p.visibility||"private",rate_visibility:p.rateVisibility||"private",availability_visibility:p.availabilityVisibility||"project",
-    verification_status:p.verificationStatus||{},capabilities,updated_at:new Date().toISOString()
+    capabilities,updated_at:new Date().toISOString()
   };
 }
 function projectFromRow(row){

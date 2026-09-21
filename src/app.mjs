@@ -92,9 +92,6 @@ async function start(){
   try{
     state.profile=await Cloud.loadProfile();
     const user=state.session?.user||await Cloud.currentUser();
-    if(user?.email_confirmed_at&&!state.profile.verificationStatus?.email){
-      state.profile=await Cloud.saveProfile({...state.profile,verificationStatus:{...state.profile.verificationStatus,email:true}});
-    }
     const legacy=Store.getProfile();
     if(legacy&&!(state.profile.skills||[]).length&&(legacy.skills||[]).length){
       state.profile=await Cloud.saveProfile({...state.profile,...legacy,id:state.profile.id,cloud:true,verificationStatus:{...legacy.verificationStatus,email:!!user?.email_confirmed_at,identity:false}});
@@ -389,7 +386,7 @@ function editProfileModal(){
         location:{...p.location,city:String(f.get("city")||""),state:String(f.get("state")||"")},hourlyRate:Number(f.get("hourlyRate")||0),projectRate:Number(f.get("projectRate")||0),
         availability:{start:String(f.get("availableStart")||""),end:String(f.get("availableEnd")||""),hoursPerWeek:Number(f.get("hoursPerWeek")||10)},
         goals:split("goals"),preferredProjectTypes:split("projectTypes"),workingStyle:split("workingStyle"),communicationPreferences:split("communication"),languages:split("languages"),
-        visibility:String(f.get("visibility")||"private"),verificationStatus:{...p.verificationStatus,skills:false}};
+        visibility:String(f.get("visibility")||"private")};
       state.profile=await Cloud.saveProfile(next);await hydrateCloud();$(".avatar").textContent=initials(next.name);$("#modal").close();render();toast(next.visibility==="public"?"Profile live in SWARM matching network":"Profile saved privately");
     }catch(err){toast(err?.message||"Could not save profile");btn.disabled=false;btn.textContent="SAVE TO SWARM CLOUD"}
   };

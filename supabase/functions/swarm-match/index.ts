@@ -59,7 +59,9 @@ function toProfile(row:any){
   };
 }
 function skillMap(p:any){
-  return new Map((p.skills||[]).map((s:any)=>Array.isArray(s)?[lower(s[0]),{level:clamp(s[1]),verified:!!s[2]}]:[lower(s.name),{level:clamp(s.level||s.proficiency||0),verified:!!s.verified}]));
+  // Capability proficiency is user supplied. Verification is intentionally ignored here
+  // until it is backed by a server-controlled evidence workflow.
+  return new Map((p.skills||[]).map((s:any)=>Array.isArray(s)?[lower(s[0]),{level:clamp(s[1]),verified:false}]:[lower(s.name),{level:clamp(s.level||s.proficiency||0),verified:false}]));
 }
 function skillFit(p:any,r:any){
   const req=(r.skills||[]).filter((s:any)=>s.required!==false); if(!req.length)return .75;
@@ -112,6 +114,10 @@ function hardReasons(p:any,r:any,project:any,teamIds:string[]=[]){
   const desired=(p.desiredRoles||[]).map(lower),title=lower(r.title),sf=skillFit(p,r);
   const direct=desired.some((x:string)=>x===title||(title.length>10&&(x.includes(title)||title.includes(x))));
   if(!direct&&sf<.62)out.push("role mismatch");
+  if((r.certifications||[]).length){
+    const verified=(p.verifiedExperience||[]).map(lower);
+    for(const cert of r.certifications){if(!verified.some((v:string)=>v.includes(lower(cert))))out.push("missing mandatory certification")}
+  }
   if(r.budgetCap&&p.minimumBudget&&Number(p.minimumBudget)>Number(r.budgetCap))out.push("budget incompatible");
   return [...new Set(out)];
 }
@@ -213,19 +219,18 @@ Deno.serve(async(req)=>{
     const {data:row,error}=await admin.from("projects").select("*").eq("id",projectId).single();
     if(error||!row)return json({error:"Project not found"},404);
     if(row.creator_id!==user.id)return json({error:"Only the project creator can run matching"},403);
+    if(["forming","active","completed","abandoned"].includes(row.status))return json({error:"Full rematching is locked after Swarm formation. Use replacement matching or create a new project."},409);
     let project=blueprintFrom(row);
 
-    const {data:existingRoles}=await admin.from("project_roles").select("*").eq("project_id",projectId);
-    const roleMap=new Map((existingRoles||[]).map((r:any)=>[lower(r.title),r]));
+    await admin.from("matches").delete().eq("project_id",projectId);
+    await admin.from("team_candidates").delete().eq("project_id",projectId);
+    await admin.from("project_roles").delete().eq("project_id",projectId);
+
     const rewritten:any[]=[];
     for(const role of project.requiredRoles||[]){
-      let dbRole=roleMap.get(lower(role.title));
-      if(!dbRole){
-        const {data:created,error:re}=await admin.from("project_roles").insert({project_id:projectId,title:role.title,required:true,budget_cap:role.budgetCap||null,estimated_hours:role.estimatedHours||24,required_languages:role.requiredLanguages||["English"],certifications:role.certifications||[],notes:role.notes||""}).select("*").single();
-        if(re)return json({error:"Could not materialize role",detail:re.message},500);
-        dbRole=created;roleMap.set(lower(role.title),created);
-      }
-      rewritten.push({...role,id:dbRole.id});
+      const {data:created,error:re}=await admin.from("project_roles").insert({project_id:projectId,title:role.title,required:true,budget_cap:role.budgetCap||null,estimated_hours:role.estimatedHours||24,required_languages:role.requiredLanguages||["English"],certifications:role.certifications||[],notes:role.notes||""}).select("*").single();
+      if(re)return json({error:"Could not materialize role",detail:re.message},500);
+      rewritten.push({...role,id:created.id});
     }
     project={...project,requiredRoles:rewritten};
     await admin.from("projects").update({blueprint:{...(row.blueprint||{}),requiredRoles:rewritten},status:"matching"}).eq("id",projectId);
@@ -237,7 +242,6 @@ Deno.serve(async(req)=>{
     for(const role of rewritten)candidates[role.id]=rank(project,role,profiles).slice(0,8).map(x=>({profile:x.profile,match:x.match}));
     const teams=optimize(project,profiles);
 
-    await admin.from("matches").delete().eq("project_id",projectId);
     for(const role of rewritten){
       const list=candidates[role.id]||[];
       if(!list.length)continue;
@@ -250,7 +254,6 @@ Deno.serve(async(req)=>{
         }
       }
     }
-    await admin.from("team_candidates").delete().eq("project_id",projectId);
     const stored:any[]=[];
     for(const team of teams){
       const {data:t}=await admin.from("team_candidates").insert({project_id:projectId,label:team.label,score:team.metrics.score,projected_cost:team.metrics.totalBudget,member_count:team.metrics.memberCount,metrics:team.metrics,assignments:team.assignments,optimizer_version:"v1"}).select("*").single();
