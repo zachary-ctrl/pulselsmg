@@ -164,6 +164,55 @@ async function loadLive(){
   if(state.tab==='feed'||state.tab==='predict') render();
 }
 async function loadWallet(){ localWallet(); if(state.tab==='me') render(); }
+function userInitials(name='P'){ return String(name).trim().split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase()||'P'; }
+function bytesToB64(bytes){ return btoa(String.fromCharCode(...bytes)); }
+function b64ToBytes(s){ return Uint8Array.from(atob(s),c=>c.charCodeAt(0)); }
+async function passwordHash(password,salt){
+  const base=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveBits']);
+  const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt,iterations:120000,hash:'SHA-256'},base,256);
+  return bytesToB64(new Uint8Array(bits));
+}
+function playPulseBeep(){
+  try{ const Ctx=window.AudioContext||window.webkitAudioContext; if(!Ctx)return; const ctx=new Ctx(); const o=ctx.createOscillator(); const g=ctx.createGain(); o.type='sine'; o.frequency.setValueAtTime(520,ctx.currentTime); o.frequency.exponentialRampToValueAtTime(880,ctx.currentTime+.06); g.gain.setValueAtTime(.0001,ctx.currentTime); g.gain.exponentialRampToValueAtTime(.07,ctx.currentTime+.01); g.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+.1); o.connect(g);g.connect(ctx.destination);o.start();o.stop(ctx.currentTime+.11);setTimeout(()=>ctx.close(),160);}catch{}
+}
+function showOnboarding(){
+  const wrap=document.createElement('div'); wrap.className='onboarding-layer';
+  wrap.innerHTML=`<div class="onboard-top"><b>PULSE.</b><button id="skipOnboard">SKIP</button></div><div class="onboard-slides">
+  <section class="onboard-slide active"><div class="onboard-icon">⌁</div><small>LIVE CULTURE</small><h2>SEE WHAT'S MOVING.</h2><p>Stories, video, creators and live public culture-market signals in one place.</p></section>
+  <section class="onboard-slide"><div class="onboard-icon">RA</div><small>READ INSIDE PULSE</small><h2>OPEN THE STORY.<br>FLIP THE ISSUE.</h2><p>Read LEDGERA articles and full magazine editions without leaving the app.</p></section>
+  <section class="onboard-slide"><div class="onboard-icon">✦</div><small>PULSE AI</small><h2>ASK THE SIGNAL.</h2><p>Search stories, issues, creators and prediction signals conversationally.</p></section></div>
+  <div class="onboard-bottom"><div class="onboard-dots"><i class="on"></i><i></i><i></i></div><button id="onboardNext">NEXT</button></div>`;
+  document.body.appendChild(wrap); let i=0;
+  const paint=()=>{ $('.onboard-slide',wrap).forEach((s,n)=>s.classList.toggle('active',n===i)); $('.onboard-dots i',wrap).forEach((d,n)=>d.classList.toggle('on',n===i)); $('#onboardNext',wrap).textContent=i===2?'CREATE ACCOUNT':'NEXT'; };
+  const done=()=>{ localStorage.setItem('pulse.intro.v1','1'); wrap.classList.add('leaving'); setTimeout(()=>{wrap.remove();showAuth('create');},220); };
+  $('#skipOnboard',wrap).onclick=done; $('#onboardNext',wrap).onclick=()=>{haptic(); if(i<2){i++;paint()}else done();};
+}
+function showAuth(mode='create'){
+  let wrap=$('#pulseAuth'); if(wrap)wrap.remove(); wrap=document.createElement('div'); wrap.id='pulseAuth'; wrap.className='auth-layer';
+  const create=mode==='create';
+  wrap.innerHTML=`<div class="auth-card"><div class="auth-brand"><b>PULSE<span>.</span></b><small>LSMG × LEDGERA</small></div>
+  <div class="auth-tabs"><button data-auth="create" class="${create?'active':''}">CREATE ACCOUNT</button><button data-auth="signin" class="${!create?'active':''}">SIGN IN</button></div>
+  <form id="authForm">${create?'<label>NAME<input id="authName" autocomplete="name" required placeholder="Your name"></label>':''}<label>EMAIL<input id="authEmail" type="email" autocomplete="email" required placeholder="you@example.com"></label><label>PASSWORD<input id="authPass" type="password" minlength="6" required placeholder="6+ characters"></label><button class="auth-submit">${create?'CREATE ACCOUNT':'SIGN IN'}</button></form>
+  <p class="auth-note">This no-Netlify-credit build stores the account securely on this device. Cross-device sync will use a separate auth backend before public launch.</p><button class="auth-guest" id="authGuest">CONTINUE AS GUEST</button></div>`;
+  document.body.appendChild(wrap);
+  $('[data-auth]',wrap).forEach(b=>b.onclick=()=>showAuth(b.dataset.auth));
+  $('#authGuest',wrap).onclick=()=>{state.session={name:'Guest',email:'guest@local'};localStorage.setItem('pulse.session.v1',JSON.stringify(state.session));wrap.remove();startPulse();};
+  $('#authForm',wrap).onsubmit=async e=>{ e.preventDefault(); const email=$('#authEmail',wrap).value.trim().toLowerCase(); const pass=$('#authPass',wrap).value; const accounts=JSON.parse(localStorage.getItem('pulse.accounts.v1')||'{}');
+    if(create){ const name=$('#authName',wrap).value.trim(); if(accounts[email]){toast('Account already exists on this device');return;} const salt=crypto.getRandomValues(new Uint8Array(16)); accounts[email]={name,email,salt:bytesToB64(salt),hash:await passwordHash(pass,salt)}; localStorage.setItem('pulse.accounts.v1',JSON.stringify(accounts)); state.session={name,email}; }
+    else { const acct=accounts[email]; if(!acct){toast('Account not found on this device');return;} if(await passwordHash(pass,b64ToBytes(acct.salt))!==acct.hash){toast('Password does not match');return;} state.session={name:acct.name,email}; }
+    localStorage.setItem('pulse.session.v1',JSON.stringify(state.session)); wrap.remove(); startPulse(); toast(create?'Welcome to PULSE':'Signed in');
+  };
+}
+function bootPulse(){
+  const splash=$('#splash'); const btn=$('#enterPulse');
+  const enter=()=>{playPulseBeep();haptic();splash?.classList.add('exit');setTimeout(()=>{splash?.classList.add('hide'); if(!localStorage.getItem('pulse.intro.v1'))showOnboarding();else if(!state.session)showAuth('create');else startPulse();},300);};
+  if(btn)btn.onclick=enter; else setTimeout(enter,1200);
+}
+let pulseStarted=false;
+function startPulse(){
+  if(pulseStarted)return; pulseStarted=true; const av=$('.avatar'); if(av)av.textContent=userInitials(state.session?.name||'PULSE'); render(); Promise.all([loadLive(),loadWallet()]); setInterval(loadLive,90000);
+}
+
 function installChip(){
   if(appInstalled()) return '<span class="app-mode-pill">APP MODE</span>';
   return '<button class="app-mode-pill install-chip" id="installApp">INSTALL APP</button>';
@@ -507,8 +556,5 @@ document.addEventListener('touchend',e=>{
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();state.deferredInstall=e;render();});
 window.addEventListener('appinstalled',()=>{state.deferredInstall=null;toast('PULSE installed');render();});
 
-render();
-Promise.all([loadLive(),loadWallet()]);
-setInterval(loadLive,60000);
-setTimeout(()=>$('#splash')?.classList.add('hide'),650);
+bootPulse();
 if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
