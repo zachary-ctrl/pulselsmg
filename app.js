@@ -251,6 +251,22 @@ async function loadPodcast(){
       }
     }
   }catch{}
+  try{
+    const r=await fetch('https://itunes.apple.com/lookup?id=1494831568&entity=podcastEpisode&limit=8&country=US',{cache:'no-store'});
+    if(r.ok){
+      const j=await r.json();
+      const eps=(j.results||[]).filter(x=>x.wrapperType==='podcastEpisode').slice(0,8).map(x=>({
+        title:x.trackName||x.collectionName||'The Last Shot Podcast',
+        date:episodeDate(x.releaseDate||''),
+        duration:x.trackTimeMillis?Math.round(x.trackTimeMillis/60000)+' min':'',
+        description:stripHTML(x.description||x.shortDescription||'').slice(0,220),
+        link:x.trackViewUrl||PODCAST_APPLE,
+        audio:x.episodeUrl||'',
+        image:x.artworkUrl600||x.artworkUrl100||''
+      }));
+      if(eps.length){state.podcast={status:'live',episodes:eps};if(state.tab==='watch')render();return;}
+    }
+  }catch{}
   state.podcast={status:'fallback',episodes:fallbackEpisodes};
   if(state.tab==='watch')render();
 }
@@ -717,14 +733,14 @@ function bind(){
     const m=[...state.live.markets,...fallbackMarkets].find(x=>x.id===b.dataset.aiMarket);
     closeModal(); aiModal(m?`Break down this live prediction signal: ${m.title}`:'Break down this market.');
   });
-  $('[data-face]').forEach(b=>b.onclick=()=>faceModal(b.dataset.face));
-  $('[data-photo]').forEach(b=>b.onclick=()=>photoModal(b.dataset.photo));
+  $$('[data-face]').forEach(b=>b.onclick=()=>faceModal(b.dataset.face));
+  $$('[data-photo]').forEach(b=>b.onclick=()=>photoModal(b.dataset.photo));
   $('#refreshPodcast')?.addEventListener('click',()=>{loadPodcast();toast('Refreshing podcast RSS');});
   $$('[data-read-article]').forEach(b=>b.onclick=()=>{closeModal();readArticle(b.dataset.readArticle);});
   $$('[data-read-issue]').forEach(b=>b.onclick=()=>{closeModal();readIssue(b.dataset.readIssue);});
   $('#allIssues')?.addEventListener('click',issuesModal);
   $('#allStories')?.addEventListener('click',allStoriesModal);
-  $('[data-swipe-card]').forEach(b=>b.onclick=()=>creatorAction(b.dataset.swipeCard,false));
+  $$('[data-swipe-card]').forEach(b=>b.onclick=()=>creatorAction(b.dataset.swipeCard,false));
   bindCreatorCardSwipe();
   $$('#installApp, #installSettings').forEach(b=>b.onclick=installApp);
   $('#openAISettings')?.addEventListener('click',()=>aiModal());
