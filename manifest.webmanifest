@@ -1,7 +1,7 @@
 {
   "name": "PULSE — LSMG × LEDGERA",
   "short_name": "PULSE",
-  "description": "Read LEDGERA, watch LSMG, track culture predictions, connect with creatives, and use PULSE AI.",
+  "description": "Read LEDGERA, watch LSMG, browse live articles and magazines, track culture predictions, and use PULSE AI.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#050505",
@@ -22,7 +22,6 @@
   "categories": [
     "news",
     "magazines",
-    "entertainment",
-    "social"
+    "entertainment"
   ]
 }

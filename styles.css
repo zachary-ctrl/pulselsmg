@@ -36,7 +36,7 @@ a{color:inherit}
 .view-enter{animation:viewIn .22s cubic-bezier(.2,.8,.2,1)}
 @keyframes viewIn{from{opacity:.35;transform:translateY(7px)}to{opacity:1;transform:none}}
 
-.bottom-nav{position:fixed;z-index:60;left:50%;bottom:0;transform:translateX(-50%);width:min(620px,100%);display:grid;grid-template-columns:repeat(5,1fr);gap:2px;padding:8px 8px calc(8px + var(--safe-bottom));background:rgba(11,11,13,.94);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid rgba(255,255,255,.08);box-shadow:0 -18px 50px rgba(0,0,0,.32)}
+.bottom-nav{position:fixed;z-index:60;left:50%;bottom:0;transform:translateX(-50%);width:min(620px,100%);display:grid;grid-template-columns:repeat(4,1fr);gap:2px;padding:8px 8px calc(8px + var(--safe-bottom));background:rgba(11,11,13,.94);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid rgba(255,255,255,.08);box-shadow:0 -18px 50px rgba(0,0,0,.32)}
 .nav-item{position:relative;min-height:54px;border:0;border-radius:13px;background:transparent;color:#77777e;font-size:9px;font-weight:900;letter-spacing:.05em;display:grid;place-items:center;align-content:center;gap:4px}
 .nav-item.active{color:#fff;background:#17171a}
 .nav-item.active::before{content:"";position:absolute;top:3px;width:22px;height:3px;border-radius:99px;background:var(--red)}
@@ -254,3 +254,6 @@ img{image-orientation:from-image}
 .connect-save-btn{border:1px solid var(--red);background:var(--red);color:#fff}
 .mag-stage{touch-action:auto!important}
 @media(max-width:390px){.connect-browser{grid-template-columns:1fr 1fr}.connect-save-btn{grid-column:1/-1;grid-row:1}.connect-nav-btn{grid-row:2}}
+
+/* PULSE v12 — Connect feature removed */
+.connect-wrap,.connect-browser,.connect-actions,.swipe-hint{display:none!important}
