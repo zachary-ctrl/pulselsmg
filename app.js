@@ -164,34 +164,27 @@ function isCultureMarket(text=''){
 }
 async function loadLive(){
   state.liveStatus='loading';
+  try{
+    const r=await fetch('/api/live',{cache:'no-store'});
+    if(r.ok){
+      const d=await r.json();
+      if(Array.isArray(d.articles)&&d.articles.length) state.articles=d.articles;
+      const markets=Array.isArray(d.markets)&&d.markets.length?d.markets:fallbackMarkets;
+      state.live={news:state.articles.map(a=>({title:a.title,url:a.url,domain:'LEDGERA',image:a.image||''})),markets,generatedAt:d.generatedAt||new Date().toISOString(),sources:[...new Set(markets.map(m=>m.source))]};
+      state.liveStatus=d.markets?.length?'live':'fallback';
+      if(Array.isArray(d.podcast)&&d.podcast.length){state.podcast={status:'live',episodes:d.podcast.map(x=>({...x,date:episodeDate(x.date),description:stripHTML(x.description||'').slice(0,240)}))};}
+      if(state.tab==='feed'||state.tab==='predict'||state.tab==='watch')render();
+      return;
+    }
+  }catch{}
   const markets=[];
   try{
-    const r=await fetch('https://gamma-api.polymarket.com/markets?active=true&closed=false&limit=250&order=volume24hr&ascending=false',{cache:'no-store'});
-    if(r.ok){ const data=await r.json(); for(const m of data){
-      if(!isCultureMarket((m.question||'')+' '+(m.events?.[0]?.title||''))) continue;
-      let outcomes=[],prices=[]; try{outcomes=JSON.parse(m.outcomes||'[]')}catch{} try{prices=JSON.parse(m.outcomePrices||'[]')}catch{}
-      const yi=outcomes.findIndex(x=>String(x).toLowerCase()==='yes'); if(yi<0) continue;
-      const yes=Math.max(0,Math.min(100,Math.round(Number(prices[yi]||0)*100)));
-      markets.push({id:'poly-'+m.id,source:'POLYMARKET',title:m.question,yes,no:100-yes,volume24h:Number(m.volume24hr||0),change24h:Number(m.oneDayPriceChange||0)*100,endDate:m.endDate||m.endDateIso||'',image:m.image||m.icon||''});
-      if(markets.length>=14) break;
-    }}
+    const r=await fetch('https://gamma-api.polymarket.com/markets?active=true&closed=false&limit=120&order=volume24hr&ascending=false',{cache:'no-store'});
+    if(r.ok){const data=await r.json();for(const m of data){if(!isCultureMarket(m.question||''))continue;let outcomes=[],prices=[];try{outcomes=JSON.parse(m.outcomes||'[]');prices=JSON.parse(m.outcomePrices||'[]')}catch{}const yi=outcomes.findIndex(x=>String(x).toLowerCase()==='yes');if(yi<0)continue;const yes=Math.round(Number(prices[yi]||0)*100);markets.push({id:'poly-'+m.id,source:'POLYMARKET',title:m.question,yes,no:100-yes,volume24h:Number(m.volume24hr||0),change24h:Number(m.oneDayPriceChange||0)*100,endDate:m.endDate||'',image:m.image||''});if(markets.length>=12)break}}
   }catch{}
-  try{
-    const r=await fetch('https://api.elections.kalshi.com/trade-api/v2/markets?limit=300&status=open',{cache:'no-store'});
-    if(r.ok){ const data=await r.json(); for(const m of (data.markets||[])){
-      if(!isCultureMarket((m.title||'')+' '+(m.yes_sub_title||''))) continue;
-      const p=Number(m.last_price_dollars||m.yes_ask_dollars||m.yes_bid_dollars||0); if(!(p>0&&p<1)) continue;
-      const yes=Math.round(p*100); markets.push({id:'kalshi-'+m.ticker,source:'KALSHI',title:m.title,yes,no:100-yes,volume24h:Number(m.volume_24h_fp||0),change24h:(p-Number(m.previous_price_dollars||p))*100,endDate:m.close_time||m.expiration_time||'',image:''});
-      if(markets.length>=20) break;
-    }}
-  }catch{}
-  try{
-    const r=await fetch(LEDGERA+'/feed.json',{cache:'no-store'});
-    if(r.ok){ const feed=await r.json(); if(Array.isArray(feed.items)) state.articles=feed.items.map(x=>({title:x.title||'LEDGERA',summary:x.summary||'',category:x._ledgera?.category||x.tags?.join(' / ')||'LEDGERA',url:x.url||x.id,image:x.image||''})); }
-  }catch{}
-  state.live={news:state.articles.map(a=>({title:a.title,url:a.url,domain:'LEDGERA',image:a.image||''})),markets:markets.length?markets:fallbackMarkets,generatedAt:new Date().toISOString(),sources:markets.length?[...new Set(markets.map(m=>m.source))]:['PULSE SNAPSHOT']};
-  state.liveStatus=markets.length?'live':'fallback';
-  if(state.tab==='feed'||state.tab==='predict') render();
+  try{const r=await fetch(LEDGERA+'/feed.json',{cache:'no-store'});if(r.ok){const feed=await r.json();if(Array.isArray(feed.items))state.articles=feed.items.map(x=>({title:x.title||'LEDGERA',summary:x.summary||'',category:x._ledgera?.category||x.tags?.join(' / ')||'LEDGERA',url:x.url||x.id,image:x.image||''}));}}catch{}
+  state.live={news:state.articles.map(a=>({title:a.title,url:a.url,domain:'LEDGERA',image:a.image||''})),markets:markets.length?markets:fallbackMarkets,generatedAt:new Date().toISOString(),sources:markets.length?['POLYMARKET']:['PULSE SNAPSHOT']};
+  state.liveStatus=markets.length?'live':'fallback';if(state.tab==='feed'||state.tab==='predict')render();
 }
 async function loadWallet(){ localWallet(); if(state.tab==='me') render(); }
 
@@ -338,7 +331,7 @@ function startPulse(){
   render();
   Promise.all([loadLive(),loadWallet(),loadPodcast()]);
   if(liveTimer) clearInterval(liveTimer);
-  liveTimer=setInterval(loadLive,90000);
+  liveTimer=setInterval(loadLive,60000);
 }
 
 function installChip(){
@@ -555,14 +548,57 @@ function tradeModal(){
   <div class="reward-list">${catalog.map(([key,r])=>`<button data-redeem="${esc(key)}"><span><b>${esc(r.label)}</b><small>PULSE BUCKS MARKET</small></span><strong>₱${Number(r.cost)}</strong></button>`).join('')}</div>`);
 }
 
-function openReader(url,title,label='LEDGERA'){
-  const layer=document.createElement('div'); layer.className='reader-overlay';
-  layer.innerHTML=`<header class="reader-bar"><button class="reader-back" aria-label="Back">‹</button><div><small>${esc(label)}</small><b>${esc(title)}</b></div><a href="${esc(url)}" target="_blank" rel="noopener">↗</a></header><div class="reader-loading"><i></i><b>OPENING IN PULSE…</b></div><iframe class="reader-frame" src="${esc(url)}" title="${esc(title)}" allow="fullscreen"></iframe>`;
-  document.body.appendChild(layer); const frame=$('.reader-frame',layer); frame.onload=()=>$('.reader-loading',layer)?.classList.add('hide');
-  $('.reader-back',layer).onclick=()=>{layer.classList.add('closing');setTimeout(()=>layer.remove(),220);};
+function readerShell(title,label,url){
+  const layer=document.createElement('div');layer.className='reader-overlay pulse-reader';
+  layer.innerHTML=`<header class="reader-bar pulse-reader-bar"><button class="reader-back" aria-label="Back">‹</button><div><small>${esc(label)}</small><b>${esc(title)}</b></div><a href="${esc(url)}" target="_blank" rel="noopener">↗</a></header><main class="native-reader"><div class="native-loading"><i></i><b>PULSE IS BUILDING THE READER…</b></div></main>`;
+  document.body.appendChild(layer);$('.reader-back',layer).onclick=()=>{layer.classList.add('closing');setTimeout(()=>layer.remove(),180)};return layer;
 }
-function readArticle(i){ const a=state.articles[Number(i)]; if(a)openReader(a.url,a.title,a.category||'LEDGERA ARTICLE'); }
-function readIssue(i){ const x=issues[Number(i)]; if(x)openReader(x.url,x.title,x.label); }
+function closeNativeReader(layer){layer?.classList.add('closing');setTimeout(()=>layer?.remove(),180)}
+async function openArticleReader(a){
+  const layer=readerShell(a.title,a.category||'LEDGERA ARTICLE',a.url),main=$('.native-reader',layer);
+  try{
+    const r=await fetch('/api/content?url='+encodeURIComponent(a.url),{cache:'no-store'});if(!r.ok)throw new Error('reader');
+    const d=await r.json();if(d.type!=='article'||!d.paragraphs?.length)throw new Error('reader');
+    main.innerHTML=`<article class="pulse-article">
+      <div class="article-progress"><i></i></div>
+      <header>${d.hero?`<img class="pulse-article-hero" src="${esc(d.hero)}" alt="">`:''}<span class="pulse-article-kicker">${esc(d.kicker||a.category||'LEDGERA')}</span><h1>${esc(d.title||a.title)}</h1>${d.dek?`<p class="pulse-dek">${esc(d.dek)}</p>`:''}${d.byline?`<p class="pulse-byline">${esc(d.byline)}</p>`:''}</header>
+      <div class="pulse-story-body">${d.paragraphs.map((p,i)=>`<p class="${i===0?'lead':''}">${esc(p)}</p>`).join('')}</div>
+      <footer><span>LEDGERA</span><b>THE RECORD OF CULTURE.</b><button class="btn primary" data-reader-close>BACK TO PULSE</button></footer>
+    </article>`;
+    $('[data-reader-close]',main).onclick=()=>closeNativeReader(layer);
+    const progress=$('.article-progress i',main);main.addEventListener('scroll',()=>{const max=main.scrollHeight-main.clientHeight;progress.style.width=(max?Math.min(100,main.scrollTop/max*100):100)+'%'},{passive:true});
+  }catch{
+    main.innerHTML=`<div class="reader-error"><b>THIS STORY COULDN'T BE REFORMATTED.</b><p>Open the original LEDGERA story without leaving your reading flow.</p><a class="btn primary" href="${esc(a.url)}" target="_blank" rel="noopener">OPEN ORIGINAL ↗</a></div>`;
+  }
+}
+function renderMagazinePage(layer,pages,index){
+  const stage=$('.mag-stage',layer),status=$('.mag-status',layer),strip=$('.mag-thumbs',layer);const p=pages[index];if(!p)return;
+  stage.innerHTML=`<img src="${esc(p.src)}" alt="${esc(p.alt||p.title||'Magazine page')}" draggable="false">`;
+  status.innerHTML=`<small>PAGE ${String(index+1).padStart(2,'0')} / ${String(pages.length).padStart(2,'0')}</small><b>${esc(p.title||p.short||'LEDGERA')}</b><span>${esc(p.chapter||'')}</span>`;
+  strip.querySelectorAll('button').forEach((b,i)=>b.classList.toggle('active',i===index));strip.querySelector(`button[data-page="${index}"]`)?.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+  layer.dataset.page=String(index);
+}
+async function openIssueReader(x){
+  const layer=readerShell(x.title,x.label,x.url),main=$('.native-reader',layer);
+  try{
+    const r=await fetch('/api/content?url='+encodeURIComponent(x.url),{cache:'no-store'});if(!r.ok)throw new Error('reader');const d=await r.json();if(d.type!=='issue'||!d.pages?.length)throw new Error('reader');
+    const pages=d.pages;main.innerHTML=`<section class="pulse-magazine">
+      <div class="mag-top"><span>LEDGERA / PULSE READER</span><button data-mag-fit>FIT</button></div>
+      <div class="mag-stage"></div>
+      <div class="mag-controls"><button data-mag-prev>‹</button><div class="mag-status"></div><button data-mag-next>›</button></div>
+      <div class="mag-thumbs">${pages.map((p,i)=>`<button data-page="${i}"><img src="${esc(p.src)}" alt=""><span>${String(i+1).padStart(2,'0')}</span></button>`).join('')}</div>
+    </section>`;
+    let idx=0;renderMagazinePage(layer,pages,idx);
+    const go=n=>{idx=Math.max(0,Math.min(pages.length-1,n));renderMagazinePage(layer,pages,idx);haptic()};
+    $('[data-mag-prev]',layer).onclick=()=>go(idx-1);$('[data-mag-next]',layer).onclick=()=>go(idx+1);
+    $$('[data-page]',layer).forEach(b=>b.onclick=()=>go(Number(b.dataset.page)));
+    $('[data-mag-fit]',layer).onclick=()=>layer.classList.toggle('mag-width');
+    let sx=0,sy=0;const stage=$('.mag-stage',layer);stage.addEventListener('pointerdown',e=>{sx=e.clientX;sy=e.clientY;try{stage.setPointerCapture(e.pointerId)}catch{}});
+    stage.addEventListener('pointerup',e=>{const dx=e.clientX-sx,dy=e.clientY-sy;if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.2)go(idx+(dx<0?1:-1));});
+  }catch{main.innerHTML=`<div class="reader-error"><b>ISSUE READER IS RETRYING.</b><p>The original edition is still available.</p><a class="btn primary" href="${esc(x.url)}" target="_blank" rel="noopener">OPEN EDITION ↗</a></div>`;}
+}
+function readArticle(i){const a=state.articles[Number(i)];if(a)openArticleReader(a)}
+function readIssue(i){const x=issues[Number(i)];if(x)openIssueReader(x)}
 function issuesModal(){
   openModal(`<button class="modal-close" data-close>×</button><span class="category">LEDGERA MAGAZINE</span><h2>READ THE ISSUES.</h2><p>Full editions open inside PULSE in LEDGERA’s mobile reader.</p><div class="issue-library">${issues.map((x,i)=>`<button data-read-issue="${i}"><img src="${esc(x.cover)}" alt=""><span><small>${esc(x.label)}</small><b>${esc(x.title)}</b><p>${esc(x.subtitle)}</p></span></button>`).join('')}</div>`);
   $$('[data-read-issue]',$('#modalCard')).forEach(b=>b.onclick=()=>{closeModal();readIssue(b.dataset.readIssue);});
@@ -598,7 +634,7 @@ function faceModal(i){
 function aiModal(prefill=''){
   const msgs=state.aiMessages.slice(-6).map(m=>`<div class="ai-msg ${m.role}"><span>${m.role==='assistant'?'PULSE AI':'YOU'}</span><p>${esc(m.text)}</p></div>`).join('');
   openModal(`<button class="modal-close" data-close>×</button><div class="ai-head"><span class="ai-orb">✦</span><div><small>PULSE AI</small><h2>ASK WHAT'S NEXT.</h2></div></div>
-    <div class="ai-mode"><i></i><span id="aiModeLabel">ON-DEVICE AI · LIVE APP DATA</span></div>
+    <div class="ai-mode"><i></i><span id="aiModeLabel">LIVE LLM · GPT · PULSE CONTEXT</span></div>
     <div class="ai-chat" id="aiChat">${msgs||'<div class="ai-welcome">Ask about stories, full magazine issues, creators, fashion, film, music, wrestling, or any culture prediction on screen.</div>'}</div>
     <div class="ai-quick"><button data-ai-quick="What are the biggest culture prediction signals right now?">BIGGEST SIGNALS</button><button data-ai-quick="What culture headlines should I know right now?">HEADLINES</button></div>
     <form id="aiForm" class="ai-form"><input id="aiInput" autocomplete="off" placeholder="Ask PULSE AI…" value="${esc(prefill)}"><button>↑</button></form>`, 'ai-sheet');
@@ -652,13 +688,27 @@ function buildAIAnswer(prompt){
   return {text:'I can search PULSE across LEDGERA articles, full magazine editions, culture prediction signals and creator profiles. Ask what you want to read, watch, track or find.'};
 }
 async function sendAI(prompt){
-  const p=String(prompt||'').trim(); if(!p)return;
+  const p=String(prompt||'').trim();if(!p)return;
   state.aiMessages.push({role:'user',text:p});
-  const chat=$('#aiChat'); if(chat)chat.innerHTML=state.aiMessages.slice(-8).map(m=>`<div class="ai-msg ${m.role}"><span>${m.role==='assistant'?'PULSE AI':'YOU'}</span><p>${esc(m.text)}</p></div>`).join('')+'<div class="ai-thinking">PULSE IS READING THE SIGNAL…</div>';
-  const generated=await browserAIAnswer(p);
-  const answer=generated?{text:generated}:buildAIAnswer(p); state.aiMessages.push({role:'assistant',text:answer.text}); state.aiMode=generated?'browser-ai':'local';
-  if(chat){ chat.innerHTML=state.aiMessages.slice(-8).map(m=>`<div class="ai-msg ${m.role}"><span>${m.role==='assistant'?'PULSE AI':'YOU'}</span><p>${esc(m.text)}</p></div>`).join('')+(answer.action?`<button class="ai-action" id="aiAction">${esc(answer.action.label)}</button>`:''); chat.scrollTop=chat.scrollHeight; if(answer.action)$('#aiAction').onclick=answer.action.run; }
-  if($('#aiModeLabel'))$('#aiModeLabel').textContent=generated?'BROWSER GENERATIVE AI':'ON-DEVICE SIGNAL AI';
+  const chat=$('#aiChat');const paintThinking=()=>{if(chat){chat.innerHTML=state.aiMessages.slice(-10).map(m=>`<div class="ai-msg ${m.role}"><span>${m.role==='assistant'?'PULSE AI':'YOU'}</span><p>${esc(m.text)}</p></div>`).join('')+'<div class="ai-thinking">PULSE LLM IS THINKING LIVE…</div>';chat.scrollTop=chat.scrollHeight}};paintThinking();
+  let answer=null,mode='live-llm';
+  try{
+    const context={
+      generatedAt:state.live.generatedAt,
+      articles:state.articles.slice(0,12).map(a=>({title:a.title,category:a.category,summary:a.summary})),
+      issues:issues.map(x=>({title:x.title,label:x.label,subtitle:x.subtitle})),
+      markets:(state.live.markets.length?state.live.markets:fallbackMarkets).slice(0,10).map(m=>({title:m.title,source:m.source,yes:m.yes,no:m.no,volume24h:m.volume24h,endDate:m.endDate})),
+      podcast:(state.podcast.episodes||[]).slice(0,6).map(e=>({title:e.title,date:e.date,description:e.description})),
+      creators:creators.map(c=>({name:c.name,role:c.role,location:c.loc,skills:c.skills}))
+    };
+    const messages=state.aiMessages.slice(-10).map(m=>({role:m.role,content:m.text}));
+    const r=await fetch('/api/ai',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({messages,context})});
+    if(r.ok){const d=await r.json();if(d.text)answer={text:d.text};}
+  }catch{}
+  if(!answer){const generated=await browserAIAnswer(p);if(generated){answer={text:generated};mode='browser-ai'}else{answer=buildAIAnswer(p);mode='signal-fallback'}}
+  state.aiMessages.push({role:'assistant',text:answer.text});state.aiMode=mode;
+  if(chat){chat.innerHTML=state.aiMessages.slice(-10).map(m=>`<div class="ai-msg ${m.role}"><span>${m.role==='assistant'?'PULSE AI':'YOU'}</span><p>${esc(m.text)}</p></div>`).join('')+(answer.action?`<button class="ai-action" id="aiAction">${esc(answer.action.label)}</button>`:'');chat.scrollTop=chat.scrollHeight;if(answer.action)$('#aiAction').onclick=answer.action.run}
+  if($('#aiModeLabel'))$('#aiModeLabel').textContent=mode==='live-llm'?'LIVE LLM · GPT · PULSE CONTEXT':mode==='browser-ai'?'BROWSER GENERATIVE AI':'SIGNAL FALLBACK · RETRY LIVE LLM';
 }
 function installApp(){
   if(appInstalled()){toast('PULSE is already in app mode');return;}

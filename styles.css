@@ -197,3 +197,30 @@ img{image-orientation:from-image}
   .stock-video-card{flex-basis:88%}
   .creator-visual{height:58svh!important}
 }
+
+/* PULSE v8 native editorial + magazine readers */
+.pulse-reader{background:#080809;color:#fff}
+.pulse-reader-bar{position:relative;z-index:10}
+.native-reader{height:100%;overflow-y:auto;overscroll-behavior:contain;background:#f3f0e9;color:#111;-webkit-overflow-scrolling:touch}
+.native-loading,.reader-error{min-height:70svh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:28px;text-align:center}
+.native-loading i{width:38px;height:38px;border:3px solid #d4d0c8;border-top-color:#e51d36;border-radius:50%;animation:spin .7s linear infinite}
+.native-loading b,.reader-error b{font-size:9px;letter-spacing:.12em}
+.reader-error p{max-width:340px;color:#666;font-size:12px;line-height:1.5}
+.pulse-article{position:relative;max-width:760px;margin:0 auto;background:#f3f0e9;min-height:100%}
+.article-progress{position:sticky;z-index:7;top:0;height:3px;background:#ddd8cf}.article-progress i{display:block;width:0;height:100%;background:#e51d36;transition:width .08s linear}
+.pulse-article header{padding:34px 24px 18px;border-bottom:1px solid #d7d1c7}
+.pulse-article-hero{display:block;width:calc(100% + 48px);max-width:none;margin:-34px -24px 26px;max-height:54svh;object-fit:cover;background:#111}
+.pulse-article-kicker{display:inline-block;margin-bottom:13px;color:#d71932;font:800 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.12em}
+.pulse-article h1{margin:0;font-family:Georgia,"Times New Roman",serif;font-size:clamp(38px,10vw,66px);line-height:.94;letter-spacing:-.035em}
+.pulse-dek{margin:18px 0 0;color:#4d4b48;font:400 17px/1.5 Georgia,"Times New Roman",serif}
+.pulse-byline{margin:18px 0 0;color:#77716b;font:800 9px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.08em}
+.pulse-story-body{padding:24px 24px 40px}.pulse-story-body p{margin:0 0 22px;font:400 18px/1.72 Georgia,"Times New Roman",serif;color:#242321}.pulse-story-body p.lead:first-letter{float:left;margin:7px 8px 0 0;color:#d71932;font:700 68px/.7 Georgia,serif}
+.pulse-story-body strong{font-weight:800}
+.pulse-article footer{padding:26px 24px 42px;border-top:4px solid #111;background:#e8e3d9}.pulse-article footer span{display:block;color:#d71932;font:900 42px/.9 Impact,"Arial Narrow",sans-serif}.pulse-article footer b{display:block;margin:7px 0 18px;font-size:8px;letter-spacing:.15em}
+.pulse-magazine{height:100%;display:grid;grid-template-rows:42px minmax(0,1fr) 64px 88px;background:#09090b;color:#fff;overflow:hidden}
+.mag-top{display:flex;align-items:center;justify-content:space-between;padding:0 12px;border-bottom:1px solid #29292e;font-size:8px;font-weight:950;letter-spacing:.1em}.mag-top button{border:1px solid #38383e;border-radius:9px;background:#17171a;padding:7px 10px;font-size:7px;font-weight:950}
+.mag-stage{position:relative;display:grid;place-items:center;overflow:auto;padding:10px;background:radial-gradient(circle,#1d1d20,#080809 72%);touch-action:pan-y}.mag-stage img{display:block;width:auto;height:100%;max-width:100%;object-fit:contain;box-shadow:0 18px 55px #000b;user-select:none;-webkit-user-drag:none}
+.mag-width .mag-stage{align-items:start}.mag-width .mag-stage img{width:100%;height:auto;max-width:none}
+.mag-controls{display:grid;grid-template-columns:52px 1fr 52px;align-items:center;border-top:1px solid #29292e;border-bottom:1px solid #29292e;background:#111113}.mag-controls>button{height:100%;border:0;background:#19191c;color:#fff;font-size:31px}.mag-status{text-align:center;min-width:0}.mag-status small{display:block;color:#e51d36;font-size:7px;font-weight:950;letter-spacing:.1em}.mag-status b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:3px 8px 1px;font-size:11px}.mag-status span{display:block;color:#777;font-size:7px}
+.mag-thumbs{display:flex;gap:7px;overflow-x:auto;padding:8px;background:#080809;scrollbar-width:none}.mag-thumbs::-webkit-scrollbar{display:none}.mag-thumbs button{position:relative;flex:0 0 48px;padding:0;border:1px solid #333;border-radius:7px;background:#111;overflow:hidden;opacity:.52}.mag-thumbs button.active{opacity:1;border-color:#e51d36;box-shadow:0 0 0 1px #e51d36}.mag-thumbs img{width:100%;height:70px;object-fit:cover;display:block}.mag-thumbs span{position:absolute;right:2px;bottom:2px;background:#000d;padding:2px 3px;font-size:6px}
+@media(min-width:700px){.pulse-reader{inset:18px}.pulse-article header,.pulse-story-body{padding-left:46px;padding-right:46px}.pulse-article-hero{width:calc(100% + 92px);margin-left:-46px;margin-right:-46px}.pulse-magazine{grid-template-rows:44px minmax(0,1fr) 68px 100px}}
