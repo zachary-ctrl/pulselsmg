@@ -54,6 +54,10 @@ const issues = [
   {title:'THE SUMMER ISSUE',subtitle:'New Faces · Culture · Tribeca',label:'ISSUE NO. 01',url:LEDGERA+'/magazine/issue-01/',cover:LEDGERA+'/assets/covers/ledgera-issue-01-cover.png'}
 ];
 
+const nativeArticleData = {
+ 'remembering-dolly-parton-1946-2026.html':{kicker:'ISSUE STORY / REMEMBRANCE',dek:'A voice, a vision, a legacy that built generations.',byline:'LEDGERA EDITORIAL DESK',date:'AUGUST 27, 2026',body:[['p','Dolly Parton understood something that few stars ever master: becoming larger than life does not require becoming distant from ordinary people.'],['p','Her seven-decade career reached far beyond country music and into film, publishing, business, tourism, literacy, healthcare, disaster relief and the broader language of American celebrity.'],['h2','THE IMAGE WAS NEVER AN ACCIDENT'],['p','Parton’s visual identity — towering hair, rhinestones, acrylic nails and impossible silhouettes — was both sincere and strategic: instantly legible, endlessly repeatable and entirely under her control.'],['h2','WHY DOLLY LASTS'],['p','Her appeal crossed categories that increasingly seem impossible to cross. Country traditionalists claimed her. Pop audiences claimed her. Queer audiences embraced her. Entrepreneurs studied the empire. Songwriters studied the economy of her lyrics.']]},
+ 'us-open-redzone-espn-sports-broadcast-2026.html':{kicker:'SPORTS / MEDIA',dek:'A multi-court feed built for viewers who want the drama without waiting for it.',byline:'LEDGERA SPORTS DESK',date:'AUGUST 29, 2026',body:[['p','One tennis match is a story. Sixteen courts at once are a programming problem.'],['p','A RedZone-style streaming format can jump across courts and surface the biggest points, momentum swings and unexpected matches in real time.'],['h2','THE FEED IS BECOMING THE PRODUCT'],['p','Streaming has changed viewing behavior. Audiences follow alerts, social clips, group chats, highlights and live broadcasts at the same time. The format packages that fragmentation into one product.']]}
+};
 const fallbackMarkets = [
   {id:'fallback-film',source:'PULSE',title:'Will a major streaming title announce a renewal this month?',yes:63,no:37,volume24h:0,endDate:'2026-09-30T23:59:00-05:00'},
   {id:'fallback-music',source:'PULSE',title:'Will a major artist announce a surprise release before October?',yes:58,no:42,volume24h:0,endDate:'2026-10-01T00:00:00-05:00'}
@@ -641,6 +645,7 @@ function aiModal(prefill=''){
   setTimeout(()=>$('#aiInput')?.focus(),100);
 }
 
+async function serverAIAnswer(prompt){try{const context={articles:state.articles.slice(0,12),issues:issues.slice(0,6),markets:(state.live.markets.length?state.live.markets:fallbackMarkets).slice(0,10),podcast:(state.podcast.episodes||[]).slice(0,5)};const r=await fetch('/api/ai',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({prompt,context})});if(!r.ok)return null;const j=await r.json();return j.answer||j.text||null;}catch{return null;}}
 let browserAI=null;
 async function browserAIAnswer(prompt){
   if(!globalThis.LanguageModel) return null;
