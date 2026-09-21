@@ -156,10 +156,19 @@ async function loadLive(){
     }}
   }catch{}
   try{
+    const r=await fetch('https://api.elections.kalshi.com/trade-api/v2/markets?limit=300&status=open',{cache:'no-store'});
+    if(r.ok){ const data=await r.json(); for(const m of (data.markets||[])){
+      if(!isCultureMarket((m.title||'')+' '+(m.yes_sub_title||''))) continue;
+      const p=Number(m.last_price_dollars||m.yes_ask_dollars||m.yes_bid_dollars||0); if(!(p>0&&p<1)) continue;
+      const yes=Math.round(p*100); markets.push({id:'kalshi-'+m.ticker,source:'KALSHI',title:m.title,yes,no:100-yes,volume24h:Number(m.volume_24h_fp||0),change24h:(p-Number(m.previous_price_dollars||p))*100,endDate:m.close_time||m.expiration_time||'',image:''});
+      if(markets.length>=20) break;
+    }}
+  }catch{}
+  try{
     const r=await fetch(LEDGERA+'/feed.json',{cache:'no-store'});
     if(r.ok){ const feed=await r.json(); if(Array.isArray(feed.items)) state.articles=feed.items.map(x=>({title:x.title||'LEDGERA',summary:x.summary||'',category:x._ledgera?.category||x.tags?.join(' / ')||'LEDGERA',url:x.url||x.id,image:x.image||''})); }
   }catch{}
-  state.live={news:state.articles.map(a=>({title:a.title,url:a.url,domain:'LEDGERA',image:a.image||''})),markets:markets.length?markets:fallbackMarkets,generatedAt:new Date().toISOString(),sources:markets.length?['Polymarket']:['PULSE SNAPSHOT']};
+  state.live={news:state.articles.map(a=>({title:a.title,url:a.url,domain:'LEDGERA',image:a.image||''})),markets:markets.length?markets:fallbackMarkets,generatedAt:new Date().toISOString(),sources:markets.length?[...new Set(markets.map(m=>m.source))]:['PULSE SNAPSHOT']};
   state.liveStatus=markets.length?'live':'fallback';
   if(state.tab==='feed'||state.tab==='predict') render();
 }
