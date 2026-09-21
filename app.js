@@ -220,12 +220,12 @@ function installChip(){
 
 function feed(){
   const liveNews = state.live.news.length ? state.live.news.slice(0,8).map((a,i)=>`
-    <a class="live-story" href="${esc(a.url)}" target="_blank" rel="noopener">
+    <button class="live-story" data-read-article="${i}">
       <div class="live-story-img" ${a.image?`style="background-image:linear-gradient(180deg,transparent 28%,rgba(0,0,0,.88)),url('${esc(a.image)}')"`:''}>
-        <span>${i<2?'BREAKING':'NOW'}</span>
+        <span>${i<2?'FEATURED':'READ'}</span>
       </div>
-      <div class="live-story-copy"><b>${esc(a.title)}</b><small>${esc(a.domain||'LIVE SOURCE')} · AUTO-UPDATED</small></div>
-    </a>`).join('') : `
+      <div class="live-story-copy"><b>${esc(a.title)}</b><small>LEDGERA · READ IN PULSE</small></div>
+    </button>`).join('') : `
       <div class="live-fallback"><div class="skeleton sk-line"></div><div class="skeleton sk-line short"></div><span>${state.liveStatus==='loading'?'SYNCING LIVE CULTURE…':'LIVE FEED WILL RETRY AUTOMATICALLY'}</span></div>`;
 
   const pulseSignals=(state.live.markets.length?state.live.markets:fallbackMarkets).slice(0,3).map(m=>`
@@ -259,6 +259,9 @@ function feed(){
   <div class="section-kicker"><span><b>NOW</b> / CULTURE WIRE</span><button class="text-btn" id="refreshLive">REFRESH ↻</button></div>
   <div class="live-grid">${liveNews}</div>
 
+  <div class="section-kicker"><span><b>MAGAZINE</b> / READ FULL ISSUES</span><button class="text-btn" id="allIssues">ARCHIVE →</button></div>
+  <div class="issue-rail">${issues.slice(0,4).map((x,i)=>`<button class="issue-card" data-read-issue="${i}"><img src="${esc(x.cover)}" alt="${esc(x.title)} cover" loading="lazy"><span><small>${esc(x.label)}</small><b>${esc(x.title)}</b><em>READ ISSUE →</em></span></button>`).join('')}</div>
+
   <div class="section-kicker"><span><b>WATCH</b> / NEW CUT</span><span>LSMG × LEDGERA</span></div>
   <article class="feature-video-card app-card" data-go="watch">
     <div class="feature-video-poster" style="background-image:linear-gradient(180deg,transparent 18%,rgba(0,0,0,.9)),url('${VIDEO_POSTER}')">
@@ -287,6 +290,8 @@ function watch(){
     <a class="channel-card red" href="https://ledgeramagazine.com/after-dark/" target="_blank"><small>LEDGERA</small><strong>AFTER DARK</strong><span>Night edition · Visual culture</span></a>
     <a class="channel-card" href="https://ledgeramagazine.com/coverage/" target="_blank"><small>FIELD</small><strong>ARCHIVE</strong><span>Festivals · Sports · Film · Events</span></a>
   </div>
+  <div class="section-kicker"><span>READ LEDGERA</span><button class="text-btn" id="allIssues">MAGAZINE →</button></div>
+  <div class="compact-stories">${state.articles.slice(0,4).map((a,i)=>`<button data-read-article="${i}"><span>${String(i+1).padStart(2,'0')}</span><div><small>${esc(a.category||'LEDGERA')}</small><b>${esc(a.title)}</b></div><em>›</em></button>`).join('')}</div>
   <div class="section-kicker"><span>FROM LEDGERA</span></div>
   <div class="face-rail">${creators.map((c,i)=>`<button class="face-tile" data-face="${i}"><img src="${c.image}" alt="${esc(c.name)}" loading="lazy"><span><b>${esc(c.name)}</b><small>${esc(c.role)}</small></span></button>`).join('')}</div>`;
 }
@@ -414,6 +419,21 @@ function tradeModal(){
   <div class="reward-list">${catalog.map(([key,r])=>`<button data-redeem="${esc(key)}"><span><b>${esc(r.label)}</b><small>PULSE BUCKS MARKET</small></span><strong>₱${Number(r.cost)}</strong></button>`).join('')}</div>`);
 }
 
+function openReader(url,title,label='LEDGERA'){
+  const layer=document.createElement('div'); layer.className='reader-overlay';
+  layer.innerHTML=`<header class="reader-bar"><button class="reader-back" aria-label="Back">‹</button><div><small>${esc(label)}</small><b>${esc(title)}</b></div><a href="${esc(url)}" target="_blank" rel="noopener">↗</a></header><div class="reader-loading"><i></i><b>OPENING IN PULSE…</b></div><iframe class="reader-frame" src="${esc(url)}" title="${esc(title)}" allow="fullscreen"></iframe>`;
+  document.body.appendChild(layer); const frame=$('.reader-frame',layer); frame.onload=()=>$('.reader-loading',layer)?.classList.add('hide');
+  $('.reader-back',layer).onclick=()=>{layer.classList.add('closing');setTimeout(()=>layer.remove(),220);};
+}
+function readArticle(i){ const a=state.articles[Number(i)]; if(a)openReader(a.url,a.title,a.category||'LEDGERA ARTICLE'); }
+function readIssue(i){ const x=issues[Number(i)]; if(x)openReader(x.url,x.title,x.label); }
+function issuesModal(){
+  openModal(`<button class="modal-close" data-close>×</button><span class="category">LEDGERA MAGAZINE</span><h2>READ THE ISSUES.</h2><p>Full editions open inside PULSE in LEDGERA’s mobile reader.</p><div class="issue-library">${issues.map((x,i)=>`<button data-read-issue="${i}"><img src="${esc(x.cover)}" alt=""><span><small>${esc(x.label)}</small><b>${esc(x.title)}</b><p>${esc(x.subtitle)}</p></span></button>`).join('')}</div>`);
+}
+function allStoriesModal(){
+  openModal(`<button class="modal-close" data-close>×</button><span class="category">LEDGERA</span><h2>ALL STORIES.</h2><div class="article-library">${state.articles.map((a,i)=>`<button data-read-article="${i}"><span>${String(i+1).padStart(2,'0')}</span><div><small>${esc(a.category||'LEDGERA')}</small><b>${esc(a.title)}</b><p>${esc(a.summary||'')}</p></div><em>›</em></button>`).join('')}</div>`);
+}
+
 function marketModal(id){
   const m=[...state.live.markets,...fallbackMarkets].find(x=>x.id===id);
   if(!m) return;
@@ -483,7 +503,11 @@ function bind(){
     const m=[...state.live.markets,...fallbackMarkets].find(x=>x.id===b.dataset.aiMarket);
     closeModal(); aiModal(m?`Break down this live prediction signal: ${m.title}`:'Break down this market.');
   });
-  $$('[data-face]').forEach(b=>b.onclick=()=>faceModal(b.dataset.face));
+  $('[data-face]').forEach(b=>b.onclick=()=>faceModal(b.dataset.face));
+  $('[data-read-article]').forEach(b=>b.onclick=()=>{closeModal();readArticle(b.dataset.readArticle);});
+  $('[data-read-issue]').forEach(b=>b.onclick=()=>{closeModal();readIssue(b.dataset.readIssue);});
+  $('#allIssues')?.addEventListener('click',issuesModal);
+  $('#allStories')?.addEventListener('click',allStoriesModal);
   $$('[data-swipe-card]').forEach(b=>b.onclick=()=>{
     const action=b.dataset.swipeCard; const c=creators[state.creatorIndex%creators.length];
     if(action==='like' && !state.matches.includes(c.name)){state.matches.push(c.name);toast('Connection saved');}
