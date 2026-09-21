@@ -322,13 +322,13 @@ function discoveryCard(p){
 function profilePage(){
   const p=state.profile,trust=TrustService.signals(p);
   return `<div class="page-title profile-title"><div><small>LIVE CLOUD CAPABILITY PROFILE</small><h1>YOU.</h1></div><button class="outline-btn" id="editProfile">EDIT PROFILE</button></div>
-  <div class="cloud-status"><i></i><b>SWARM CLOUD CONNECTED</b><span>${esc(state.session?.user?.email||"")}</span></div>
+  ${state.guest?`<div class="cloud-status guest"><i></i><b>GUEST MODE</b><span>Using this device without sign-in</span></div>`:`<div class="cloud-status"><i></i><b>SWARM CLOUD CONNECTED</b><span>${esc(state.session?.user?.email||"")}</span></div>`}
   <section class="profile-hero"><div class="profile-big-avatar">${initials(p.name)}</div><div><h2>${esc(p.name)}</h2><p>${esc(p.bio||"Add what you can help with and what you are building.")}</p><span>${esc([p.location?.city,p.location?.state].filter(Boolean).join(", ")||"LOCATION PRIVATE")}</span></div></section>
   <div class="capability-grid"><section><small>I CAN HELP WITH</small><div class="chips">${(p.skills||[]).length?p.skills.map(s=>`<span>${esc(Array.isArray(s)?s[0]:s.name)}</span>`).join(""):"<span>ADD SKILLS</span>"}</div></section><section><small>WHAT I'M BUILDING</small><div class="chips">${(p.goals||[]).length?p.goals.map(x=>`<span>${esc(x)}</span>`).join(""):"<span>ADD GOALS</span>"}</div></section></div>
   <div class="section-head"><div><small>TRUST</small><h2>VISIBLE SIGNALS, NOT A SOCIAL SCORE</h2></div></div><div class="trust-grid">${trust.map(s=>`<div><b>${s.value===true?"VERIFIED":s.value===false?"NOT VERIFIED":s.value??"NO DATA"}</b><span>${esc(s.label)}</span></div>`).join("")}</div>
   <div class="section-head"><div><small>PRIVACY</small><h2>YOU CONTROL WHAT IS SHARED</h2></div></div>
   <div class="privacy-card"><span>Profile visibility <b>${esc(p.visibility||"private")}</b></span><span>Exact location <b>NEVER EXPOSED</b></span><span>Rate visibility <b>${esc(p.rateVisibility||"private")}</b></span><span>Contact information <b>PRIVATE</b></span></div>
-  <div class="account-actions">${!appInstalled()?'<button id="installBtn">INSTALL SWARM</button>':""}<button id="signOut">SIGN OUT</button></div>`;
+  <div class="account-actions">${!appInstalled()?'<button id="installBtn">INSTALL SWARM</button>':""}${state.guest?'<button id="guestSignIn">SIGN IN / CREATE CLOUD ACCOUNT</button>':""}<button id="signOut">${state.guest?"EXIT GUEST MODE":"SIGN OUT"}</button></div>`;
 }
 async function notificationsModal(){
   const notes=state.notifications;
