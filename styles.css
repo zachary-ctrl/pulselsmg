@@ -181,7 +181,7 @@ a{color:inherit}
 .issue-card img,.issue-library img{object-fit:contain!important;background:#050506}
 .video-shell video{display:block;width:100%;height:auto;max-height:72svh;object-fit:contain!important;background:#000}
 .stock-video-card video{width:100%;height:auto!important;aspect-ratio:9/16;max-height:66svh;object-fit:contain!important;background:#000}
-.feature-video-poster{background-size:contain;background-repeat:no-repeat;background-color:#050506}
+.feature-video-poster{background-size:cover;background-repeat:no-repeat;background-color:#050506}
 .creator-card{touch-action:pan-y;transform-origin:center center;will-change:transform,opacity}
 .creator-card.dragging{transition:none!important}
 .creator-visual{position:relative;height:min(62svh,520px)!important;padding:0!important;display:block!important;overflow:hidden;background:#050506!important}
