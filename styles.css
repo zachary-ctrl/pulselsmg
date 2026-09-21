@@ -166,3 +166,34 @@ a{color:inherit}
 .podcast-stack{display:grid;gap:8px}.podcast-card{display:grid;grid-template-columns:44px 1fr;gap:11px;border:1px solid var(--line);border-radius:18px;background:var(--surface);padding:12px}.podcast-number{font-family:Impact,"Arial Narrow",sans-serif;font-size:29px;color:var(--red);line-height:1}.podcast-body{min-width:0}.podcast-meta{display:flex;justify-content:space-between;gap:10px;color:#77777e;font-size:7px;font-weight:900;letter-spacing:.06em}.podcast-card h3{margin:6px 0 5px;font-size:13px;line-height:1.3}.podcast-card p{margin:0 0 9px;color:#929299;font-size:9px;line-height:1.5}.podcast-card audio{display:block;width:100%;height:36px;margin:7px 0;color-scheme:dark}.podcast-card a{display:inline-block;color:#e9e9ed;text-decoration:none;font-size:8px;font-weight:950}
 .photo-modal{padding:0!important;overflow:hidden!important}.photo-lightbox{display:block;width:100%;max-height:68svh;object-fit:contain;background:#000}.photo-modal .category,.photo-modal h2,.photo-modal p{margin-left:16px;margin-right:16px}.photo-modal .category{display:block;margin-top:14px}.photo-modal h2{margin-bottom:4px}.photo-modal p{margin-top:0;margin-bottom:18px}
 @media(min-width:520px){.nyfw-card{flex-basis:46%}.stock-video-card{flex-basis:62%}}
+
+/* PULSE v7 stability + swipe/media fixes */
+.view{touch-action:pan-y;will-change:transform,opacity}
+.nyfw-rail,.issue-rail,.face-rail,.stock-video-rail{overscroll-behavior-inline:contain;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}
+.nyfw-card{height:auto;min-height:0}
+.nyfw-card::after{display:none}
+.nyfw-media{position:relative;width:100%;aspect-ratio:3/4;display:grid;place-items:center;background-size:cover;background-position:center;overflow:hidden}
+.nyfw-media::before{content:"";position:absolute;inset:0;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);background:rgba(0,0,0,.26)}
+.nyfw-media img{position:relative;z-index:1;width:100%;height:100%;object-fit:contain!important;background:transparent}
+.nyfw-card>span{position:static!important;display:block;padding:11px 12px 13px;background:#0e0e10}
+.nyfw-card>span b{text-shadow:none}
+.face-tile{background:#0b0b0d}.face-tile img{height:250px!important;object-fit:contain!important;background:#050506}
+.issue-card img,.issue-library img{object-fit:contain!important;background:#050506}
+.video-shell video{display:block;width:100%;height:auto;max-height:72svh;object-fit:contain!important;background:#000}
+.stock-video-card video{width:100%;height:auto!important;aspect-ratio:9/16;max-height:66svh;object-fit:contain!important;background:#000}
+.feature-video-poster{background-size:contain;background-repeat:no-repeat;background-color:#050506}
+.creator-card{touch-action:pan-y;transform-origin:center center;will-change:transform,opacity}
+.creator-card.dragging{transition:none!important}
+.creator-visual{position:relative;height:min(62svh,520px)!important;padding:0!important;display:block!important;overflow:hidden;background:#050506!important}
+.creator-photo-bg{position:absolute;inset:-26px;background-size:cover;background-position:center;filter:blur(22px);opacity:.42;transform:scale(1.08)}
+.creator-photo{position:absolute;z-index:1;inset:0;width:100%;height:100%;object-fit:contain;background:transparent;user-select:none;-webkit-user-drag:none}
+.creator-gradient{position:absolute;z-index:2;inset:40% 0 0;background:linear-gradient(transparent,rgba(0,0,0,.92))}
+.creator-title{position:absolute;z-index:3;left:18px;right:18px;bottom:18px}
+.swipe-hint{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 10px 0;color:#777;font-size:7px;font-weight:950;letter-spacing:.08em}.swipe-hint b{color:#bbb}
+.podcast-card audio{max-width:100%}
+img{image-orientation:from-image}
+@media(max-width:430px){
+  .nyfw-card{flex-basis:82%}
+  .stock-video-card{flex-basis:88%}
+  .creator-visual{height:58svh!important}
+}

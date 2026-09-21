@@ -16,9 +16,7 @@ const nyfwPhotos = [
   {title:'JANEKE LUXUEUSE',subtitle:'RUNWAY 7 / NYFW',image:'https://gcdn.picsart.com/editing-temp/67a88ecd-3b4b-4e7b-95a0-2c78820d0c27.jpeg'}
 ];
 const stockVideos = [
-  {title:'RUNWAY STUDY 01',subtitle:'FASHION B-ROLL',src:'https://gcdn.picsart.com/editing-temp/8ac49354-c10a-4f75-818f-d0e64cf19135.mp4',poster:'https://images.pexels.com/videos/9512048/pexels-photo-9512048.jpeg?auto=compress&dpr=1&h=750&w=1260',credit:'cottonbro studio / Pexels',source:'https://www.pexels.com/video/fashion-model-walking-in-the-runway-9512048/'},
-  {title:'RUNWAY STUDY 02',subtitle:'FASHION B-ROLL',src:'https://videos.pexels.com/video-files/9511841/9511841-uhd_4096_2160_25fps.mp4',poster:'https://images.pexels.com/videos/9511841/pexels-photo-9511841.jpeg?auto=compress&dpr=1&h=750&w=1260',credit:'cottonbro studio / Pexels',source:'https://www.pexels.com/video/models-doing-a-catwalk-9511841/'},
-  {title:'RUNWAY STUDY 03',subtitle:'FASHION B-ROLL',src:'https://videos.pexels.com/video-files/9510025/9510025-uhd_4096_2160_25fps.mp4',poster:'https://images.pexels.com/videos/9510025/pexels-photo-9510025.jpeg?auto=compress&dpr=1&h=750&w=1260',credit:'cottonbro studio / Pexels',source:'https://www.pexels.com/video/a-female-model-walking-on-the-runway-9510025/'}
+  {title:'RUNWAY STUDY 01',subtitle:'FASHION B-ROLL',src:'https://gcdn.picsart.com/editing-temp/8ac49354-c10a-4f75-818f-d0e64cf19135.mp4',poster:'https://images.pexels.com/videos/9512048/pexels-photo-9512048.jpeg?auto=compress&dpr=1&h=750&w=1260',credit:'cottonbro studio / Pexels',source:'https://www.pexels.com/video/fashion-model-walking-in-the-runway-9512048/'}
 ];
 const fallbackEpisodes = [
   {title:'An Interview With Jaylen Christie | Stink Bomb Man and the Brain Kids',date:'Sep 7, 2026',duration:'59:25',description:'Creativity, ownership, representation and building an independent comic-book universe.',link:PODCAST_APPLE,audio:''},
@@ -316,8 +314,15 @@ function bootPulse(){
   if(btn)btn.onclick=enter; else setTimeout(enter,1200);
 }
 let pulseStarted=false;
+let liveTimer=null;
 function startPulse(){
-  if(pulseStarted)return; pulseStarted=true; const av=$('.avatar'); if(av)av.textContent=userInitials(state.session?.name||'PULSE'); render(); Promise.all([loadLive(),loadWallet(),loadPodcast()]); setInterval(loadLive,90000);
+  if(pulseStarted)return;
+  pulseStarted=true;
+  const av=$('.avatar'); if(av)av.textContent=userInitials(state.session?.name||'PULSE');
+  render();
+  Promise.all([loadLive(),loadWallet(),loadPodcast()]);
+  if(liveTimer) clearInterval(liveTimer);
+  liveTimer=setInterval(loadLive,90000);
 }
 
 function installChip(){
@@ -342,7 +347,7 @@ function feed(){
       <strong>${Number(m.yes||0)}%</strong>
     </button>`).join('');
 
-  const nyfwRail=nyfwPhotos.map((p,i)=>`<button class="nyfw-card" data-photo="${i}"><img src="${p.image}" alt="${esc(p.title)} at NYFW" loading="lazy"><span><small>${esc(p.subtitle)}</small><b>${esc(p.title)}</b></span></button>`).join('');
+  const nyfwRail=nyfwPhotos.map((p,i)=>`<button class="nyfw-card" data-photo="${i}"><div class="nyfw-media" style="background-image:linear-gradient(rgba(0,0,0,.48),rgba(0,0,0,.48)),url('${p.image}')"><img src="${p.image}" alt="${esc(p.title)} at NYFW" loading="lazy"></div><span><small>${esc(p.subtitle)}</small><b>${esc(p.title)}</b></span></button>`).join('');
 
   const faceRail=creators.map((c,i)=>`
     <button class="face-tile" data-face="${i}">
@@ -464,8 +469,11 @@ function connect(){
   <div class="screen-title"><div><small>CREATIVE NETWORK</small><h1>CONNECT.</h1></div><span>${state.creatorIndex%creators.length+1} / ${creators.length}</span></div>
   <div class="connect-wrap">
     <article class="creator-card app-card" id="creatorCard">
-      <div class="creator-visual" style="background-image:linear-gradient(180deg,transparent 35%,rgba(0,0,0,.85)),url('${c.image}')">
-        <div><span class="creator-role">${esc(c.role)}</span><h2>${esc(c.name)}</h2><div class="creator-location">${esc(c.loc)}</div></div>
+      <div class="creator-visual">
+        <div class="creator-photo-bg" style="background-image:url('${c.image}')"></div>
+        <img class="creator-photo" src="${c.image}" alt="${esc(c.name)}" draggable="false">
+        <div class="creator-gradient"></div>
+        <div class="creator-title"><span class="creator-role">${esc(c.role)}</span><h2>${esc(c.name)}</h2><div class="creator-location">${esc(c.loc)}</div></div>
       </div>
       <div class="creator-copy">
         <div class="chips">${c.skills.map(s=>`<span class="chip">${esc(s)}</span>`).join('')}</div>
@@ -473,6 +481,7 @@ function connect(){
         <a href="${c.url}" target="_blank" rel="noopener" class="profile-link">VIEW LEDGERA PROFILE ↗</a>
       </div>
     </article>
+    <div class="swipe-hint"><span>← SKIP</span><b>SWIPE THE CARD</b><span>LIKE →</span></div>
     <div class="connect-actions"><button class="round-action" data-swipe-card="skip">×</button><button class="round-action star" data-swipe-card="save">☆</button><button class="round-action like" data-swipe-card="like">♡</button></div>
   </div>`;
 }
@@ -646,6 +655,56 @@ function installApp(){
   openModal(`<button class="modal-close" data-close>×</button><span class="category">INSTALL PULSE</span><h2>MAKE IT AN APP.</h2><p>${ios?'On iPhone: tap the Share button in Safari, then choose “Add to Home Screen.” PULSE opens full-screen with its own app icon.':'Open your browser menu and choose “Install app” or “Add to Home screen.”'}</p><div class="install-preview"><img src="/assets/icon-192.png" alt=""><span><b>PULSE</b><small>LSMG × LEDGERA</small></span></div>`);
 }
 
+
+function creatorAction(action, animate=false){
+  const c=creators[state.creatorIndex%creators.length];
+  if(action==='like' && !state.matches.includes(c.name)){state.matches.push(c.name);toast('Connection saved');}
+  else if(action==='save') toast('Profile saved');
+  const card=$('#creatorCard');
+  const finish=()=>{state.creatorIndex=(state.creatorIndex+1)%creators.length;save();render();};
+  if(animate&&card){
+    const dir=action==='like'?1:-1;
+    card.style.transition='transform .18s ease, opacity .18s ease';
+    card.style.transform=`translateX(${dir*120}%) rotate(${dir*8}deg)`;
+    card.style.opacity='0';
+    setTimeout(finish,170);
+  }else finish();
+}
+function bindCreatorCardSwipe(){
+  const card=$('#creatorCard'); if(!card)return;
+  let g=null;
+  card.addEventListener('pointerdown',e=>{
+    if(e.pointerType==='mouse'&&e.button!==0)return;
+    if(e.target.closest('a,button,audio,video,input'))return;
+    g={id:e.pointerId,x:e.clientX,y:e.clientY,t:performance.now(),dx:0};
+    try{card.setPointerCapture(e.pointerId)}catch{}
+    card.classList.add('dragging');
+  });
+  card.addEventListener('pointermove',e=>{
+    if(!g||e.pointerId!==g.id)return;
+    const dx=e.clientX-g.x,dy=e.clientY-g.y;
+    if(Math.abs(dy)>Math.abs(dx)*1.4&&Math.abs(dy)>18)return;
+    g.dx=dx;
+    const limited=Math.max(-150,Math.min(150,dx));
+    card.style.transform=`translateX(${limited}px) rotate(${limited*.025}deg)`;
+    card.style.opacity=String(Math.max(.72,1-Math.abs(limited)/520));
+  });
+  const end=e=>{
+    if(!g||e.pointerId!==g.id)return;
+    const dx=e.clientX-g.x,dt=Math.max(1,performance.now()-g.t),velocity=Math.abs(dx)/dt;
+    g=null; card.classList.remove('dragging');
+    if(Math.abs(dx)>86||velocity>.55){
+      creatorAction(dx>0?'like':'skip',true);
+    }else{
+      card.style.transition='transform .22s cubic-bezier(.2,.8,.2,1), opacity .22s';
+      card.style.transform='';card.style.opacity='';
+      setTimeout(()=>card.style.transition='',230);
+    }
+  };
+  card.addEventListener('pointerup',end);
+  card.addEventListener('pointercancel',()=>{if(!g)return;g=null;card.classList.remove('dragging');card.style.transform='';card.style.opacity='';});
+}
+
 function bind(){
   $$('[data-go]').forEach(b=>b.onclick=()=>setTab(b.dataset.go));
   $('#refreshLive')?.addEventListener('click',loadLive);
@@ -665,12 +724,8 @@ function bind(){
   $$('[data-read-issue]').forEach(b=>b.onclick=()=>{closeModal();readIssue(b.dataset.readIssue);});
   $('#allIssues')?.addEventListener('click',issuesModal);
   $('#allStories')?.addEventListener('click',allStoriesModal);
-  $$('[data-swipe-card]').forEach(b=>b.onclick=()=>{
-    const action=b.dataset.swipeCard; const c=creators[state.creatorIndex%creators.length];
-    if(action==='like' && !state.matches.includes(c.name)){state.matches.push(c.name);toast('Connection saved');}
-    else if(action==='save') toast('Profile saved');
-    state.creatorIndex=(state.creatorIndex+1)%creators.length;save();render();
-  });
+  $('[data-swipe-card]').forEach(b=>b.onclick=()=>creatorAction(b.dataset.swipeCard,false));
+  bindCreatorCardSwipe();
   $$('#installApp, #installSettings').forEach(b=>b.onclick=installApp);
   $('#openAISettings')?.addEventListener('click',()=>aiModal());
   $('#profileStories')?.addEventListener('click',allStoriesModal);
@@ -720,25 +775,53 @@ aiButton.setAttribute('aria-label','Open PULSE AI');
 aiButton.onclick=()=>aiModal();
 document.body.appendChild(aiButton);
 
-let touchStart=null;
-document.addEventListener('touchstart',e=>{
-  if(e.touches.length!==1 || $('#modal')?.open) return;
-  touchStart={x:e.touches[0].clientX,y:e.touches[0].clientY};
-},{passive:true});
-document.addEventListener('touchend',e=>{
-  if(!touchStart || $('#modal')?.open) return;
-  const t=e.changedTouches[0], dx=t.clientX-touchStart.x, dy=t.clientY-touchStart.y;
-  touchStart=null;
-  if(Math.abs(dx)>85 && Math.abs(dx)>Math.abs(dy)*1.5){
+const swipeSurface=$('#view');
+let tabSwipe=null;
+let suppressClickUntil=0;
+const noTabSwipe=t=>!!t.closest('.nyfw-rail,.issue-rail,.face-rail,.stock-video-rail,.podcast-card,audio,video,input,textarea,select,.reader-overlay,.onboarding-layer,.auth-layer,#creatorCard');
+swipeSurface?.addEventListener('pointerdown',e=>{
+  if((e.pointerType==='mouse'&&e.button!==0)||$('#modal')?.open||noTabSwipe(e.target))return;
+  tabSwipe={id:e.pointerId,x:e.clientX,y:e.clientY,t:performance.now(),dx:0,dragging:false};
+  try{swipeSurface.setPointerCapture(e.pointerId)}catch{}
+});
+swipeSurface?.addEventListener('pointermove',e=>{
+  if(!tabSwipe||e.pointerId!==tabSwipe.id)return;
+  const dx=e.clientX-tabSwipe.x,dy=e.clientY-tabSwipe.y;
+  if(Math.abs(dx)>12&&Math.abs(dx)>Math.abs(dy)*1.15){
+    tabSwipe.dragging=true;tabSwipe.dx=dx;
+    const visual=Math.max(-28,Math.min(28,dx*.18));
+    swipeSurface.style.transition='none';
+    swipeSurface.style.transform=`translateX(${visual}px)`;
+    swipeSurface.style.opacity=String(Math.max(.9,1-Math.abs(visual)/220));
+  }
+});
+function endTabSwipe(e){
+  if(!tabSwipe||e.pointerId!==tabSwipe.id)return;
+  const g=tabSwipe;tabSwipe=null;
+  const dx=e.clientX-g.x,dy=e.clientY-g.y,dt=Math.max(1,performance.now()-g.t),velocity=Math.abs(dx)/dt;
+  swipeSurface.style.transition='transform .18s ease, opacity .18s ease';
+  swipeSurface.style.transform='';swipeSurface.style.opacity='';
+  setTimeout(()=>swipeSurface.style.transition='',190);
+  if(!g.dragging)return;
+  suppressClickUntil=Date.now()+260;
+  if(Math.abs(dx)>68&&Math.abs(dx)>Math.abs(dy)*1.18||velocity>.65&&Math.abs(dx)>38){
     const tabs=['feed','watch','predict','connect','me'];
     const i=tabs.indexOf(state.tab);
-    if(dx<0 && i<tabs.length-1) setTab(tabs[i+1]);
-    if(dx>0 && i>0) setTab(tabs[i-1]);
+    if(dx<0&&i<tabs.length-1)setTab(tabs[i+1]);
+    else if(dx>0&&i>0)setTab(tabs[i-1]);
+    else haptic();
   }
-},{passive:true});
+}
+swipeSurface?.addEventListener('pointerup',endTabSwipe);
+swipeSurface?.addEventListener('pointercancel',e=>{
+  tabSwipe=null;swipeSurface.style.transform='';swipeSurface.style.opacity='';
+});
+document.addEventListener('click',e=>{
+  if(Date.now()<suppressClickUntil){e.preventDefault();e.stopImmediatePropagation();}
+},true);
 
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();state.deferredInstall=e;render();});
 window.addEventListener('appinstalled',()=>{state.deferredInstall=null;toast('PULSE installed');render();});
 
 bootPulse();
-if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
+if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
