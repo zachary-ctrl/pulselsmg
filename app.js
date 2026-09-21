@@ -420,11 +420,11 @@ function readArticle(i){ const a=state.articles[Number(i)]; if(a)openReader(a.ur
 function readIssue(i){ const x=issues[Number(i)]; if(x)openReader(x.url,x.title,x.label); }
 function issuesModal(){
   openModal(`<button class="modal-close" data-close>×</button><span class="category">LEDGERA MAGAZINE</span><h2>READ THE ISSUES.</h2><p>Full editions open inside PULSE in LEDGERA’s mobile reader.</p><div class="issue-library">${issues.map((x,i)=>`<button data-read-issue="${i}"><img src="${esc(x.cover)}" alt=""><span><small>${esc(x.label)}</small><b>${esc(x.title)}</b><p>${esc(x.subtitle)}</p></span></button>`).join('')}</div>`);
-  $('[data-read-issue]',$('#modalCard')).forEach(b=>b.onclick=()=>{closeModal();readIssue(b.dataset.readIssue);});
+  $$('[data-read-issue]',$('#modalCard')).forEach(b=>b.onclick=()=>{closeModal();readIssue(b.dataset.readIssue);});
 }
 function allStoriesModal(){
   openModal(`<button class="modal-close" data-close>×</button><span class="category">LEDGERA</span><h2>ALL STORIES.</h2><div class="article-library">${state.articles.map((a,i)=>`<button data-read-article="${i}"><span>${String(i+1).padStart(2,'0')}</span><div><small>${esc(a.category||'LEDGERA')}</small><b>${esc(a.title)}</b><p>${esc(a.summary||'')}</p></div><em>›</em></button>`).join('')}</div>`);
-  $('[data-read-article]',$('#modalCard')).forEach(b=>b.onclick=()=>{closeModal();readArticle(b.dataset.readArticle);});
+  $$('[data-read-article]',$('#modalCard')).forEach(b=>b.onclick=()=>{closeModal();readArticle(b.dataset.readArticle);});
 }
 
 function marketModal(id){
