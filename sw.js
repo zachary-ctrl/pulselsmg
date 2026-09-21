@@ -1,5 +1,5 @@
-const CACHE="swarm-v3";
-const CORE=["/","/index.html","/styles.css","/src/app.mjs","/src/store.mjs","/src/demo-data.mjs","/src/goal-engine.mjs","/src/match-engine.mjs","/src/services.mjs","/manifest.webmanifest","/assets/swarm-mark.svg"];
+const CACHE="swarm-v4";
+const CORE=["/","/index.html","/styles.css","/src/app.mjs","/src/cloud.mjs","/src/store.mjs","/src/demo-data.mjs","/src/goal-engine.mjs","/src/match-engine.mjs","/src/services.mjs","/manifest.webmanifest","/assets/swarm-mark.svg"];
 self.addEventListener("install",e=>{self.skipWaiting();e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)))});
 self.addEventListener("activate",e=>{e.waitUntil(Promise.all([self.clients.claim(),caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))))]))});
 self.addEventListener("fetch",e=>{

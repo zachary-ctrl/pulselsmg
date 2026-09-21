@@ -84,3 +84,21 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   .hero{padding:44px;min-height:620px}.project-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.project-shell{display:grid;grid-template-columns:220px 1fr;column-gap:24px}.project-header{grid-column:1/-1}.project-nav{display:grid;align-content:start;border:1px solid var(--line);border-radius:16px;padding:8px;height:max-content;position:sticky;top:90px}.project-nav button{text-align:left}.project-stage{min-width:0}.people-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
+
+/* SWARM Cloud production layer */
+.cloud-loader{min-height:55svh;display:grid;place-items:center;align-content:center;text-align:center;gap:10px;color:var(--muted)}
+.cloud-loader i{width:38px;height:38px;border:3px solid var(--line2);border-top-color:var(--acid);border-radius:50%;animation:spin .7s linear infinite}
+.cloud-loader b{font-size:8px;letter-spacing:.14em;color:#dfe8e1}.cloud-loader span{font-size:9px;color:var(--muted2)}
+.cloud-auth-message{margin:12px 0;border:1px solid #3f583f;border-radius:11px;background:#111b13;padding:10px 11px;color:#a6d9ad;font-size:9px;line-height:1.5}
+.cloud-status,.live-banner{display:flex;gap:9px;align-items:center;border:1px solid #314b3b;border-radius:13px;background:linear-gradient(90deg,#101913,#0c1110);padding:10px 12px;margin:10px 0}
+.cloud-status i{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 5px rgba(118,242,167,.08)}
+.cloud-status b,.live-banner b{color:var(--ok);font-size:7px;letter-spacing:.1em;white-space:nowrap}.cloud-status span,.live-banner span{color:#879a8e;font-size:8px;line-height:1.45}
+.live-banner{align-items:flex-start;border-color:#35545a}.live-banner b{color:var(--cyan)}
+.icon-btn.has-unread{position:relative;border-color:#4b6540}.icon-btn.has-unread::after{content:attr(data-count);position:absolute;right:-3px;top:-4px;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:var(--acid);color:#071009;display:grid;place-items:center;font-size:6px;font-weight:950}
+.blueprint-readonly{display:grid;grid-template-columns:1fr 1fr;gap:8px}.blueprint-readonly>div{border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:13px}.blueprint-readonly .span-2{grid-column:1/-1}.blueprint-readonly small{display:block;color:var(--acid);font-size:6px;font-weight:950;letter-spacing:.1em}.blueprint-readonly p{color:#a1ada5;font-size:10px;line-height:1.55}.blueprint-readonly b{font-size:12px}
+.role-editor-head select{min-height:30px;border:1px solid var(--line);border-radius:8px;background:#0b0e0c;color:var(--acid);padding:5px 7px;font-size:7px;font-weight:950}
+.invite-card.live{border-color:#3b5142}.invite-status.pending{color:var(--warn);border-color:#5a4d2d}
+.file-list{display:grid;gap:6px}.file-list>button{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;border:1px solid var(--line);border-radius:10px;background:#0c100d;padding:9px;text-align:left}.file-list b{font-size:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.file-list small{color:#657269;font-size:6px;flex:0 0 auto}
+.upload-btn{cursor:pointer;color:var(--cyan);font-size:7px;font-weight:950;letter-spacing:.06em}
+.check-list input:disabled{opacity:.35}
+@media(max-width:700px){.blueprint-readonly{grid-template-columns:1fr}.blueprint-readonly .span-2{grid-column:auto}.live-banner,.cloud-status{align-items:flex-start;flex-direction:column}}
