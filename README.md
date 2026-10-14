@@ -29,7 +29,7 @@ Open `index.html` in a browser, or deploy the folder as a static site (Netlify c
 
 ## Art and sound
 
-- Dialogue portraits for Max, Lana, Jason, Dr. Ciencia and the Choir are taken from the *Complete Illustrated Bible* model sheets and embedded in `index.html`. In-game sprites and backgrounds are drawn in code to match those designs.
+- Dialogue portraits for Max, Lana, Jason, Dr. Ciencia and the Choir are taken from the *Complete Illustrated Bible* model sheets and embedded in `index.html`. Max, Lana and Jason's in-game sprites are cut from the same model sheet's side-view poses and animated by splitting each figure at the hip (stride, bob, lean, squash and stretch); Max switches to his power pose when he strikes, and his astral double and the Hallway Echo are tinted versions of his design. Backgrounds, enemies and Dr. Ciencia's sprite are drawn in code.
 - All audio is synthesized live with the Web Audio API: footsteps that change with the floor, character voice blips in dialogue, per-room ambience (classroom clock, hallway fluorescent buzz, cafeteria hum, lab bubbling), boss music (clinical percussion for Dr. Ciencia, a late heartbeat for the Hallway Echo), and effects for every attack, power and pickup. Sound and music can be toggled separately in the pause menu.
 
 The whole game is the single `index.html` file.
