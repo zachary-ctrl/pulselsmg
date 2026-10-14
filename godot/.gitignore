@@ -1,0 +1,5 @@
+# Godot editor cache and exports
+.godot/
+/android/
+/build/
+*.tmp

@@ -1,0 +1,86 @@
+"""Writes scenes/rooms/*.tscn from the room table below.
+
+Run once to regenerate the starting layouts; after that, edit the rooms
+directly in the Godot editor (move platforms, markers and blockers there).
+"""
+import os
+ROOT = os.path.join(os.path.dirname(__file__), '..', 'scenes', 'rooms')
+
+ROOMS = {
+ 'classroom': dict(name='Room 101', sub='Science Wing · Last Period', size=(1920, 540), floor='wood', tint='#ffb37a',
+   solids=[(0,470,1920,70,'s'),(250,430,96,10,'o'),(450,430,96,10,'o'),(650,430,96,10,'o'),(1040,430,96,10,'o'),(1230,430,96,10,'o'),(1440,402,180,68,'s'),(1650,330,130,10,'o')],
+   doors=[(1818,298,22,172,'door101')], gates=[],
+   markers=[('sigil',dict(pos=(1882,392),flag='door101')),('exit',dict(rect=(1898,290,22,180),target_room='hallway',spawn_point=(60,470))),
+            ('anchor',dict(pos=(1715,330),id='momText')),('trigger',dict(rect=(780,0,60,540),event='firstProjection'))]),
+ 'hallway': dict(name='East Hall', sub='Where the lockers whisper', size=(3200, 540), floor='tile', tint='#9ec2ff',
+   solids=[(0,470,1480,70,'s'),(1720,470,1480,70,'s'),(1480,540,240,10,'s'),(1556,392,96,12,'o'),(2050,380,160,90,'s'),(600,404,120,10,'o')],
+   doors=[], gates=[(2370,230,28,240,'echo_fight'),(3150,230,28,240,'echo_unresolved')],
+   markers=[('hazard',dict(rect=(1480,500,240,40))),('exit',dict(rect=(0,290,22,180),target_room='classroom',spawn_point=(1870,470))),
+            ('exit',dict(rect=(3178,290,22,180),target_room='cafeteria',spawn_point=(60,1010))),('anchor',dict(pos=(2130,380),id='unknownText')),
+            ('trigger',dict(rect=(2520,0,40,540),event='echoArena')),('spawn',dict(pos=(1150,470),enemy='sleeper',id='s1')),
+            ('spawn',dict(pos=(1880,470),enemy='sleeper',id='s2')),('spawn',dict(pos=(2280,470),enemy='sleeper',id='s3',patrol_range=70)),
+            ('npc',dict(pos=(860,470),id='lana',face=-1,dialog='lana1',dialog_repeat='lana2')),('bench',dict(pos=(300,470)))]),
+ 'cafeteria': dict(name='The Cafeteria', sub='412 lunches served · 0 eaten', size=(2400, 1080), floor='lino', tint='#b8ffd8',
+   solids=[(0,1010,1300,70,'s'),(1560,1010,840,70,'s'),(1300,1080,260,10,'s'),(180,950,200,12,'o'),(520,950,200,12,'o'),(880,950,200,12,'o'),
+           (1700,950,200,12,'o'),(2050,950,200,12,'o'),(1380,935,100,12,'o'),(1100,800,160,14,'o'),(1380,650,140,14,'o'),(1600,520,800,30,'s'),
+           (130,905,110,12,'a'),(320,800,110,12,'a'),(130,695,110,12,'a'),(320,590,110,12,'a'),(130,485,110,12,'a'),(300,385,200,12,'a')],
+   doors=[], gates=[],
+   markers=[('hazard',dict(rect=(1300,1030,260,50))),('exit',dict(rect=(0,870,22,140),target_room='hallway',spawn_point=(3110,470))),
+            ('exit',dict(rect=(2378,380,22,140),target_room='lab',spawn_point=(60,470))),('anchor',dict(pos=(400,385),id='levitation',astral=True)),
+            ('anchor',dict(pos=(2150,950),id='receipt')),('spawn',dict(pos=(1200,700),enemy='mote',id='m1')),('spawn',dict(pos=(1900,800),enemy='mote',id='m2')),
+            ('spawn',dict(pos=(700,640),enemy='mote',id='m3')),('spawn',dict(pos=(1900,1010),enemy='sleeper',id='s4',patrol_range=120)),
+            ('npc',dict(pos=(760,1010),id='jason',face=1,dialog='jason1',dialog_repeat='jason2')),('bench',dict(pos=(1760,520)))]),
+ 'lab': dict(name='Sub-Basement Lab', sub='Property of the Dharma Order', size=(1120, 540), floor='metal', tint='#7ff0ff',
+   solids=[(0,470,1120,70,'s'),(170,368,170,12,'o'),(790,368,170,12,'o')],
+   doors=[], gates=[(4,230,28,240,'ciencia_fight')],
+   markers=[('exit',dict(rect=(0,290,20,180),target_room='cafeteria',spawn_point=(2330,520))),('anchor',dict(pos=(110,470),id='dharmaNote')),
+            ('trigger',dict(rect=(300,0,40,540),event='cienciaArena')),('spawn',dict(pos=(900,470),enemy='ciencia',id='boss'))]),
+}
+LAYER = {'s': 1, 'o': 2, 'a': 4}
+
+def v2(p): return 'Vector2(%g, %g)' % p
+def col(h):
+    h = h.lstrip('#'); r, g, b = (int(h[i:i + 2], 16) / 255 for i in (0, 2, 4))
+    return 'Color(%.4f, %.4f, %.4f, 1)' % (r, g, b)
+def gen(rid, r):
+    subs, nodes = [], []
+    ext = ['[ext_resource type="Script" path="res://scripts/room.gd" id="room"]',
+           '[ext_resource type="Script" path="res://scripts/marker.gd" id="marker"]',
+           '[ext_resource type="Script" path="res://scripts/blocker.gd" id="blocker"]']
+    title = rid.capitalize()
+    nodes.append(f'[node name="{title}" type="Node2D"]\nscript = ExtResource("room")\nroom_id = "{rid}"\ndisplay_name = "{r["name"]}"\nsubtitle = "{r["sub"]}"\nroom_size = {v2(r["size"])}\nfloor_sound = "{r["floor"]}"\ntint = {col(r["tint"])}\n')
+    nodes.append('[node name="Platforms" type="Node2D" parent="."]\n')
+    for i, (x, y, w, h, k) in enumerate(r['solids']):
+        sid = f'shape_p{i}'; subs.append(f'[sub_resource type="RectangleShape2D" id="{sid}"]\nsize = Vector2({w}, {h})\n')
+        nm = {'s': 'Solid', 'o': 'OneWay', 'a': 'Astral'}[k] + str(i)
+        nodes.append(f'[node name="{nm}" type="StaticBody2D" parent="Platforms"]\nposition = {v2((x + w / 2, y + h / 2))}\ncollision_layer = {LAYER[k]}\ncollision_mask = 0\n' + ('metadata/astral = true\n' if k == 'a' else ''))
+        nodes.append(f'[node name="Shape" type="CollisionShape2D" parent="Platforms/{nm}"]\nshape = SubResource("{sid}")\n' + ('one_way_collision = true\n' if k in 'oa' else ''))
+    nodes.append('[node name="Blockers" type="Node2D" parent="."]\n')
+    bl = [('door', d) for d in r['doors']] + [('gate', g) for g in r['gates']]
+    for i, (kind, (x, y, w, h, c)) in enumerate(bl):
+        sid = f'shape_b{i}'; subs.append(f'[sub_resource type="RectangleShape2D" id="{sid}"]\nsize = Vector2({w}, {h})\n')
+        nm = kind.capitalize() + str(i)
+        extra = f'flag = "{c}"\n' if kind == 'door' else f'condition = "{c}"\n'
+        nodes.append(f'[node name="{nm}" type="StaticBody2D" parent="Blockers"]\nposition = {v2((x + w / 2, y + h / 2))}\ncollision_layer = {8 if kind == "door" else 16}\ncollision_mask = 0\nscript = ExtResource("blocker")\nkind = "{kind}"\n{extra}size = Vector2({w}, {h})\n')
+        nodes.append(f'[node name="Shape" type="CollisionShape2D" parent="Blockers/{nm}"]\nshape = SubResource("{sid}")\n')
+    nodes.append('[node name="Markers" type="Node2D" parent="."]\n')
+    for i, (kind, d) in enumerate(r['markers']):
+        props = [f'kind = "{kind}"']
+        if 'rect' in d: x, y, w, h = d['rect']; pos = (x, y); props.append(f'size = Vector2({w}, {h})')
+        else: pos = d['pos']
+        for k in ('target_room', 'event', 'id', 'flag', 'dialog', 'dialog_repeat', 'enemy'):
+            if k in d: props.append(f'{k} = "{d[k]}"')
+        if 'spawn_point' in d: props.append(f'spawn_point = {v2(d["spawn_point"])}')
+        if 'face' in d: props.append(f'face = {d["face"]}')
+        if 'patrol_range' in d: props.append(f'patrol_range = {d["patrol_range"]}')
+        if d.get('astral'): props.append('astral = true')
+        label = (d.get('id') or d.get('event') or d.get('target_room') or kind).replace(' ', '')
+        nodes.append(f'[node name="{kind.capitalize()}_{label}_{i}" type="Node2D" parent="Markers"]\nposition = {v2(pos)}\nscript = ExtResource("marker")\n' + '\n'.join(props) + '\n')
+    head = f'[gd_scene load_steps={len(ext) + len(subs) + 1} format=3]\n'
+    return head + '\n' + '\n'.join(ext) + '\n\n' + '\n'.join(subs) + '\n' + '\n'.join(nodes)
+
+if __name__ == '__main__':
+    os.makedirs(ROOT, exist_ok=True)
+    for rid, r in ROOMS.items():
+        open(os.path.join(ROOT, rid + '.tscn'), 'w').write(gen(rid, r))
+    print('rooms written')

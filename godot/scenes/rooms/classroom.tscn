@@ -1,0 +1,156 @@
+[gd_scene load_steps=13 format=3]
+
+[ext_resource type="Script" path="res://scripts/room.gd" id="room"]
+[ext_resource type="Script" path="res://scripts/marker.gd" id="marker"]
+[ext_resource type="Script" path="res://scripts/blocker.gd" id="blocker"]
+
+[sub_resource type="RectangleShape2D" id="shape_p0"]
+size = Vector2(1920, 70)
+
+[sub_resource type="RectangleShape2D" id="shape_p1"]
+size = Vector2(96, 10)
+
+[sub_resource type="RectangleShape2D" id="shape_p2"]
+size = Vector2(96, 10)
+
+[sub_resource type="RectangleShape2D" id="shape_p3"]
+size = Vector2(96, 10)
+
+[sub_resource type="RectangleShape2D" id="shape_p4"]
+size = Vector2(96, 10)
+
+[sub_resource type="RectangleShape2D" id="shape_p5"]
+size = Vector2(96, 10)
+
+[sub_resource type="RectangleShape2D" id="shape_p6"]
+size = Vector2(180, 68)
+
+[sub_resource type="RectangleShape2D" id="shape_p7"]
+size = Vector2(130, 10)
+
+[sub_resource type="RectangleShape2D" id="shape_b0"]
+size = Vector2(22, 172)
+
+[node name="Classroom" type="Node2D"]
+script = ExtResource("room")
+room_id = "classroom"
+display_name = "Room 101"
+subtitle = "Science Wing · Last Period"
+room_size = Vector2(1920, 540)
+floor_sound = "wood"
+tint = Color(1.0000, 0.7020, 0.4784, 1)
+
+[node name="Platforms" type="Node2D" parent="."]
+
+[node name="Solid0" type="StaticBody2D" parent="Platforms"]
+position = Vector2(960, 505)
+collision_layer = 1
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/Solid0"]
+shape = SubResource("shape_p0")
+
+[node name="OneWay1" type="StaticBody2D" parent="Platforms"]
+position = Vector2(298, 435)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay1"]
+shape = SubResource("shape_p1")
+one_way_collision = true
+
+[node name="OneWay2" type="StaticBody2D" parent="Platforms"]
+position = Vector2(498, 435)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay2"]
+shape = SubResource("shape_p2")
+one_way_collision = true
+
+[node name="OneWay3" type="StaticBody2D" parent="Platforms"]
+position = Vector2(698, 435)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay3"]
+shape = SubResource("shape_p3")
+one_way_collision = true
+
+[node name="OneWay4" type="StaticBody2D" parent="Platforms"]
+position = Vector2(1088, 435)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay4"]
+shape = SubResource("shape_p4")
+one_way_collision = true
+
+[node name="OneWay5" type="StaticBody2D" parent="Platforms"]
+position = Vector2(1278, 435)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay5"]
+shape = SubResource("shape_p5")
+one_way_collision = true
+
+[node name="Solid6" type="StaticBody2D" parent="Platforms"]
+position = Vector2(1530, 436)
+collision_layer = 1
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/Solid6"]
+shape = SubResource("shape_p6")
+
+[node name="OneWay7" type="StaticBody2D" parent="Platforms"]
+position = Vector2(1715, 335)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay7"]
+shape = SubResource("shape_p7")
+one_way_collision = true
+
+[node name="Blockers" type="Node2D" parent="."]
+
+[node name="Door0" type="StaticBody2D" parent="Blockers"]
+position = Vector2(1829, 384)
+collision_layer = 8
+collision_mask = 0
+script = ExtResource("blocker")
+kind = "door"
+flag = "door101"
+size = Vector2(22, 172)
+
+[node name="Shape" type="CollisionShape2D" parent="Blockers/Door0"]
+shape = SubResource("shape_b0")
+
+[node name="Markers" type="Node2D" parent="."]
+
+[node name="Sigil_sigil_0" type="Node2D" parent="Markers"]
+position = Vector2(1882, 392)
+script = ExtResource("marker")
+kind = "sigil"
+flag = "door101"
+
+[node name="Exit_hallway_1" type="Node2D" parent="Markers"]
+position = Vector2(1898, 290)
+script = ExtResource("marker")
+kind = "exit"
+size = Vector2(22, 180)
+target_room = "hallway"
+spawn_point = Vector2(60, 470)
+
+[node name="Anchor_momText_2" type="Node2D" parent="Markers"]
+position = Vector2(1715, 330)
+script = ExtResource("marker")
+kind = "anchor"
+id = "momText"
+
+[node name="Trigger_firstProjection_3" type="Node2D" parent="Markers"]
+position = Vector2(780, 0)
+script = ExtResource("marker")
+kind = "trigger"
+size = Vector2(60, 540)
+event = "firstProjection"

@@ -1,0 +1,316 @@
+[gd_scene load_steps=22 format=3]
+
+[ext_resource type="Script" path="res://scripts/room.gd" id="room"]
+[ext_resource type="Script" path="res://scripts/marker.gd" id="marker"]
+[ext_resource type="Script" path="res://scripts/blocker.gd" id="blocker"]
+
+[sub_resource type="RectangleShape2D" id="shape_p0"]
+size = Vector2(1300, 70)
+
+[sub_resource type="RectangleShape2D" id="shape_p1"]
+size = Vector2(840, 70)
+
+[sub_resource type="RectangleShape2D" id="shape_p2"]
+size = Vector2(260, 10)
+
+[sub_resource type="RectangleShape2D" id="shape_p3"]
+size = Vector2(200, 12)
+
+[sub_resource type="RectangleShape2D" id="shape_p4"]
+size = Vector2(200, 12)
+
+[sub_resource type="RectangleShape2D" id="shape_p5"]
+size = Vector2(200, 12)
+
+[sub_resource type="RectangleShape2D" id="shape_p6"]
+size = Vector2(200, 12)
+
+[sub_resource type="RectangleShape2D" id="shape_p7"]
+size = Vector2(200, 12)
+
+[sub_resource type="RectangleShape2D" id="shape_p8"]
+size = Vector2(100, 12)
+
+[sub_resource type="RectangleShape2D" id="shape_p9"]
+size = Vector2(160, 14)
+
+[sub_resource type="RectangleShape2D" id="shape_p10"]
+size = Vector2(140, 14)
+
+[sub_resource type="RectangleShape2D" id="shape_p11"]
+size = Vector2(800, 30)
+
+[sub_resource type="RectangleShape2D" id="shape_p12"]
+size = Vector2(110, 12)
+
+[sub_resource type="RectangleShape2D" id="shape_p13"]
+size = Vector2(110, 12)
+
+[sub_resource type="RectangleShape2D" id="shape_p14"]
+size = Vector2(110, 12)
+
+[sub_resource type="RectangleShape2D" id="shape_p15"]
+size = Vector2(110, 12)
+
+[sub_resource type="RectangleShape2D" id="shape_p16"]
+size = Vector2(110, 12)
+
+[sub_resource type="RectangleShape2D" id="shape_p17"]
+size = Vector2(200, 12)
+
+[node name="Cafeteria" type="Node2D"]
+script = ExtResource("room")
+room_id = "cafeteria"
+display_name = "The Cafeteria"
+subtitle = "412 lunches served · 0 eaten"
+room_size = Vector2(2400, 1080)
+floor_sound = "lino"
+tint = Color(0.7216, 1.0000, 0.8471, 1)
+
+[node name="Platforms" type="Node2D" parent="."]
+
+[node name="Solid0" type="StaticBody2D" parent="Platforms"]
+position = Vector2(650, 1045)
+collision_layer = 1
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/Solid0"]
+shape = SubResource("shape_p0")
+
+[node name="Solid1" type="StaticBody2D" parent="Platforms"]
+position = Vector2(1980, 1045)
+collision_layer = 1
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/Solid1"]
+shape = SubResource("shape_p1")
+
+[node name="Solid2" type="StaticBody2D" parent="Platforms"]
+position = Vector2(1430, 1085)
+collision_layer = 1
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/Solid2"]
+shape = SubResource("shape_p2")
+
+[node name="OneWay3" type="StaticBody2D" parent="Platforms"]
+position = Vector2(280, 956)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay3"]
+shape = SubResource("shape_p3")
+one_way_collision = true
+
+[node name="OneWay4" type="StaticBody2D" parent="Platforms"]
+position = Vector2(620, 956)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay4"]
+shape = SubResource("shape_p4")
+one_way_collision = true
+
+[node name="OneWay5" type="StaticBody2D" parent="Platforms"]
+position = Vector2(980, 956)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay5"]
+shape = SubResource("shape_p5")
+one_way_collision = true
+
+[node name="OneWay6" type="StaticBody2D" parent="Platforms"]
+position = Vector2(1800, 956)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay6"]
+shape = SubResource("shape_p6")
+one_way_collision = true
+
+[node name="OneWay7" type="StaticBody2D" parent="Platforms"]
+position = Vector2(2150, 956)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay7"]
+shape = SubResource("shape_p7")
+one_way_collision = true
+
+[node name="OneWay8" type="StaticBody2D" parent="Platforms"]
+position = Vector2(1430, 941)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay8"]
+shape = SubResource("shape_p8")
+one_way_collision = true
+
+[node name="OneWay9" type="StaticBody2D" parent="Platforms"]
+position = Vector2(1180, 807)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay9"]
+shape = SubResource("shape_p9")
+one_way_collision = true
+
+[node name="OneWay10" type="StaticBody2D" parent="Platforms"]
+position = Vector2(1450, 657)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay10"]
+shape = SubResource("shape_p10")
+one_way_collision = true
+
+[node name="Solid11" type="StaticBody2D" parent="Platforms"]
+position = Vector2(2000, 535)
+collision_layer = 1
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/Solid11"]
+shape = SubResource("shape_p11")
+
+[node name="Astral12" type="StaticBody2D" parent="Platforms"]
+position = Vector2(185, 911)
+collision_layer = 4
+collision_mask = 0
+metadata/astral = true
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/Astral12"]
+shape = SubResource("shape_p12")
+one_way_collision = true
+
+[node name="Astral13" type="StaticBody2D" parent="Platforms"]
+position = Vector2(375, 806)
+collision_layer = 4
+collision_mask = 0
+metadata/astral = true
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/Astral13"]
+shape = SubResource("shape_p13")
+one_way_collision = true
+
+[node name="Astral14" type="StaticBody2D" parent="Platforms"]
+position = Vector2(185, 701)
+collision_layer = 4
+collision_mask = 0
+metadata/astral = true
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/Astral14"]
+shape = SubResource("shape_p14")
+one_way_collision = true
+
+[node name="Astral15" type="StaticBody2D" parent="Platforms"]
+position = Vector2(375, 596)
+collision_layer = 4
+collision_mask = 0
+metadata/astral = true
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/Astral15"]
+shape = SubResource("shape_p15")
+one_way_collision = true
+
+[node name="Astral16" type="StaticBody2D" parent="Platforms"]
+position = Vector2(185, 491)
+collision_layer = 4
+collision_mask = 0
+metadata/astral = true
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/Astral16"]
+shape = SubResource("shape_p16")
+one_way_collision = true
+
+[node name="Astral17" type="StaticBody2D" parent="Platforms"]
+position = Vector2(400, 391)
+collision_layer = 4
+collision_mask = 0
+metadata/astral = true
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/Astral17"]
+shape = SubResource("shape_p17")
+one_way_collision = true
+
+[node name="Blockers" type="Node2D" parent="."]
+
+[node name="Markers" type="Node2D" parent="."]
+
+[node name="Hazard_hazard_0" type="Node2D" parent="Markers"]
+position = Vector2(1300, 1030)
+script = ExtResource("marker")
+kind = "hazard"
+size = Vector2(260, 50)
+
+[node name="Exit_hallway_1" type="Node2D" parent="Markers"]
+position = Vector2(0, 870)
+script = ExtResource("marker")
+kind = "exit"
+size = Vector2(22, 140)
+target_room = "hallway"
+spawn_point = Vector2(3110, 470)
+
+[node name="Exit_lab_2" type="Node2D" parent="Markers"]
+position = Vector2(2378, 380)
+script = ExtResource("marker")
+kind = "exit"
+size = Vector2(22, 140)
+target_room = "lab"
+spawn_point = Vector2(60, 470)
+
+[node name="Anchor_levitation_3" type="Node2D" parent="Markers"]
+position = Vector2(400, 385)
+script = ExtResource("marker")
+kind = "anchor"
+id = "levitation"
+astral = true
+
+[node name="Anchor_receipt_4" type="Node2D" parent="Markers"]
+position = Vector2(2150, 950)
+script = ExtResource("marker")
+kind = "anchor"
+id = "receipt"
+
+[node name="Spawn_m1_5" type="Node2D" parent="Markers"]
+position = Vector2(1200, 700)
+script = ExtResource("marker")
+kind = "spawn"
+id = "m1"
+enemy = "mote"
+
+[node name="Spawn_m2_6" type="Node2D" parent="Markers"]
+position = Vector2(1900, 800)
+script = ExtResource("marker")
+kind = "spawn"
+id = "m2"
+enemy = "mote"
+
+[node name="Spawn_m3_7" type="Node2D" parent="Markers"]
+position = Vector2(700, 640)
+script = ExtResource("marker")
+kind = "spawn"
+id = "m3"
+enemy = "mote"
+
+[node name="Spawn_s4_8" type="Node2D" parent="Markers"]
+position = Vector2(1900, 1010)
+script = ExtResource("marker")
+kind = "spawn"
+id = "s4"
+enemy = "sleeper"
+patrol_range = 120
+
+[node name="Npc_jason_9" type="Node2D" parent="Markers"]
+position = Vector2(760, 1010)
+script = ExtResource("marker")
+kind = "npc"
+id = "jason"
+dialog = "jason1"
+dialog_repeat = "jason2"
+face = 1
+
+[node name="Bench_bench_10" type="Node2D" parent="Markers"]
+position = Vector2(1760, 520)
+script = ExtResource("marker")
+kind = "bench"

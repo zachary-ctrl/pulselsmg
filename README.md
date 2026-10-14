@@ -10,7 +10,11 @@ A 2D action-platformer in the spirit of Hollow Knight, built from the *SAKAWA: A
 - Resonance (heal by focusing), Full Potential (a burst with a permanent cost), and a Levitation upgrade.
 - Two bosses — the Hallway Echo and Dr. Ciencia — each resolved with READ / REACH / BIND / STRIKE choices that feed hidden Connection / Control / Rupture and Witness values.
 
-## Play
+## Godot version
+
+A full Godot 4 port of Chapter One lives in [`godot/`](godot/README.md): editable room scenes, gamepad support, rendered sound files and an automated playthrough test. Open `godot/project.godot` in Godot 4.3+.
+
+## Play (web version)
 
 Open `index.html` in a browser, or deploy the folder as a static site (Netlify config included). No build step.
 
