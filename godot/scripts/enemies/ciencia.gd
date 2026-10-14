@@ -227,6 +227,7 @@ func hit(dmg: int, _hdir: int) -> bool:
 		main.fx.projectiles.clear()
 		main.predict_text = ""
 		Sound.play("defeat")
+		Sound.play("tp_explosion_big", 0.0, -10.0)
 		main.get_tree().create_timer(0.9).timeout.connect(_on_defeat)
 	return true
 

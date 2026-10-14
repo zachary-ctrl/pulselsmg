@@ -66,6 +66,51 @@ func _quick(ch: int) -> void:
 
 
 func _run() -> void:
+	if OS.get_environment("QUICK") == "nethost":
+		Net.host()
+		print("NET hosting ", Net.status)
+		main.start_chapter(4, true)
+		await wait(0.5)
+		await advance(14)
+		main.card = null
+		for i in 40:
+			await wait(0.25)
+			if Net.is_host():
+				break
+		print("NET host sees guest=", Net.is_host(), " partner=", main.partner_ok())
+		await wait(1.5)
+		main.player.position = Vector2(900, 470)
+		for i in 6:
+			main._drop("xp", main.player.position + Vector2(60, -40), {"xp": 5})
+		await hold("right", 1.0)
+		await tap("attack")
+		await wait(0.5)
+		await shot("n_host")
+		print("NET partner pos=", main.partner.position if main.partner_ok() else null, " bits=", main.partner.inp.remote_bits if main.partner_ok() else -1)
+		main.load_room("gym", Vector2(300, 1010))
+		await wait(2.0)
+		await shot("n_host_gym")
+		await wait(3.0)
+		get_tree().quit()
+		return
+	if OS.get_environment("QUICK") == "netguest":
+		for i in 60:
+			await wait(0.25)
+			if main.coop == "guest":
+				break
+		print("NET guest joined room=", main.room_id, " mode=", main.mode)
+		Input.action_press("left")
+		await wait(1.2)
+		Input.action_release("left")
+		await tap("jump")
+		await wait(0.6)
+		await shot("n_guest")
+		print("NET guest ents=", main.ents.size(), " partner=", main.partner_ok(), " room=", main.room_id)
+		await wait(3.0)
+		await shot("n_guest_gym")
+		print("NET guest room2=", main.room_id, " ents=", main.ents.size())
+		get_tree().quit()
+		return
 	if OS.get_environment("QUICK") == "ui":
 		await wait(0.5)
 		await shot("q_title")
@@ -119,6 +164,13 @@ func _run() -> void:
 	print("REBIND jump=", Game.bind_label("jump", false), " dash_keys=", Game.settings["bind"]["dash"]["k"].size(), " ps=", Game.PAD_NAMES["ps"]["b0"])
 	Game.reset_bindings()
 	main.ui.sub_back()
+	main.ui.sub_back()
+	main.ui.show_sub("coop")
+	await wait(0.3)
+	await shot("01d_coop")
+	main.ui.show_sub("credits")
+	await wait(0.3)
+	await shot("01e_credits")
 	main.ui.sub_back()
 	# LSMG arcade
 	main.open_arcade()
@@ -423,7 +475,24 @@ func _run() -> void:
 	main.ui._menu_go(2)
 	await wait(0.2)
 	await shot("49_menu_skills")
+	main.ui._menu_go(3)
+	await wait(0.3)
+	await shot("49b_menu_map")
+	main.ui._menu_go(1)
+	await wait(0.2)
+	await shot("49c_menu_gear_icons")
 	main.close_menu()
+	main.add_partner("remote")
+	main.partner.inp.remote_bits = 1 << 1
+	await wait(0.8)
+	main.partner.inp.remote_bits = (1 << 1) | (1 << 4)
+	await wait(0.3)
+	main.partner.inp.remote_bits = 1 << 5
+	await wait(0.1)
+	await shot("49d_coop_partner")
+	print("COOP partner hero=", main.partner.hero, " x=", main.partner.position.x)
+	main.partner.inp.remote_bits = 0
+	main.remove_partner()
 	await tap("hero1")
 	await wait(0.3)
 	main.player.hp = main.player.max_hp

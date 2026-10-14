@@ -22,6 +22,7 @@ var _menu: PanelContainer
 var _menu_body: VBoxContainer
 var _menu_tab = 0
 var _menu_desc: Label
+var _map_ctrl: Control = null
 var _theme: Theme
 
 const CMD := {"READ": "Observe. Reveals memories, rules and hidden truths.", "REACH": "Emotional or psychic contact. The path toward non-destructive endings.",
@@ -129,9 +130,9 @@ func _build_title() -> void:
 	add_child(_title)
 	_title_main = GridContainer.new()
 	_title_main.columns = 2
-	_title_main.position = Vector2(96, 330)
+	_title_main.position = Vector2(96, 318)
 	_title_main.add_theme_constant_override("h_separation", 10)
-	_title_main.add_theme_constant_override("v_separation", 8)
+	_title_main.add_theme_constant_override("v_separation", 6)
 	_title.add_child(_title_main)
 	_btn_continue = _menu_button("CONTINUE", func(): main.continue_game())
 	_title_main.add_child(_btn_continue)
@@ -140,7 +141,9 @@ func _build_title() -> void:
 	cb.name = "Chapters"
 	_title_main.add_child(cb)
 	_title_main.add_child(_menu_button("LSMG ARCADE", func(): main.open_arcade()))
+	_title_main.add_child(_menu_button("CO-OP", func(): show_sub("coop")))
 	_title_main.add_child(_menu_button("SETTINGS", func(): show_sub("settings")))
+	_title_main.add_child(_menu_button("CREDITS", func(): show_sub("credits")))
 	if not OS.has_feature("web"):
 		_title_main.add_child(_menu_button("QUIT", func(): get_tree().quit()))
 	var hint = Label.new()
@@ -157,8 +160,9 @@ func _build_title() -> void:
 func _menu_button(text: String, cb: Callable) -> Button:
 	var b = Button.new()
 	b.text = text
-	b.custom_minimum_size = Vector2(250, 40)
-	b.pressed.connect(func(): Sound.play("select"); cb.call())
+	b.custom_minimum_size = Vector2(250, 36)
+	b.pressed.connect(func(): Sound.play("tp_menu_confirm", 0.0, -6.0); cb.call())
+	b.focus_entered.connect(func(): if b.is_visible_in_tree(): Sound.play("tp_menu_move", 0.0, -10.0))
 	return b
 
 
@@ -210,6 +214,67 @@ func show_sub(kind: String, from_pause := false) -> void:
 				v.add_child(b)
 				if first == null:
 					first = b
+		"coop":
+			v.add_child(_heading("CO-OP", 22))
+			var st = Net.status if Net.status != "" else ("Player 2 is in (couch co-op)." if main.coop == "local" else "Play the story with a friend. Player 2 controls Lana or Jason.")
+			var sl = _small(st, 13, Color("#fff2c8"))
+			sl.custom_minimum_size = Vector2(460, 0)
+			v.add_child(sl)
+			var lc = _menu_button("COUCH CO-OP: " + ("ON" if main.coop == "local" or main.want_local_coop else "OFF"), func(): main.toggle_local_coop(); show_sub("coop", _sub_from_pause))
+			lc.custom_minimum_size = Vector2(460, 38)
+			v.add_child(lc)
+			first = lc
+			var pads = Input.get_connected_joypads()
+			var pn = "Controllers: " + (", ".join(pads.map(func(j): return Input.get_joy_name(j))) if not pads.is_empty() else "none. Plug in or pair a second controller (PS5, PS4, Xbox...).")
+			var pl2 = _small(pn + "  With one controller, player 1 uses the keyboard.", 11, Color("#a8a0b0"))
+			pl2.custom_minimum_size = Vector2(460, 0)
+			v.add_child(pl2)
+			if Net.online_supported():
+				if Net.role == "":
+					var hb = _menu_button("HOST ONLINE GAME", func(): Net.host(); show_sub("coop", _sub_from_pause))
+					hb.custom_minimum_size = Vector2(460, 38)
+					v.add_child(hb)
+					var row = HBoxContainer.new()
+					row.add_theme_constant_override("separation", 8)
+					var le = LineEdit.new()
+					le.placeholder_text = "Host's IP address"
+					le.text = Game.settings.get("last_ip", "")
+					le.custom_minimum_size = Vector2(300, 38)
+					row.add_child(le)
+					var jb = _menu_button("JOIN", func(): Game.settings["last_ip"] = le.text; Game.save_settings(); Net.join(le.text); show_sub("coop", _sub_from_pause))
+					jb.custom_minimum_size = Vector2(150, 38)
+					row.add_child(jb)
+					v.add_child(row)
+				else:
+					var lb = _menu_button("LEAVE / STOP HOSTING", func(): Net.leave(true); show_sub("coop", _sub_from_pause))
+					lb.custom_minimum_size = Vector2(460, 38)
+					v.add_child(lb)
+				var note = _small("Online: the host forwards UDP port %d on their router (or plays on the same Wi-Fi). Host first, then start or continue a game." % Net.PORT, 11, Color("#a8a0b0"))
+				note.custom_minimum_size = Vector2(460, 0)
+				v.add_child(note)
+			else:
+				var wn = _small("Online co-op needs the desktop version (Windows, Mac or Linux). Couch co-op works here.", 12, Color("#a8a0b0"))
+				wn.custom_minimum_size = Vector2(460, 0)
+				v.add_child(wn)
+		"credits":
+			v.add_child(_heading("CREDITS", 22))
+			var sc = ScrollContainer.new()
+			sc.custom_minimum_size = Vector2(700, 340)
+			var cv = VBoxContainer.new()
+			sc.add_child(cv)
+			var cr = [{"section": "SAKAWA: Astral MAX", "lines": ["A Last Shot Media Group game", "Story bible, characters and portraits: SAKAWA team"]}]
+			if FileAccess.file_exists("res://assets/third_party/credits.json"):
+				var d = JSON.parse_string(FileAccess.get_file_as_string("res://assets/third_party/credits.json"))
+				if d is Array:
+					cr += d
+			for sec in cr:
+				var h = _small(str(sec.get("section", "")).to_upper(), 14, Color("#ff8aa0"))
+				cv.add_child(h)
+				for ln in sec.get("lines", []):
+					var l = _small(str(ln), 11)
+					l.custom_minimum_size = Vector2(680, 0)
+					cv.add_child(l)
+			v.add_child(sc)
 		"settings":
 			v.add_child(_heading("SETTINGS", 22))
 			var rows = [["DIFFICULTY: " + Game.diff()["name"], func(): Game.cycle_difficulty(); main.apply_difficulty(); show_sub("settings")],
@@ -385,6 +450,8 @@ func update_dialog(dt: float, advance: bool) -> void:
 
 
 func _process(_d: float) -> void:
+	if _map_ctrl != null and is_instance_valid(_map_ctrl) and _menu.visible:
+		_map_ctrl.queue_redraw()
 	for p in [_choice_panel, _pause, _end, _menu, _sub]:
 		if p and p.visible:
 			var ms: Vector2 = p.get_combined_minimum_size()
@@ -593,7 +660,7 @@ func _refresh_menu(focus_tab := false) -> void:
 	var head = HBoxContainer.new()
 	head.add_theme_constant_override("separation", 10)
 	_menu_body.add_child(head)
-	var tabs = ["PARTY", "EQUIPMENT", "ABILITIES"]
+	var tabs = ["PARTY", "EQUIPMENT", "ABILITIES", "MAP"]
 	var tab_btns = []
 	for i in tabs.size():
 		var ii = i
@@ -620,6 +687,8 @@ func _refresh_menu(focus_tab := false) -> void:
 			_menu_gear()
 		2:
 			_menu_skills()
+		3:
+			_menu_map()
 	_menu_body.add_child(_menu_desc)
 	var close = _btn("CLOSE  [" + Game.label("menu") + "]", func(): main.close_menu(), 0, 14)
 	_menu_body.add_child(close)
@@ -693,6 +762,8 @@ func _menu_gear() -> void:
 		var id: String = pg["equip"][i]
 		var ii = i
 		var b = _btn(Game.ITEMS[id]["name"] if id != "" else "— empty —", func(): _unequip(ii), 255, 13)
+		if id != "" and ResourceLoader.exists("res://assets/third_party/icons/%s.png" % id):
+			b.icon = load("res://assets/third_party/icons/%s.png" % id)
 		if id != "":
 			var d: String = Game.ITEMS[id]["d"]
 			b.focus_entered.connect(func(): _menu_desc.text = d + "  (press to unequip)")
@@ -710,6 +781,10 @@ func _menu_gear() -> void:
 		var eq: bool = id in pg["equip"]
 		var iid: String = id
 		var b = _btn(("✓ " if eq else "") + (it["name"] if owned else "???"), func(): _toggle_item(iid), 255, 12)
+		if owned and ResourceLoader.exists("res://assets/third_party/icons/%s.png" % id):
+			b.icon = load("res://assets/third_party/icons/%s.png" % id)
+			b.expand_icon = false
+			b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		b.disabled = not owned
 		var d2: String = it["d"] if owned else "Not found yet. Explore, beat bosses and elite riders, or get lucky with drops."
 		b.focus_entered.connect(func(): _menu_desc.text = d2)
@@ -772,6 +847,58 @@ func _menu_skills() -> void:
 			row.add_child(b)
 
 
+## Screen map (after YKnytt / Knytt Stories): each room of the chapter as a
+## box, lit once visited, with where you are blinking.
+const MAP := {
+	1: [["classroom", 0, 1, 2, 1], ["hallway", 2, 1, 3, 1], ["cafeteria", 5, 0, 2, 2], ["lab", 7, 0, 1, 1]],
+	2: [["street", 0, 0, 4, 1], ["hospital", 4, 0, 3, 1]],
+	3: [["waterworks", 0, 0, 4, 2], ["pumphouse", 4, 0, 2, 1]],
+	4: [["fairhall", 0, 1, 4, 1], ["gym", 4, 0, 3, 2], ["stage", 7, 0, 2, 1]],
+}
+
+
+func _menu_map() -> void:
+	var title = _small("CHAPTER %d · %s" % [Game.chapter, Game.CHAPTERS[Game.chapter]["title"]], 15, Color("#fff2c8"))
+	_menu_body.add_child(title)
+	var mc = Control.new()
+	mc.custom_minimum_size = Vector2(780, 230)
+	mc.draw.connect(func(): _draw_map(mc))
+	mc.set_process(true)
+	_menu_body.add_child(mc)
+	_map_ctrl = mc
+	_menu_body.add_child(_small("Lit rooms are explored. ● you · ■ save bench · ♦ boss. Anchors found: %d / %d" % [Game.anchors.size(), Game.ANCH.size()], 12, Color("#a8a0b0")))
+
+
+func _draw_map(mc: Control) -> void:
+	var rooms: Array = MAP.get(Game.chapter, [])
+	var cell = Vector2(84, 84)
+	var org = Vector2(20, 20)
+	for i in rooms.size():
+		var r: Array = rooms[i]
+		var rect = Rect2(org + Vector2(r[1], r[2]) * cell, Vector2(r[3], r[4]) * cell - Vector2(6, 6))
+		var seen: bool = Game.visited.has(r[0])
+		mc.draw_rect(rect, Color(0.2, 0.22, 0.4, 0.95) if seen else Color(0.08, 0.08, 0.14, 0.9))
+		mc.draw_rect(rect, Color("#8fb8ff") if seen else Color(1, 1, 1, 0.15), false, 2.0)
+		if i > 0:
+			var prev: Array = rooms[i - 1]
+			var pr = Rect2(org + Vector2(prev[1], prev[2]) * cell, Vector2(prev[3], prev[4]) * cell - Vector2(6, 6))
+			var y = clampf(rect.get_center().y, maxf(pr.position.y, rect.position.y) + 10, minf(pr.end.y, rect.end.y) - 10)
+			mc.draw_line(Vector2(pr.end.x, y), Vector2(rect.position.x, y), Color(1, 1, 1, 0.5), 4.0)
+		var nm = main.meta.get(r[0], {})
+		var label = r[0].capitalize() if not seen else Game.ROOM_TITLES.get(r[0], r[0].capitalize())
+		mc.draw_string(Game.font_semi, rect.position + Vector2(8, 18), label if seen else "?", HORIZONTAL_ALIGNMENT_LEFT, rect.size.x - 12, 12, Color.WHITE if seen else Color(1, 1, 1, 0.4))
+		if r[0] in ["lab", "hospital", "pumphouse", "stage"]:
+			mc.draw_string(Game.font_display, rect.end - Vector2(18, 8), "♦", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("#ff8aa0"))
+		if r[0] in ["hallway", "cafeteria", "street", "hospital", "waterworks", "fairhall", "gym"]:
+			mc.draw_rect(Rect2(rect.position + Vector2(8, rect.size.y - 16), Vector2(8, 8)), Color("#ffd6a0"))
+		if r[0] == main.room_id and main.room != null:
+			var rs: Vector2 = main.room.room_size
+			var pp = rect.position + Vector2(main.player.position.x / rs.x * rect.size.x, main.player.position.y / rs.y * rect.size.y)
+			if int(main.t * 4.0) % 2 == 0:
+				mc.draw_circle(pp, 6, Color(Game.HEROES[main.player.hero]["col"]))
+			mc.draw_arc(pp, 9, 0, TAU, 16, Color.WHITE, 1.5)
+
+
 func _pick_special(h: String, sp: String) -> void:
 	Game.prog["special"][h] = sp
 	Sound.play("select")
@@ -792,7 +919,7 @@ func _build_pause() -> void:
 	keys.add_theme_font_size_override("font_size", 14)
 	v.add_child(keys)
 	for spec in [["RESUME", func(): main.close_pause()], ["CHARACTER", func(): _pause.visible = false; main.open_menu()],
-			["SETTINGS", func(): show_sub("settings", true)], ["CONTROLS", func(): _sub_from_pause = true; show_sub("controls", true)],
+			["SETTINGS", func(): show_sub("settings", true)], ["CO-OP", func(): show_sub("coop", true)], ["CONTROLS", func(): _sub_from_pause = true; show_sub("controls", true)],
 			["TITLE", func(): _pause.visible = false; main.show_title()]]:
 		var b = Button.new()
 		b.text = spec[0]

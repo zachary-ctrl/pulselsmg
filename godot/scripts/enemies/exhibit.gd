@@ -60,6 +60,7 @@ func hit(dmg: int, _hdir: int) -> bool:
 		Game.set_flag("down_" + id)
 		Game.flags["exhibits"] = int(Game.flags.get("exhibits", 0)) + 1
 		Sound.play("stabilize")
+		Sound.play("tp_impact_metal", 0.1, -8.0)
 		main.shake = 0.25
 		main.fx.burst(position + Vector2(0, -40), 30, 320, Color("#ff9ad8"))
 		main.toast("Exhibit silenced (%d / 3)" % Game.flags["exhibits"])

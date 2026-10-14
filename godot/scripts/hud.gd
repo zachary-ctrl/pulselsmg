@@ -30,7 +30,7 @@ func _draw() -> void:
 		draw_rect(Rect2(0, 0, W, H), Color(main.flash_col, main.flash * 0.5))
 	if main.mode == "end":
 		return
-	var p: Node = main.player
+	var p: Node = main.partner if (Net.is_guest() and main.partner_ok()) else main.player
 	var t: float = main.t
 	# cyberpunk GUI plate behind the orb, health and party
 	if _plate == null:
@@ -86,6 +86,22 @@ func _draw() -> void:
 	# hero, level and party
 	for i in 10:
 		draw_rect(Rect2(0, 96 + i * 5.0, 300 - i * 12.0, 5), Color(0, 0, 0, 0.32 - i * 0.02))
+	# second player (couch or online co-op)
+	var q: Node = null
+	if main.partner_ok():
+		q = main.player if (Net.is_guest()) else main.partner
+	if q != null:
+		var qc = Color(Game.HEROES[q.hero]["col"])
+		draw_rect(Rect2(12, H - 44, 230, 32), Color(0.02, 0.02, 0.06, 0.7))
+		_text(Game.font_display, Vector2(20, H - 22), ("HOST · " if Net.is_guest() else "P2 · ") + Game.HEROES[q.hero]["name"], 12, qc)
+		for i in q.max_hp:
+			var dc = Vector2(120 + i * 11, H - 27)
+			var dd = PackedVector2Array([dc + Vector2(0, -6), dc + Vector2(4, -1), dc + Vector2(0, 6), dc + Vector2(-4, -1)])
+			draw_colored_polygon(dd, Color("#efe7da") if i < q.hp else Color(1, 1, 1, 0.15))
+		if q.down_t > 0.0:
+			_text(Game.font_semi, Vector2(120, H - 12), "DOWN · back in %d" % ceili(q.down_t), 10, Color("#ff8a8a"))
+	if Net.is_guest() and main.mode in ["choice"]:
+		_text(Game.font_display, Vector2(W / 2, H / 2), "The host is choosing...", 18, Color.WHITE, true)
 	var hd: Dictionary = Game.HEROES[p.hero]
 	if p.shinobi:
 		var ego = "ALTER EGO · " + p.EGO_NAMES[p.hero]

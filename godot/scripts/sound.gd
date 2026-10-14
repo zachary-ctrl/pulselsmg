@@ -42,6 +42,11 @@ func _ready() -> void:
 
 
 func play(name: String, pitch_var := 0.0, volume_db := 0.0) -> void:
+	Net.queue_sound(name, pitch_var, volume_db)
+	if name.begins_with("tp_") and not _sfx.has(name):
+		var path = "res://assets/third_party/audio/sfx_%s.wav" % name.substr(3)
+		if ResourceLoader.exists(path):
+			_sfx[name] = load(path)
 	if not sound_on or not _sfx.has(name):
 		return
 	if name == "focus":
@@ -83,10 +88,19 @@ func music(name: String) -> void:
 	tw.tween_property(old, "volume_db", -80.0, 1.2)
 	if name == "":
 		return
-	cur.stream = _looped("res://assets/audio/mus_%s.wav" % name)
+	# Tracks from assets/third_party/audio (CC-BY, see credits) are OGG.
+	var tp = "res://assets/third_party/audio/mus_%s.ogg" % name
+	var vol = -6.0
+	if ResourceLoader.exists(tp):
+		var og: AudioStreamOggVorbis = load(tp)
+		og.loop = true
+		cur.stream = og
+		vol = -16.0 if name == "menu_dark_synth" else -2.0
+	else:
+		cur.stream = _looped("res://assets/audio/mus_%s.wav" % name)
 	cur.volume_db = -80
 	cur.play()
-	tw.tween_property(cur, "volume_db", -6.0 if music_on else -80.0, 1.2)
+	tw.tween_property(cur, "volume_db", vol if music_on else -80.0, 1.2)
 
 
 func ambience(room_id: String) -> void:

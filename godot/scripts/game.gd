@@ -39,6 +39,8 @@ const CHAPTERS := {
 	3: {"title": "Red Water", "room": "waterworks", "spawn": Vector2(120, 1010)},
 	4: {"title": "#ScienceMatters", "room": "fairhall", "spawn": Vector2(120, 470)},
 }
+const ROOM_TITLES := {"classroom": "Room 101", "hallway": "East Hall", "cafeteria": "Cafeteria", "lab": "Sub-Basement Lab", "street": "Westbrook Ave",
+	"hospital": "Mercy General", "waterworks": "Waterworks", "pumphouse": "Pumphouse", "fairhall": "Fair Night Hall", "gym": "Gymnasium", "stage": "Main Stage"}
 const CHAPTER_WORD := {1: "ONE", 2: "TWO", 3: "THREE", 4: "FOUR"}
 const PROGRESS_PATH := "user://sakawa_progress.json"
 var chapter = 1
@@ -375,6 +377,7 @@ const AXIS_NAMES := {"a0-": "Left stick ←", "a0+": "Left stick →", "a1-": "L
 	"a3-": "Right stick ↑", "a3+": "Right stick ↓"}
 
 var settings = {}
+var p1_device = -1
 var using_pad = false
 
 
@@ -442,10 +445,14 @@ func apply_bindings() -> void:
 			ev.physical_keycode = int(k)
 			InputMap.action_add_event(action, ev)
 		for c in b["p"]:
-			InputMap.action_add_event(action, _pad_event(c))
+			var pe = _pad_event(c)
+			pe.device = p1_device
+			InputMap.action_add_event(action, pe)
 	# The left stick always moves, whatever the d-pad is bound to.
 	for pair in [["left", "a0-"], ["right", "a0+"], ["up", "a1-"], ["down", "a1+"]]:
-		InputMap.action_add_event(pair[0], _pad_event(pair[1]))
+		var se = _pad_event(pair[1])
+		se.device = p1_device
+		InputMap.action_add_event(pair[0], se)
 
 
 func rebind(action: String, ev: InputEvent) -> void:

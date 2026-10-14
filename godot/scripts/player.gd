@@ -4,11 +4,15 @@ extends CharacterBody2D
 
 const Anim = preload("res://scripts/anim_sprite.gd")
 const Aura = preload("res://scripts/aura.gd")
+const VInput = preload("res://scripts/vinput.gd")
 const PRM_BODY := {"run": 300.0, "grav": 2400.0, "max_fall": 880.0, "jump": 760.0, "dash": 760.0}
 const LASER_COST := 22.0
 const PRM_ASTRAL := {"run": 280.0, "grav": 1300.0, "max_fall": 520.0, "jump": 620.0, "dash": 700.0}
 
 var main: Node
+var inp = VInput.new()
+var is_partner = false
+var down_t = 0.0
 var is_astral = false
 var rig: Node2D
 var w = 24.0
@@ -47,6 +51,9 @@ var wall_dir = 0
 var wall_grace = 0.0
 var wall_lock = 0.0
 var down_hold = 0.0
+var dash_vec = Vector2.RIGHT
+var stamina = 1.0
+var climbing = false
 const EGO_NAMES := {"max": "SHADOW", "lana": "RONIN", "jason": "BRAWLER"}
 var hit_set = {}
 var pogo_done = false
@@ -136,13 +143,14 @@ func _set_drop(on: bool) -> void:
 
 
 func control(dt: float) -> void:
+	inp.tick()
 	var prm: Dictionary = PRM_ASTRAL if is_astral else PRM_BODY
 	if not is_astral:
 		var hd: Dictionary = Game.HEROES[hero]
 		prm = PRM_BODY.duplicate()
 		prm["run"] = hd["run"] * (1.0 + Game.mod("speed")) * (1.25 if shinobi else 1.0)
 		prm["jump"] = hd["jump"] * (1.06 if shinobi else 1.0)
-		if Input.is_action_just_pressed("transform"):
+		if inp.just("transform"):
 			if shinobi:
 				set_shinobi(false)
 			elif res >= 30.0:
@@ -158,8 +166,8 @@ func control(dt: float) -> void:
 	swap_t = maxf(0.0, swap_t - dt)
 	var was_floor = is_on_floor()
 	var vy_before = velocity.y
-	var dir = int(Input.is_action_pressed("right")) - int(Input.is_action_pressed("left"))
-	var healing = (not is_astral) and Input.is_action_pressed("heal") and is_on_floor() and res >= 33.0 and hp < max_hp and atk_t <= 0.0
+	var dir = int(inp.pressed("right")) - int(inp.pressed("left"))
+	var healing = (not is_astral) and inp.pressed("heal") and is_on_floor() and res >= 33.0 and hp < max_hp and atk_t <= 0.0
 	if healing:
 		dir = 0
 		if heal_t == 0.0:
@@ -179,8 +187,7 @@ func control(dt: float) -> void:
 		heal_t = 0.0
 	if dash_t > 0.0:
 		dash_t -= dt
-		velocity.x = face * prm["dash"]
-		velocity.y = 0.0
+		velocity = dash_vec * prm["dash"] * (0.85 if dash_vec.y != 0.0 else 1.0)
 		if randf() < 0.6:
 			main.fx.part(position + Vector2(-face * 10, -30 + randf_range(-15, 15)), Vector2(-face * 60, 0), "trail", Color("#a58bff") if is_astral else Color("#ffb06a"))
 		if dash_t <= 0.0:
@@ -211,22 +218,28 @@ func control(dt: float) -> void:
 			velocity.y = minf(velocity.y + prm["grav"] * dt, prm["max_fall"])
 	# Wall slide: hold toward a wall while falling.
 	wall_grace -= dt
+	climbing = false
 	if not is_astral and not is_on_floor() and is_on_wall() and dash_t <= 0.0:
 		var n = get_wall_normal().x
 		if n != 0.0 and dir == -int(signf(n)):
 			wall_dir = -int(signf(n))
 			wall_grace = 0.12
-			if velocity.y > 120.0:
+			climbing = inp.pressed("up") and stamina > 0.0
+			if climbing:
+				# Wall climb (after Kandria): hold up on a wall, limited by stamina.
+				velocity.y = -150.0
+				stamina = maxf(0.0, stamina - dt * 0.9)
+			elif velocity.y > 120.0:
 				velocity.y = 120.0
 				if randf() < 0.3:
 					main.fx.part(position + Vector2(wall_dir * w / 2.0, -50), Vector2(0, -20), "dust", Color("#c8c0b0"))
-	if Input.is_action_just_pressed("jump"):
+	if inp.just("jump"):
 		jump_buf = 0.16
 	else:
 		jump_buf -= dt
 	coyote = 0.14 if is_on_floor() else coyote - dt
 	# Hold down on a desk or ledge to drop through.
-	if is_on_floor() and ground_oneway and Input.is_action_pressed("down") and dir == 0 and not healing:
+	if is_on_floor() and ground_oneway and inp.pressed("down") and dir == 0 and not healing:
 		down_hold += dt
 		if down_hold > 0.22:
 			down_hold = 0.0
@@ -237,7 +250,7 @@ func control(dt: float) -> void:
 		down_hold = 0.0
 	var max_air = (1 if Game.ability.get("double", false) else 0) + (1 if shinobi else 0)
 	if jump_buf > 0.0 and not healing:
-		if Input.is_action_pressed("down") and is_on_floor() and ground_oneway:
+		if inp.pressed("down") and is_on_floor() and ground_oneway:
 			drop_t = 0.25
 			jump_buf = 0.0
 			_set_drop(true)
@@ -272,13 +285,25 @@ func control(dt: float) -> void:
 			for i in 14:
 				var a = TAU * i / 14.0
 				main.fx.part(position + Vector2(cos(a) * 16, sin(a) * 6), Vector2(cos(a) * 120, sin(a) * 40), "spark", Color("#c9b8ff"))
-	if not Input.is_action_pressed("jump") and velocity.y < 0.0 and not jump_cut:
+	if not inp.pressed("jump") and velocity.y < 0.0 and not jump_cut:
 		velocity.y *= 0.45
 		jump_cut = true
 	dash_cd -= dt
-	if Input.is_action_just_pressed("dash") and dash_cd <= 0.0 and (is_on_floor() or air_dash) and not healing and not dive and laser_t <= 0.0:
+	if inp.just("dash") and dash_cd <= 0.0 and (is_on_floor() or air_dash) and not healing and not dive and laser_t <= 0.0:
 		dash_t = 0.17
 		dash_cd = maxf(0.12, 0.48 + Game.mod("dashcd"))
+		# 8-way air dash (after Kandria): hold a direction while airborne.
+		var dy = int(inp.pressed("down")) - int(inp.pressed("up"))
+		var dx = int(inp.pressed("right")) - int(inp.pressed("left"))
+		if is_on_floor() or is_astral or (dx == 0 and dy == 0):
+			dy = 0
+			dx = face
+		elif dy > 0 and dx == 0:
+			dy = 0
+			dx = face
+		dash_vec = Vector2(dx, dy).normalized()
+		if dx != 0:
+			face = dx
 		if not is_on_floor():
 			air_dash = false
 		Sound.play("dash", 0.05)
@@ -291,10 +316,10 @@ func control(dt: float) -> void:
 		if atk_t <= 0.13:
 			pogo_done = false
 	var busy = kick_t > 0.0 or dive or laser_t > 0.0 or flurry_t > 0.0
-	if Input.is_action_just_pressed("attack") and atk_cd <= 0.0 and not healing and not busy:
-		if Input.is_action_pressed("up"):
+	if inp.just("attack") and atk_cd <= 0.0 and not healing and not busy:
+		if inp.pressed("up"):
 			atk_dir = "up"
-		elif Input.is_action_pressed("down") and not is_on_floor():
+		elif inp.pressed("down") and not is_on_floor():
 			atk_dir = "down"
 		else:
 			atk_dir = "side"
@@ -330,6 +355,8 @@ func control(dt: float) -> void:
 		used_double = false
 		air_jumps = 0
 		air_dash = true
+		stamina = 1.0
+		climbing = false
 		if dive:
 			_end_dive(true)
 		if not was_floor and vy_before > 320.0:
@@ -355,7 +382,7 @@ func _kick(dt: float, healing: bool) -> void:
 		main.attack_hits(self)
 		if randf() < 0.8:
 			main.fx.part(position + Vector2(-face * 8, -20), Vector2(-face * 80, -120), "trail", Color("#a58bff") if is_astral else Color("#ffd6a0"))
-	if not Input.is_action_just_pressed("kick") or kick_cd > 0.0 or healing or atk_t > 0.0 or laser_t > 0.0 or dive or dash_t > 0.0:
+	if not inp.just("kick") or kick_cd > 0.0 or healing or atk_t > 0.0 or laser_t > 0.0 or dive or dash_t > 0.0:
 		return
 	hit_set = {}
 	atk_dmg = 2 + int(Game.mod("heavy")) + dmg_bonus() + (1 if hero == "jason" else 0)
@@ -431,7 +458,7 @@ func _laser(dt: float, healing: bool) -> void:
 			laser_fired = true
 			main.fire_special(self, special)
 		return
-	if not Input.is_action_just_pressed("laser") or laser_cd > 0.0 or healing or atk_t > 0.0 or kick_t > 0.0 or dash_t > 0.0 or flurry_t > 0.0:
+	if not inp.just("laser") or laser_cd > 0.0 or healing or atk_t > 0.0 or kick_t > 0.0 or dash_t > 0.0 or flurry_t > 0.0:
 		return
 	special = Game.prog["special"].get(hero, Game.HEROES[hero]["specials"][0])
 	var cost = Game.special_cost(hero)
@@ -441,11 +468,13 @@ func _laser(dt: float, healing: bool) -> void:
 		laser_cd = 0.6
 		return
 	res -= cost
-	laser_dir = Vector2.UP if Input.is_action_pressed("up") and special == "laser" else Vector2(face, 0)
+	laser_dir = Vector2.UP if inp.pressed("up") and special == "laser" else Vector2(face, 0)
 	laser_t = 0.4
 	laser_cd = 0.55
 	laser_fired = false
 	Sound.play("charge", 0.05, -4.0)
+	if special == "laser":
+		Sound.play("tp_energy_charge", 0.05, -14.0)
 
 
 func start_flurry() -> void:

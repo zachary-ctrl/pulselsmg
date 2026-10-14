@@ -126,6 +126,9 @@ func step(dt: float) -> void:
 			if pr.intersects(main.player.hitbox()):
 				main.hurt_player(1, p["p"].x)
 				p["life"] = 0.0
+			elif main.partner_ok() and main.partner.down_t <= 0.0 and pr.intersects(main.partner.hitbox()):
+				main.hurt_partner(1, p["p"].x)
+				p["life"] = 0.0
 			elif main.astral_active() and pr.intersects(main.astral.hitbox()):
 				main.hurt_astral()
 				p["life"] = 0.0
@@ -276,7 +279,7 @@ func _draw() -> void:
 		draw_line(predict - Vector2(80, 0), predict + Vector2(80, 0), c, 2.0)
 		draw_line(predict - Vector2(0, 80), predict + Vector2(0, 80), c, 2.0)
 		draw_string(Game.font_semi, predict + Vector2(10, -72), "▸ " + main.predict_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#ff9ad8"))
-	for who in [main.player, main.astral]:
+	for who in [main.player, main.astral, main.partner]:
 		if who == null or not is_instance_valid(who):
 			continue
 		var wc = Color("#c9b8ff") if who.is_astral else Color("#ffb06a")
@@ -284,6 +287,8 @@ func _draw() -> void:
 			_slash(who, wc)
 		if who.kick_t > 0.0:
 			_kick(who, wc)
+		if not who.is_astral and who.stamina < 0.999 and not who.is_on_floor():
+			draw_arc(who.position + Vector2(-18 * who.face, -70), 7, -PI / 2, -PI / 2 + TAU * who.stamina, 16, Color(1, 0.9, 0.5, 0.9), 2.5)
 		if not who.is_astral and who.laser_t > 0.0 and not who.laser_fired:
 			var hand: Vector2 = who.position + (Vector2(0, -96) if who.laser_dir.y < 0.0 else Vector2(who.face * 26, -40))
 			var k = 1.0 - (who.laser_t - 0.26) / 0.14
@@ -447,6 +452,10 @@ func _draw_pickups(t: float) -> void:
 				draw_polyline(PackedVector2Array([d2[0], d2[1], d2[2], d2[3], d2[0]]), Color("#ff6a88"), 2.0)
 			"item":
 				_glow(c, 30, Color(1, 0.85, 0.4, 0.55))
+				var ic = vfx("../third_party/icons/" + str(pk.get("item", "")))
+				if ic != null:
+					draw_texture_rect(ic, Rect2(c - Vector2(14, 14), Vector2(28, 28)), false)
+					continue
 				draw_rect(Rect2(c - Vector2(8, 8), Vector2(16, 16)), Color("#2a2030"))
 				draw_rect(Rect2(c - Vector2(8, 8), Vector2(16, 16)), Color("#ffd68a"), false, 2.0)
 				draw_string(Game.font_display, c + Vector2(-4, 5), "?", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#ffd68a"))
