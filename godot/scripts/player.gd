@@ -3,6 +3,7 @@ extends CharacterBody2D
 ## Collision layers: 1 solid, 2 one-way, 3 astral-only, 4 doors, 5 gates.
 
 const Anim = preload("res://scripts/anim_sprite.gd")
+const Aura = preload("res://scripts/aura.gd")
 const PRM_BODY := {"run": 300.0, "grav": 2400.0, "max_fall": 880.0, "jump": 760.0, "dash": 760.0}
 const LASER_COST := 22.0
 const PRM_ASTRAL := {"run": 280.0, "grav": 1300.0, "max_fall": 520.0, "jump": 620.0, "dash": 700.0}
@@ -34,6 +35,12 @@ var laser_t = 0.0
 var laser_cd = 0.0
 var laser_dir = Vector2.RIGHT
 var laser_fired = false
+var special = "laser"
+var flurry_t = 0.0
+var flurry_tick = 0.0
+var hero = "max"
+var aura: Node2D
+var swap_t = 0.0
 var hit_set = {}
 var pogo_done = false
 var recoil_t = 0.0
@@ -69,11 +76,24 @@ func setup(astral: bool) -> void:
 	collision_mask = (1 | 2 | 4 | 16) if astral else (1 | 2 | 8 | 16)
 	floor_snap_length = 6.0
 	floor_max_angle = deg_to_rad(50)
+	aura = Aura.new()
+	add_child(aura)
 	rig = Anim.new()
 	rig.key = "max"
 	if astral:
 		rig.tint = Color(0.56, 0.45, 1.0, 0.82)
 	add_child(rig)
+
+
+func set_hero(h: String) -> void:
+	hero = h
+	rig.key = h
+	aura.color = Game.HEROES[h]["aura"]
+	swap_t = 0.6
+
+
+func dmg_bonus() -> int:
+	return int(Game.mod("dmg")) + int(Game.attr(hero, "pow") / 2)
 
 
 func hitbox() -> Rect2:
@@ -88,6 +108,12 @@ func _set_drop(on: bool) -> void:
 
 func control(dt: float) -> void:
 	var prm: Dictionary = PRM_ASTRAL if is_astral else PRM_BODY
+	if not is_astral:
+		var hd: Dictionary = Game.HEROES[hero]
+		prm = PRM_BODY.duplicate()
+		prm["run"] = hd["run"] * (1.0 + Game.mod("speed"))
+		prm["jump"] = hd["jump"]
+	swap_t = maxf(0.0, swap_t - dt)
 	var was_floor = is_on_floor()
 	var vy_before = velocity.y
 	var dir = int(Input.is_action_pressed("right")) - int(Input.is_action_pressed("left"))
@@ -99,7 +125,7 @@ func control(dt: float) -> void:
 		heal_t += dt
 		if randf() < dt * 30.0:
 			main.fx.part(position + Vector2(randf_range(-30, 30), -10 - randf() * 50), Vector2.ZERO, "heal", Color("#8affb0"), self)
-		if heal_t >= 0.9:
+		if heal_t >= 0.9 / (1.0 + Game.mod("focus")):
 			heal_t = 0.0
 			hp += 1
 			res -= 33.0
@@ -123,6 +149,8 @@ func control(dt: float) -> void:
 			velocity.x = recoil_v
 		elif dive:
 			velocity.x = face * 520.0
+		elif flurry_t > 0.0:
+			velocity.x = face * 380.0
 		elif laser_t > 0.0:
 			velocity.x = move_toward(velocity.x, 0.0, 3000.0 * dt)
 		elif kick_t > 0.0 and is_on_floor():
@@ -133,7 +161,7 @@ func control(dt: float) -> void:
 			face = dir
 		if dive:
 			velocity.y = 820.0
-		elif laser_t > 0.0 and not is_on_floor():
+		elif (laser_t > 0.0 or flurry_t > 0.0) and not is_on_floor():
 			velocity.y = minf(velocity.y + prm["grav"] * 0.25 * dt, 90.0)
 		else:
 			velocity.y = minf(velocity.y + prm["grav"] * dt, prm["max_fall"])
@@ -171,7 +199,7 @@ func control(dt: float) -> void:
 	dash_cd -= dt
 	if Input.is_action_just_pressed("dash") and dash_cd <= 0.0 and (is_on_floor() or air_dash) and not healing and not dive and laser_t <= 0.0:
 		dash_t = 0.17
-		dash_cd = 0.48
+		dash_cd = maxf(0.12, 0.48 + Game.mod("dashcd"))
 		if not is_on_floor():
 			air_dash = false
 		Sound.play("dash", 0.05)
@@ -183,7 +211,7 @@ func control(dt: float) -> void:
 			main.attack_hits(self)
 		if atk_t <= 0.13:
 			pogo_done = false
-	var busy = kick_t > 0.0 or dive or laser_t > 0.0
+	var busy = kick_t > 0.0 or dive or laser_t > 0.0 or flurry_t > 0.0
 	if Input.is_action_just_pressed("attack") and atk_cd <= 0.0 and not healing and not busy:
 		if Input.is_action_pressed("up"):
 			atk_dir = "up"
@@ -194,9 +222,11 @@ func control(dt: float) -> void:
 		combo = (combo + 1) % 3 if (combo_t > 0.0 and atk_dir == "side") else 0
 		combo_t = 0.5
 		atk_kind = "finisher" if combo == 2 else "strike"
-		atk_dmg = 2 if combo == 2 else 1
+		var base_dmg: int = 1 if is_astral else int(Game.HEROES[hero]["dmg"])
+		atk_dmg = (base_dmg + 1 + int(Game.mod("heavy")) if combo == 2 else base_dmg) + dmg_bonus()
 		atk_t = 0.24
-		atk_cd = 0.42 if combo == 2 else 0.26
+		var cdb: float = 0.26 if is_astral else float(Game.HEROES[hero]["cd"])
+		atk_cd = cdb + 0.16 if combo == 2 else cdb
 		hit_set = {}
 		Sound.play("slash", 0.08)
 		if combo == 2:
@@ -246,7 +276,7 @@ func _kick(dt: float, healing: bool) -> void:
 	if not Input.is_action_just_pressed("kick") or kick_cd > 0.0 or healing or atk_t > 0.0 or laser_t > 0.0 or dive or dash_t > 0.0:
 		return
 	hit_set = {}
-	atk_dmg = 2
+	atk_dmg = 2 + int(Game.mod("heavy")) + dmg_bonus() + (1 if hero == "jason" else 0)
 	if is_on_floor():
 		atk_kind = "kick"
 		atk_dir = "side"
@@ -267,6 +297,8 @@ func _end_dive(landed: bool) -> void:
 	if landed:
 		Sound.play("land", 0.05)
 		main.shake = maxf(main.shake, 0.12)
+		main.fx.sprite("ring", position + Vector2(0, -2), 170.0, 0.36, 0.0, Color.WHITE, 4, 2)
+		main.fx.sprite("dust", position + Vector2(0, -14), 90.0, 0.4, 0.0, Color.WHITE, 6)
 		for i in 12:
 			main.fx.part(position, Vector2(randf_range(-260, 260), -randf() * 90), "dust", Color("#e8d8c0"))
 
@@ -281,28 +313,50 @@ func dive_bounce() -> void:
 
 func _laser(dt: float, healing: bool) -> void:
 	laser_cd -= dt
+	if flurry_t > 0.0:
+		flurry_t -= dt
+		flurry_tick -= dt
+		if flurry_tick <= 0.0:
+			flurry_tick = 0.08
+			hit_set = {}
+			Sound.play("slash", 0.15, -6.0)
+		main.attack_hits(self)
+		if flurry_t <= 0.0:
+			atk_kind = "strike"
 	if laser_t > 0.0:
 		laser_t -= dt
 		if not laser_fired and laser_t <= 0.26:
 			laser_fired = true
-			main.fire_laser(self)
+			main.fire_special(self, special)
 		return
-	if not Input.is_action_just_pressed("laser") or laser_cd > 0.0 or healing or atk_t > 0.0 or kick_t > 0.0 or dash_t > 0.0:
+	if not Input.is_action_just_pressed("laser") or laser_cd > 0.0 or healing or atk_t > 0.0 or kick_t > 0.0 or dash_t > 0.0 or flurry_t > 0.0:
 		return
-	if res < LASER_COST:
+	special = Game.prog["special"].get(hero, Game.HEROES[hero]["specials"][0])
+	var cost = Game.special_cost(hero)
+	if res < cost:
 		Sound.play("glitch", 0.05, -6.0)
-		main.toast("The laser needs Resonance. Land strikes to build it.")
+		main.toast("%s needs %d Resonance. Land hits to build it." % [Game.SPECIALS[special]["name"], int(cost)])
 		laser_cd = 0.6
 		return
-	res -= LASER_COST
-	laser_dir = Vector2.UP if Input.is_action_pressed("up") else Vector2(face, 0)
+	res -= cost
+	laser_dir = Vector2.UP if Input.is_action_pressed("up") and special == "laser" else Vector2(face, 0)
 	laser_t = 0.4
 	laser_cd = 0.55
 	laser_fired = false
 	Sound.play("charge", 0.05, -4.0)
 
 
+func start_flurry() -> void:
+	flurry_t = 0.5
+	flurry_tick = 0.0
+	atk_kind = "flurry"
+	atk_dir = "side"
+	atk_dmg = 1 + dmg_bonus() + int(Game.mod("sdmg"))
+
+
 func attack_box() -> Rect2:
+	if atk_kind == "flurry":
+		return Rect2(position.x - 30 + face * 40, position.y - 64, 60, 60)
 	if atk_kind == "kick":
 		if face > 0:
 			return Rect2(position.x + w / 2.0 - 6, position.y - 44, 74, 40)
@@ -332,6 +386,8 @@ func update_pose(t: float, slumped: bool) -> void:
 	elif kick_t > 0.0:
 		rig.seek("dash", clampf(1.0 - (kick_t - 0.08) / 0.24, 0.0, 1.0))
 		rig.tilt = -0.12 * face
+	elif flurry_t > 0.0:
+		rig.seek("strike", fmod(flurry_t * 10.0, 1.0))
 	elif laser_t > 0.0:
 		var up = laser_dir.y < 0.0
 		rig.seek("strike_up" if up else "strike", 0.3 if not laser_fired else 0.75)
@@ -362,3 +418,10 @@ func update_pose(t: float, slumped: bool) -> void:
 	rig.flash = 0.5 if (not is_astral and inv > 1.0) else 0.0
 	var blink = inv > 0.0 and not is_astral and not slumped and int(inv * 14.0) % 2 == 1
 	rig.visible = not blink
+	if is_astral:
+		aura.color = "violet"
+		aura.target = 0.35
+	else:
+		var hot = laser_t > 0.0 or flurry_t > 0.0 or swap_t > 0.0 or heal_t > 0.0
+		aura.target = 1.0 if hot else (0.6 if res >= Game.fp_need() else 0.0)
+	aura.face = face

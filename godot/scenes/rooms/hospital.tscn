@@ -130,3 +130,18 @@ script = ExtResource("marker")
 kind = "spawn"
 id = "carrier"
 enemy = "carrier"
+
+[node name="Spawn_i4_7" type="Node2D" parent="Markers"]
+position = Vector2(960, 420)
+script = ExtResource("marker")
+kind = "spawn"
+id = "i4"
+enemy = "imp"
+patrol_range = 40
+
+[node name="Loot_l_tot_8" type="Node2D" parent="Markers"]
+position = Vector2(460, 420)
+script = ExtResource("marker")
+kind = "loot"
+id = "l_tot"
+item = "tot"

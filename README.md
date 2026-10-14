@@ -12,7 +12,7 @@ A 2D action-platformer in the spirit of Hollow Knight, built from the *SAKAWA: A
 
 ## Godot version
 
-A full Godot 4 port of Chapter One lives in [`godot/`](godot/README.md): editable room scenes, gamepad support, rendered sound files and an automated playthrough test. Open `godot/project.godot` in Godot 4.3+.
+The full Godot 4 game (Chapters 1–4, playable Max / Lana / Jason party, XP, loot and gear) lives in [`godot/`](godot/README.md): editable room scenes, gamepad support, rendered sound files and an automated playthrough test. Open `godot/project.godot` in Godot 4.3+.
 
 ## Play (web version)
 

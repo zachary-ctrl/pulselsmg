@@ -50,8 +50,7 @@ func step(dt: float) -> void:
 		Sound.play("phase2")
 		main.toast("THE CHOIR IS LEARNING YOUR INPUTS")
 		main.flash_screen(0.5, Color("#a58bff"))
-		if not Game.flag("allSaved"):
-			main.spawn_add()
+		_phase2_extra()
 	var pp: Vector2 = main.player.position
 	face = int(signf(pp.x - position.x)) if pp.x != position.x else face
 	match state:
@@ -228,12 +227,25 @@ func hit(dmg: int, _hdir: int) -> bool:
 		main.fx.projectiles.clear()
 		main.predict_text = ""
 		Sound.play("defeat")
-		main.get_tree().create_timer(0.9).timeout.connect(func(): main.resolve_ciencia(self))
+		main.get_tree().create_timer(0.9).timeout.connect(_on_defeat)
 	return true
 
 
+func _phase2_extra() -> void:
+	if not Game.flag("allSaved"):
+		main.spawn_add()
+
+
+func _on_defeat() -> void:
+	main.resolve_ciencia(self)
+
+
+func _form() -> String:
+	return "saint" if phase2 else "ciencia"
+
+
 func _process(_d: float) -> void:
-	rig.key = "saint" if phase2 else "ciencia"
+	rig.key = _form()
 	rig.face = face
 	match state:
 		"defeated":

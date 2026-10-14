@@ -14,6 +14,11 @@ const Rig = preload("res://scripts/rig.gd")
 const Anim = preload("res://scripts/anim_sprite.gd")
 const Carrier = preload("res://scripts/enemies/carrier.gd")
 const Tide = preload("res://scripts/enemies/tide.gd")
+const Imp = preload("res://scripts/enemies/imp.gd")
+const Rider = preload("res://scripts/enemies/rider.gd")
+const Collective = preload("res://scripts/enemies/collective.gd")
+const AllyScript = preload("res://scripts/ally.gd")
+const Exhibit = preload("res://scripts/enemies/exhibit.gd")
 const FxScript = preload("res://scripts/fx.gd")
 const HudScript = preload("res://scripts/hud.gd")
 const UiScript = preload("res://scripts/ui.gd")
@@ -44,6 +49,8 @@ var astral_mix = 0.0
 var player: CharacterBody2D
 var astral: CharacterBody2D = null
 var ents: Array = []
+var pickups: Array = []
+var allies: Array = []
 var npcs: Array = []
 var fight = null
 var hist: Array = []
@@ -197,7 +204,12 @@ func continue_game() -> void:
 
 
 func _reset_player() -> void:
-	player.max_hp = Game.diff()["hp"]
+	var h: String = Game.prog.get("hero", "max")
+	if not Game.hero_unlocked(h):
+		h = "max"
+	player.set_hero(h)
+	player.swap_t = 0.0
+	player.max_hp = Game.hero_max_hp(h)
 	player.hp = player.max_hp
 	player.res = 0.0
 	player.dive = false
@@ -214,6 +226,20 @@ func _enter_play() -> void:
 	mode = "play"
 	fight = null
 	hist.clear()
+
+
+func open_menu() -> void:
+	mode = "menu"
+	Sound.play("pause")
+	ui.show_menu()
+
+
+func close_menu() -> void:
+	ui.hide_menu()
+	mode = "play"
+	var m: int = Game.hero_max_hp(player.hero)
+	player.hp = clampi(player.hp + (m - player.max_hp), 1, m)
+	player.max_hp = m
 
 
 func open_pause() -> void:
@@ -263,6 +289,8 @@ func load_room(id: String, spawn: Vector2) -> void:
 	npcs.clear()
 	_end_astral_now()
 	fx.clear_all()
+	pickups.clear()
+	_clear_allies()
 	predict_text = ""
 	fight = null
 	hist.clear()
@@ -289,6 +317,10 @@ func load_room(id: String, spawn: Vector2) -> void:
 	player.safe = spawn
 	for s in room.markers["spawn"]:
 		_spawn(s)
+	for lm in room.markers["loot"]:
+		if not Game.prog["picked"].has(lm.id):
+			var it: String = lm.item
+			pickups.append({"p": lm.position + Vector2(0, -18), "v": Vector2.ZERO, "k": "heart" if it == "heart" else "item", "item": it, "id": lm.id, "age": 1.0, "seed": randf() * 6.0, "fixed": true})
 	for n in room.markers["npc"]:
 		var r = Anim.new()
 		r.key = n.id
@@ -316,7 +348,7 @@ func load_room(id: String, spawn: Vector2) -> void:
 	if id == "classroom" and not Game.flag("intro"):
 		Game.set_flag("intro")
 		start_dialog("intro")
-	for pair in [["street", "c2Intro"], ["waterworks", "c3Intro"]]:
+	for pair in [["street", "c2Intro"], ["waterworks", "c3Intro"], ["fairhall", "c4Intro"]]:
 		if id == pair[0] and not Game.flag(pair[1]):
 			Game.set_flag(pair[1])
 			start_dialog(pair[1])
@@ -351,6 +383,22 @@ func _spawn(s: Node) -> void:
 			if Game.flag("tideDone"):
 				return
 			e = Tide.new()
+			e.main = self
+			e.setup(s.position)
+		"imp", "rider":
+			if Game.flag("down_" + s.id):
+				return
+			e = Imp.new() if s.enemy == "imp" else Rider.new()
+			e.main = self
+			e.setup(s.id, s.position, s.patrol_range)
+		"exhibit":
+			e = Exhibit.new()
+			e.main = self
+			e.setup(s.id, s.position)
+		"collective":
+			if Game.flag("collectiveDone"):
+				return
+			e = Collective.new()
 			e.main = self
 			e.setup(s.position)
 		_:
@@ -411,7 +459,9 @@ func say(lines: Array, on_end := Callable()) -> void:
 func _physics_process(dt: float) -> void:
 	t += dt
 	match mode:
-		"title", "boot", "pause", "choice", "end":
+		"title", "boot", "pause", "choice", "end", "menu":
+			if mode == "menu" and (Input.is_action_just_pressed("menu") or Input.is_action_just_pressed("pause")):
+				close_menu()
 			fx.update_cosmetic(dt)
 			_update_view(dt)
 			return
@@ -430,6 +480,10 @@ func _physics_process(dt: float) -> void:
 	if Input.is_action_just_pressed("pause"):
 		open_pause()
 		return
+	if Input.is_action_just_pressed("menu"):
+		open_menu()
+		return
+	_check_switch()
 	if trans != null:
 		trans["t"] += dt
 		if not trans["done"] and trans["t"] >= 0.28:
@@ -482,7 +536,7 @@ func _physics_process(dt: float) -> void:
 		player.move_and_slide()
 	else:
 		player.control(dt)
-	if Input.is_action_just_pressed("fp") and player.res >= 99.0 and not astral_active():
+	if Input.is_action_just_pressed("fp") and player.res >= Game.fp_need() and not astral_active():
 		_full_potential()
 	if not astral_active():
 		var hz = room.hazard_at(player.hitbox())
@@ -513,7 +567,12 @@ func _physics_process(dt: float) -> void:
 		hist.append({"t": t, "pos": player.position, "face": player.face, "moving": absf(player.velocity.x) > 20.0 and player.is_on_floor(), "air": not player.is_on_floor(), "vy": player.velocity.y, "ph": player.run_ph})
 		while hist.size() > 0 and hist[0]["t"] < t - 4.0:
 			hist.pop_front()
+	if fight_id() == "elite" and (not is_instance_valid(fight["e"]) or fight["e"].state == "dying" or fight["e"].dead):
+		fight = null
+		toast("The Static Rider comes apart into snow")
 	fx.step(dt)
+	_update_pickups(dt)
+	_update_allies(dt)
 	if mode == "play" and trans == null and not astral_active():
 		_world_interactions()
 	_check_anchors()
@@ -582,6 +641,10 @@ func _update_view(dt: float) -> void:
 				mus = "carrier"
 			"tide":
 				mus = "tide"
+			"elite":
+				mus = "carrier"
+			"collective":
+				mus = "ciencia2"
 			_:
 				mus = "ciencia2" if (is_instance_valid(fight["e"]) and fight["e"].phase2) else "ciencia"
 	elif astral_active():
@@ -765,6 +828,9 @@ func attack_hits(e: CharacterBody2D) -> void:
 					en.velocity.x = dir * 520.0
 				_gain_res(11.0)
 				fx.burst(box.get_center(), 18 if e.atk_dmg > 1 else 10, 420 if e.atk_dmg > 1 else 300, Color("#ffd6a0"))
+				if e.atk_dmg > 1 or kind == "flurry":
+					var hv = {"max": "vfx/burst_pink", "lana": "vfx/comet_orange", "jason": "vfx/burst_ice"}.get(e.hero, "vfx/burst_pink")
+					fx.sprite(hv, box.get_center(), 90.0 if e.atk_dmg > 1 else 60.0, 0.28, 0.0 if hv != "vfx/comet_orange" else (0.0 if e.face > 0 else PI))
 				for i in 3:
 					fx.part(en.position + Vector2(0, -20), Vector2.ZERO, "res", Color("#ffb06a"), player)
 	if not e.is_astral and striking and e.atk_dir == "down" and not pogo:
@@ -788,13 +854,99 @@ func attack_hits(e: CharacterBody2D) -> void:
 
 
 func apply_difficulty() -> void:
-	var m: int = Game.diff()["hp"]
+	var m: int = Game.hero_max_hp(player.hero)
 	player.hp = clampi(player.hp + (m - player.max_hp), 1, m)
 	player.max_hp = m
 
 
 func _gain_res(n: float) -> void:
-	player.res = minf(99.0, player.res + n * Game.diff()["res"])
+	var m: float = Game.diff()["res"] * (1.0 + Game.mod("res") + Game.attr(player.hero, "foc") * 0.1)
+	player.res = minf(99.0, player.res + n * m)
+
+
+func special_dmg(p: CharacterBody2D, base: int) -> int:
+	return base + int(Game.mod("sdmg")) + p.dmg_bonus()
+
+
+func fire_special(p: CharacterBody2D, kind: String) -> void:
+	match kind:
+		"laser":
+			fire_laser(p)
+		"orb":
+			fx.projectiles.append({"p": p.position + Vector2(p.face * 26, -44), "v": Vector2(p.face * 260, -40), "r": 13.0, "k": "mind", "c": Color("#c9b8ff"),
+				"life": 3.2, "grav": 0.0, "rot": 0.0, "friendly": true, "home": true, "dmg": special_dmg(p, 2), "hits": {}})
+			Sound.play("zap")
+		"shout":
+			var c: Vector2 = p.position + Vector2(0, -34)
+			fx.rings.append({"p": c, "r": 10.0, "life": 0.45, "max": 0.45, "c": Color("#ff8a7a")})
+			fx.sprite("vfx/burst_pink", c, 220.0, 0.4)
+			fx.text_float(c + Vector2(0, -50), ["YOU SMELL LIKE GLUE", "SIT DOWN", "BRAYDEN, REALLY?", "GET REAL"][randi() % 4], Color("#ffd0c8"), 1.4)
+			Sound.play("boom")
+			shake = maxf(shake, 0.25)
+			for en in ents:
+				if is_instance_valid(en) and not en.dead and en.hurt_rect().get_center().distance_to(c) < 180.0:
+					if en.hit(special_dmg(p, 2), int(signf(en.position.x - p.position.x)) if en.position.x != p.position.x else 1):
+						stun(en, 1.6)
+		"flurry":
+			p.start_flurry()
+		"wave":
+			fx.projectiles.append({"p": p.position + Vector2(p.face * 30, -14), "v": Vector2(p.face * 540, 0), "r": 22.0, "k": "pwave", "c": Color("#8fd8ff"),
+				"life": 1.5, "grav": 0.0, "rot": 0.0, "friendly": true, "pierce": true, "dmg": special_dmg(p, 3), "hits": {}})
+			Sound.play("whoosh")
+		"geyser":
+			var best: Node = null
+			var bd = 640.0
+			for en in ents:
+				if alive(en):
+					var d = en.position.distance_to(p.position)
+					if d < bd:
+						bd = d
+						best = en
+			var gx: float = best.position.x if best else p.position.x + p.face * 160.0
+			var gy: float = best.position.y if best else p.position.y
+			fx.lasers.append({"a": Vector2(gx, gy + 4), "b": Vector2(gx, gy - 260), "life": 0.5, "max": 0.5, "c": Color(0.4, 0.75, 1.0), "k": "geyser"})
+			Sound.play("splash")
+			shake = maxf(shake, 0.2)
+			for i in 20:
+				fx.part(Vector2(gx, gy), Vector2(randf_range(-160, 160), -randf() * 420), "dust", Color("#9fe2ff"))
+			for en in ents:
+				if is_instance_valid(en) and not en.dead and absf(en.hurt_rect().get_center().x - gx) < 46.0 and absf(en.position.y - gy) < 220.0:
+					en.hit(special_dmg(p, 4), 1)
+
+
+func alive(en) -> bool:
+	return is_instance_valid(en) and not en.dead and not (en.kind == "sleeper" and en.state == "down") and not (en.kind == "exhibit" and en.broken)
+
+
+var _sum = 0
+
+
+## Bosses call in extra enemies mid-fight.
+func summon(kind: String, at: Vector2) -> void:
+	_sum += 1
+	var e = Imp.new() if kind == "imp" else Rider.new()
+	e.main = self
+	e.setup("sum%d_%d" % [_sum, randi() % 9999], at, 200.0)
+	scale_enemy(e)
+	ents_root.add_child(e)
+	ents.append(e)
+	fx.burst(at + Vector2(0, -30), 24, 300, Color("#ff6a8a"))
+	Sound.play("glitch")
+
+
+## Elite riders become a mini-boss fight the first time they notice you.
+func start_elite(e: Node) -> void:
+	if fight != null or mode != "play":
+		return
+	fight = {"id": "elite", "name": "STATIC RIDER", "sub": "Something that rode out of a nightmare", "e": e}
+	Sound.play("gate")
+	shake = 0.3
+
+
+func stun(en: Node, t: float) -> void:
+	if en.kind in ["sleeper", "imp", "rider"] and "state" in en and en.state != "down" and not en.dead:
+		en.state = "hurt"
+		en.tm = t
 
 
 ## Max's psychic laser: a beam from his hands to the first wall, hitting every
@@ -810,7 +962,7 @@ func fire_laser(p: CharacterBody2D) -> void:
 	var thick = 34.0
 	var beam = Rect2(from, Vector2.ZERO).expand(to)
 	beam = beam.grow_individual(0, thick / 2.0, 0, thick / 2.0) if dir.y == 0.0 else beam.grow_individual(thick / 2.0, 0, thick / 2.0, 0)
-	fx.lasers.append({"a": from, "b": to, "life": 0.26, "max": 0.26})
+	fx.lasers.append({"a": from, "b": to, "life": 0.3, "max": 0.3, "c": Color(0.72, 0.5, 1.0), "k": "laser"})
 	Sound.play("beam", 0.05)
 	shake = maxf(shake, 0.18)
 	fx.burst(to, 16, 360, Color("#ffd6a0"))
@@ -820,7 +972,7 @@ func fire_laser(p: CharacterBody2D) -> void:
 			continue
 		var box: Rect2 = en.hurt_rect()
 		if beam.intersects(box):
-			if en.hit(3, int(signf(dir.x)) if dir.x != 0.0 else 1):
+			if en.hit(3 + int(Game.mod("sdmg")) + p.dmg_bonus(), int(signf(dir.x)) if dir.x != 0.0 else 1):
 				hit = true
 				fx.burst(box.get_center(), 22, 460, Color("#fff2c8"))
 	if hit:
@@ -968,6 +1120,32 @@ func _fire_event(ev: String) -> void:
 				Sound.play("gate")
 				shake = 0.3
 			start_dialog("tideIntro", go_t)
+		"eliteIntro":
+			if Game.flag("eliteIntro") or Game.flag("down_elite_r4"):
+				return
+			Game.set_flag("eliteIntro")
+			start_dialog("eliteIntro")
+		"gymIntro":
+			if Game.flag("gymIntro"):
+				return
+			Game.set_flag("gymIntro")
+			start_dialog("gymIntro")
+		"collectiveArena":
+			if Game.flag("collectiveDone") or fight != null:
+				return
+			var cb: Node = null
+			for e in ents:
+				if is_instance_valid(e) and e.kind == "collective":
+					cb = e
+			if cb == null:
+				return
+			var go4 = func():
+				cb.state = "idle"
+				cb.tm = 1.0
+				fight = {"id": "collective", "name": "COLLECTIVE COGNITION", "sub": "Dr. Ciencia, wired into four hundred minds", "e": cb}
+				Sound.play("gate")
+				shake = 0.3
+			start_dialog("collectiveIntro", go4)
 		"cienciaArena":
 			if Game.flag("cienciaDone") or fight != null:
 				return
@@ -1033,6 +1211,7 @@ func _echo_pick(k: String) -> void:
 	Game.set_flag("echoDone")
 	fight = null
 	if is_instance_valid(_echo):
+		boss_reward(70, "hallpass", _echo.position + Vector2(0, -40))
 		_echo.dead = true
 		fx.burst(_echo.position + Vector2(0, -30), 30, 300, Color("#9fb6ff"))
 	match k:
@@ -1066,6 +1245,7 @@ func _ciencia_pick(k: String) -> void:
 	Game.set_flag("cienciaDone")
 	Game.flags["ending"] = k
 	fight = null
+	boss_reward(120, "goggles", player.position + Vector2(player.face * 80, -60))
 	var lines: Array = {
 		"REACH": [["narr", "", "You open his mind and pour them in. Devon. Brayden. Coach Reyes. Four hundred and twelve names, one at a time."], ["ciencia", "sad", "They were... people. Each one so loud. So particular."], ["narr", "", "The transmitter goes quiet. Somewhere above, a cafeteria full of kids picks up their forks."]],
 		"BIND": [["narr", "", "You wrap him in his own signal and nail it to the failing transmitter. A man-shaped patch on a broken wall."], ["ciencia", "worried", "You would use me. Good. Then you understand me."], ["narr", "", "The signal holds. For now. You decided that for everyone."]],
@@ -1121,6 +1301,8 @@ func _bc_pick(k: String) -> void:
 	Game.set_flag(_bc["flag"])
 	Game.flags[_bc["flag"] + "_choice"] = k
 	fight = null
+	var rw: Array = {"carrierDone": [150, "wristband"], "tideDone": [190, "stone"], "collectiveDone": [260, "seal"]}.get(_bc["flag"], [100, ""])
+	boss_reward(rw[0], rw[1], player.position + Vector2(player.face * 80, -60))
 	Game.tend[{"REACH": "connection", "BIND": "control", "STRIKE": "rupture"}[k]] += 2
 	var ch: int = _bc["chapter"]
 	var end_d: String = _bc["end"]
@@ -1147,6 +1329,20 @@ func resolve_tide(_e: Node) -> void:
 		"tideDone", "c3End", 3)
 
 
+func resolve_collective(_e: Node) -> void:
+	for e in ents:
+		if is_instance_valid(e) and (e.kind == "imp" or e.kind == "rider") and e.id.begins_with("sum"):
+			e.hit(999, 1)
+	fx.projectiles.clear()
+	_boss_choice("DR. CIENCIA", "The exhibit sparks. Four hundred minds hang on what you choose.",
+		[{"k": "READ"}, {"k": "REACH", "d": "Give every mind back to its owner, one at a time."}, {"k": "BIND", "d": "Seal him inside his own exhibit. First place, forever."}, {"k": "STRIKE", "d": "Tear the exhibit apart, and the network with it."}],
+		[["narr", "", "READ: A letterhead. THE DHARMA ORDER · SUBJECT 7 · INOKI, MAX."], ["narr", "", "Under it, in Ciencia's handwriting: He is the receiver. Not me. Never me."]],
+		{"REACH": [["max", "angry", "You don't get to be a thought, Doc. You're a person. So are they."], ["narr", "", "Two hundred parents blink at once. Somebody's dad asks where the bathroom is."], ["ciencia", "worried", "I only wanted them to hear it too..."]],
+		"BIND": [["narr", "", "You wire him into his own exhibit and lock the glass."], ["ciencia", "worried", "This is... a display case."], ["lana", "smirk", "Congrats on first place."]],
+		"STRIKE": [["narr", "", "You tear the exhibit apart. The gym lights burst one by one."], ["narr", "", "The ribbon on the wreckage says HONORABLE MENTION."]]},
+		"collectiveDone", "c4End", 4)
+
+
 func _chapter_end(n: int) -> void:
 	mode = "end"
 	Sound.play("endsting")
@@ -1158,12 +1354,13 @@ func _chapter_end(n: int) -> void:
 		Game.write_save(c["room"], c["spawn"])
 	else:
 		Game.clear_save()
-	var key = {1: "ending", 2: "carrierDone_choice", 3: "tideDone_choice"}[n]
+	var key = {1: "ending", 2: "carrierDone_choice", 3: "tideDone_choice", 4: "collectiveDone_choice"}[n]
 	var k: String = Game.flags.get(key, "")
 	var titles = {
 		1: {"REACH": "The Signal Goes Quiet", "BIND": "A Patch on a Broken Wall", "STRIKE": "Very Bright, Then Very Dark"},
 		2: {"REACH": "One Voice Answers", "BIND": "He Hums When It Rains", "STRIKE": "A Name Left Behind"},
 		3: {"REACH": "Warm Rain", "BIND": "The Listener Under the Water", "STRIKE": "A Hundred Kitchens"},
+		4: {"REACH": "Four Hundred Minds Come Home", "BIND": "First Place, Forever", "STRIKE": "Honorable Mention"},
 	}
 	var td: Dictionary = Game.tend
 	var lead = "RUPTURE"
@@ -1172,7 +1369,220 @@ func _chapter_end(n: int) -> void:
 	elif td["control"] >= td["rupture"]:
 		lead = "CONTROL"
 	var stats = [["Connection", td["connection"]], ["Control", td["control"]], ["Rupture", td["rupture"]], ["Witness", Game.witness],
-		["Stabilized", int(Game.flags.get("stabilized", 0))], ["Anchors", "%d / 8" % Game.anchors.size()], ["Overdraws", Game.overdraw]]
+		["Stabilized", int(Game.flags.get("stabilized", 0))], ["Anchors", "%d / %d" % [Game.anchors.size(), Game.ANCH.size()]], ["Overdraws", Game.overdraw],
+		["Party level", Game.prog["level"]], ["Gear found", "%d / %d" % [Game.prog["items"].size(), Game.ITEMS.size()]]]
 	if n == 3:
 		stats.append(["Workers saved", "%d / 3" % int(Game.flags.get("rescued", 0))])
 	ui.show_end(n, titles[n].get(k, "Chapter Complete"), lead, stats, has_next)
+
+
+# ---------- party ----------
+
+func _check_switch() -> void:
+	var want = ""
+	var party: Array = Game.party()
+	if Input.is_action_just_pressed("switch") and party.size() > 1:
+		want = party[(party.find(player.hero) + 1) % party.size()]
+	for i in 3:
+		if Input.is_action_just_pressed("hero%d" % (i + 1)) and i < party.size():
+			want = party[i]
+	if want != "" and want != player.hero:
+		switch_hero(want)
+
+
+func switch_hero(h: String) -> void:
+	if astral_active():
+		toast("Return to your body first")
+		return
+	if not Game.hero_unlocked(h):
+		return
+	var frac: float = float(player.hp) / float(maxi(1, player.max_hp))
+	player.set_hero(h)
+	Game.prog["hero"] = h
+	player.max_hp = Game.hero_max_hp(h)
+	player.hp = clampi(int(ceil(frac * player.max_hp)), 1, player.max_hp)
+	player.inv = maxf(player.inv, 0.4)
+	player.flurry_t = 0.0
+	player.laser_t = 0.0
+	Sound.play("swap")
+	fx.burst(player.position + Vector2(0, -34), 26, 320, Color(Game.HEROES[h]["col"]))
+	fx.sprite("ring", player.position + Vector2(0, -4), 150.0, 0.35, 0.0, Color(Game.HEROES[h]["col"]), 4, 2)
+	toast("Playing as " + Game.HEROES[h]["name"].capitalize())
+	if fight != null:
+		_spawn_allies()
+
+
+func _clear_allies() -> void:
+	for a in allies:
+		if is_instance_valid(a):
+			a.queue_free()
+	allies.clear()
+
+
+## Bosses (except the Echo, which is Max's alone) are fought by the whole trio:
+## whoever isn't being played fights alongside.
+func _spawn_allies() -> void:
+	_clear_allies()
+	if fight == null or fight_id() == "echo":
+		return
+	var present = ["max", "lana", "jason"]
+	var i = 0
+	for h in present:
+		if h == player.hero:
+			continue
+		var a = AllyScript.new()
+		a.main = self
+		a.hero = h
+		a.position = player.position + Vector2(-60 - i * 50, 0)
+		a.slot = i
+		ents_root.add_child(a)
+		allies.append(a)
+		fx.burst(a.position + Vector2(0, -30), 20, 260, Color(Game.HEROES[h]["col"]))
+		i += 1
+
+
+func _update_allies(dt: float) -> void:
+	if fight == null:
+		_allies_spawned = false
+		if not allies.is_empty():
+			_clear_allies()
+		return
+	if allies.is_empty() and fight_id() != "echo" and not _allies_spawned:
+		_allies_spawned = true
+		_spawn_allies()
+		say_toast_party()
+	for a in allies:
+		if is_instance_valid(a):
+			a.tick(dt)
+
+
+var _allies_spawned = false
+
+
+func say_toast_party() -> void:
+	var names = []
+	for a in allies:
+		names.append(Game.HEROES[a.hero]["name"].capitalize())
+	if not names.is_empty():
+		toast(" and ".join(names) + " fight beside you")
+
+
+# ---------- loot & experience ----------
+
+## Called by enemies when they go down: drops experience, health,
+## Resonance and (rarely) equipment.
+func enemy_defeated(e: Node, xp: int) -> void:
+	var at: Vector2 = e.position + Vector2(0, -30)
+	var shards = clampi(xp / 5, 2, 10)
+	for i in shards:
+		_drop("xp", at, {"xp": int(ceil(float(xp) / shards))})
+	var luck = 0.28 + Game.mod("luck")
+	if randf() < luck:
+		_drop("hp", at, {})
+	if randf() < 0.3:
+		_drop("res", at, {})
+	if randf() < 0.07:
+		var pool = []
+		for it in Game.DROP_POOL:
+			if not it in Game.prog["items"]:
+				pool.append(it)
+		if not pool.is_empty():
+			_drop("item", at, {"item": pool[randi() % pool.size()]})
+
+
+## Boss rewards are granted at once (a chapter may end right after).
+func boss_reward(xp: int, item: String, at: Vector2) -> void:
+	for i in 30:
+		fx.part(at, Vector2(randf_range(-260, 260), randf_range(-320, 60)), "res", Color("#e6dcff"), player)
+	if Game.gain_xp(xp) > 0:
+		_level_up()
+	var got = ["+%d XP" % xp]
+	if item != "" and Game.give_item(item):
+		got.append(Game.ITEMS[item]["name"])
+		Sound.play("unlock")
+	toast("Reward: " + " · ".join(got))
+
+
+func _drop(k: String, at: Vector2, extra: Dictionary) -> void:
+	var pk = {"p": at, "v": Vector2(randf_range(-170, 170), -260 - randf() * 180), "k": k, "age": 0.0, "seed": randf() * 6.0}
+	pk.merge(extra)
+	pickups.append(pk)
+
+
+func _update_pickups(dt: float) -> void:
+	if room == null:
+		return
+	var c: Node = player
+	var pc: Vector2 = c.position + Vector2(0, -28)
+	for pk in pickups:
+		pk["age"] += dt
+		if pk.get("fixed", false):
+			if pc.distance_to(pk["p"]) < 34.0 and not astral_active():
+				_collect(pk)
+			continue
+		var d: float = pc.distance_to(pk["p"])
+		if pk["age"] > 0.45 and d < 110.0 and not astral_active():
+			pk["p"] = pk["p"].move_toward(pc, (380.0 + (110.0 - d) * 8.0) * dt)
+			if d < 20.0:
+				_collect(pk)
+			continue
+		pk["v"].y = minf(pk["v"].y + 1500.0 * dt, 700.0)
+		pk["v"].x *= 0.985
+		var np: Vector2 = pk["p"] + pk["v"] * dt
+		var fl: Vector2 = room.floor_below(Vector2(np.x, pk["p"].y))
+		if np.y >= fl.y - 6.0 and pk["v"].y > 0.0:
+			np.y = fl.y - 6.0
+			pk["v"].y *= -0.35
+			pk["v"].x *= 0.7
+		if np.x < 10 or np.x > room.room_size.x - 10:
+			pk["v"].x *= -1
+			np.x = clampf(np.x, 10, room.room_size.x - 10)
+		pk["p"] = np
+		if pk["age"] > 30.0 and pk["k"] in ["xp", "res", "hp"]:
+			pk["gone"] = true
+	pickups = pickups.filter(func(x): return not x.get("gone", false))
+
+
+func _collect(pk: Dictionary) -> void:
+	pk["gone"] = true
+	match pk["k"]:
+		"xp":
+			Sound.play("pickup", 0.2, -10.0)
+			var ups = Game.gain_xp(pk["xp"])
+			if ups > 0:
+				_level_up()
+		"hp":
+			Sound.play("heal", 0.05, -4.0)
+			if player.hp < player.max_hp:
+				player.hp += 1
+				fx.text_float(player.position + Vector2(0, -80), "+1", Color("#bfffd0"), 1.0)
+		"res":
+			Sound.play("pickup", 0.1, -6.0)
+			_gain_res(15.0)
+		"heart":
+			Game.prog["picked"][pk["id"]] = true
+			Game.prog["hp_bonus"] = int(Game.prog.get("hp_bonus", 0)) + 1
+			player.max_hp = Game.hero_max_hp(player.hero)
+			player.hp = player.max_hp
+			Sound.play("unlock")
+			flash_screen(0.35, Color("#ff9ab0"))
+			card = {"name": "Heart Ember", "sub": "Maximum health +1 for the whole party", "t": 0.0}
+		"item":
+			if pk.has("id"):
+				Game.prog["picked"][pk["id"]] = true
+			var it: String = pk["item"]
+			Game.give_item(it)
+			Sound.play("unlock")
+			flash_screen(0.3, Color("#ffd68a"))
+			card = {"name": Game.ITEMS[it]["name"], "sub": Game.ITEMS[it]["d"] + "   [" + Game.label("menu") + "] to equip", "t": 0.0}
+			var m: int = Game.hero_max_hp(player.hero)
+			player.hp = clampi(player.hp + (m - player.max_hp), 1, m)
+			player.max_hp = m
+
+
+func _level_up() -> void:
+	Sound.play("levelup")
+	flash_screen(0.3, Color("#fff2c8"))
+	fx.burst(player.position + Vector2(0, -34), 40, 420, Color("#fff2c8"))
+	fx.sprite("ring", player.position, 180.0, 0.4, 0.0, Color("#fff2c8"), 4, 2)
+	toast("LEVEL %d · Attribute points to spend [%s]" % [Game.prog["level"], Game.label("menu")])

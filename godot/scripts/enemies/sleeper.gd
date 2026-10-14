@@ -137,6 +137,7 @@ func hit(dmg: int, hdir: int) -> bool:
 			Game.set_flag("down_" + id, true)
 			Game.flags["stabilized"] = int(Game.flags.get("stabilized", 0)) + 1
 		Sound.play("stabilize")
+		main.enemy_defeated(self, 14)
 		for i in 26:
 			main.fx.part(position + Vector2(0, -40), Vector2(randf_range(-80, 80), -randf() * 160), "wisp", Color("#c9b8ff"))
 		main.fx.text_float(position + Vector2(0, -80), "stabilized", Color("#ffd2a8"), 2.0)

@@ -47,7 +47,28 @@ func advance(n: int) -> void:
 		await tap("confirm")
 
 
+## QUICK=<chapter> runs a short check of that chapter's start instead.
+func _quick(ch: int) -> void:
+	main.start_chapter(ch, true)
+	await wait(0.5)
+	await advance(14)
+	main.card = null
+	await wait(0.3)
+	await shot("q_start")
+	for i in 6:
+		main._drop(["xp", "hp", "res"][i % 3], main.player.position + Vector2(80, -40), {"xp": 10})
+	print("drop-start")
+	await wait(0.4)
+	await shot("q_drops")
+	print("drop-end")
+	await wait(2.0)
+	get_tree().quit()
+
+
 func _run() -> void:
+	if OS.get_environment("QUICK") != "":
+		await _quick(int(OS.get_environment("QUICK")))
+		return
 	await wait(1.0)
 	await shot("01_title")
 	main.new_game()
@@ -268,5 +289,109 @@ func _run() -> void:
 	await wait(1.0)
 	await shot("36_ch3_end")
 	main.player.max_hp = 5
-	print("AUTOTEST DONE mode=", main.mode, " tide=", Game.flags.get("tideDone_choice", ""), " unlocked=", Game.unlocked())
+	# ---- chapter 4 ----
+	main.start_chapter(4, false)
+	await wait(1.0)
+	await shot("40_ch4_intro")
+	await advance(12)
+	await wait(0.6)
+	await shot("41_fairhall")
+	main.player.position = Vector2(900, 470)
+	main.player.res = 99.0
+	await tap("switch")
+	await wait(0.3)
+	await shot("42_swap_lana")
+	await tap("attack")
+	await wait(0.22)
+	await tap("attack")
+	await wait(0.22)
+	await tap("attack")
+	await wait(0.05)
+	await shot("43_lana_combo")
+	await wait(0.4)
+	await tap("laser")
+	await wait(0.2)
+	await shot("44_lana_shout")
+	await wait(0.6)
+	await tap("switch")
+	await wait(0.3)
+	main.player.res = 99.0
+	await tap("laser")
+	await wait(0.3)
+	await shot("45_jason_wave")
+	await wait(0.6)
+	for i in 8:
+		main._drop("xp", main.player.position + Vector2(60, -40), {"xp": 30})
+	main._drop("hp", main.player.position + Vector2(-60, -40), {})
+	main._drop("item", main.player.position + Vector2(40, -60), {"item": "jersey"})
+	await wait(0.15)
+	await shot("46_loot")
+	await wait(2.0)
+	print("LOOT level=", Game.prog["level"], " items=", Game.prog["items"], " pts=", Game.prog["pts"])
+	main.card = null
+	main.open_menu()
+	await wait(0.3)
+	await shot("47_menu_party")
+	main.ui._spend(main.player.hero, "vit")
+	main.ui._menu_go(1)
+	await wait(0.2)
+	await shot("48_menu_gear")
+	main.ui._menu_go(2)
+	await wait(0.2)
+	await shot("49_menu_skills")
+	main.close_menu()
+	await tap("hero1")
+	await wait(0.3)
+	main.player.hp = main.player.max_hp
+	main.player.position = Vector2(2300, 470)
+	await wait(0.2)
+	await advance(6)
+	await wait(1.5)
+	await shot("50_elite")
+	print("elite fight=", main.fight_id())
+	for e in main.ents:
+		if e.kind == "rider" and e.elite:
+			e.hit(999, 1)
+	await wait(1.0)
+	main.player.hp = main.player.max_hp
+	main.load_room("gym", Vector2(300, 1010))
+	await wait(0.4)
+	await advance(4)
+	await wait(0.6)
+	await shot("51_gym")
+	for e in main.ents:
+		if e.kind == "exhibit":
+			e.hit(99, 1)
+	await wait(0.3)
+	await advance(4)
+	print("exhibits=", Game.flags.get("exhibits", 0))
+	main.player.hp = main.player.max_hp
+	main.load_room("stage", Vector2(160, 470))
+	await wait(0.4)
+	await hold("right", 0.5)
+	await wait(0.4)
+	await advance(12)
+	await wait(2.0)
+	await shot("52_collective_fight")
+	main.player.hp = 99
+	main.player.max_hp = 99
+	for e in main.ents:
+		if e.kind == "collective":
+			e.hp = 30
+			e.summon_t = 0.0
+	await wait(2.0)
+	await shot("53_collective_phase2")
+	for e in main.ents:
+		if e.kind == "collective":
+			e.alpha = 1.0
+			e.state = "idle"
+			e.hit(999, 1)
+	await wait(1.6)
+	await shot("54_collective_choice")
+	main._on_choice("REACH")
+	await wait(0.3)
+	await advance(14)
+	await wait(1.0)
+	await shot("55_ch4_end")
+	print("AUTOTEST DONE mode=", main.mode, " tide=", Game.flags.get("tideDone_choice", ""), " collective=", Game.flags.get("collectiveDone_choice", ""), " unlocked=", Game.unlocked(), " level=", Game.prog["level"])
 	get_tree().quit()

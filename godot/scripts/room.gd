@@ -19,7 +19,7 @@ var t = 0.0
 
 
 func _ready() -> void:
-	for k in ["exit", "trigger", "bench", "npc", "anchor", "sigil", "spawn", "hazard", "worker"]:
+	for k in ["exit", "trigger", "bench", "npc", "anchor", "sigil", "spawn", "hazard", "worker", "loot"]:
 		markers[k] = []
 	for c in $Platforms.get_children():
 		var sh: CollisionShape2D = c.get_node("Shape")
@@ -51,6 +51,15 @@ func ground_at(p: Vector2) -> bool:
 	return false
 
 
+## Top of the first solid surface at or below `p` (or the room bottom).
+func floor_below(p: Vector2) -> Vector2:
+	var best = room_size.y
+	for r in solid_rects(true):
+		if p.x >= r.position.x and p.x <= r.end.x and r.position.y >= p.y - 2.0 and r.position.y < best:
+			best = r.position.y
+	return Vector2(p.x, best)
+
+
 func hazard_at(r: Rect2):
 	for h in markers["hazard"]:
 		if h.id == "tide" and Game.flag("tideClear"):
@@ -68,8 +77,56 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
+func _draw_fair() -> void:
+	# Science-fair dressing drawn over the reused school art.
+	var cols = [Color("#ff6aa8"), Color("#ffd06a"), Color("#6ad8ff"), Color("#9aff8a")]
+	if room_id == "fairhall" or room_id == "gym":
+		var floor_y = 470.0 if room_id == "fairhall" else 1010.0
+		var x = 200.0
+		var i = 0
+		while x < room_size.x - 200.0:
+			var c: Color = cols[i % cols.size()]
+			var bx = x
+			draw_rect(Rect2(bx - 34, floor_y - 30, 68, 30), Color("#2a2228"))
+			draw_rect(Rect2(bx - 30, floor_y - 74, 18, 44), Color("#e9e1d0"))
+			draw_rect(Rect2(bx - 12, floor_y - 80, 24, 50), Color("#f4eee2"))
+			draw_rect(Rect2(bx + 12, floor_y - 74, 18, 44), Color("#e9e1d0"))
+			draw_rect(Rect2(bx - 10, floor_y - 76, 20, 6), c)
+			for k in 3:
+				draw_rect(Rect2(bx - 26 + k * 20, floor_y - 62, 12, 9), Color(c, 0.5))
+			x += 420.0 + (i % 3) * 60.0
+			i += 1
+		var y0 = 150.0 if room_id == "fairhall" else 450.0
+		var bx2 = 120.0
+		while bx2 < room_size.x - 120.0:
+			var pts = PackedVector2Array()
+			for k in 9:
+				pts.append(Vector2(bx2 + k * 30.0, y0 + sin(k * 0.39) * 26.0))
+			draw_polyline(pts, Color(0.9, 0.85, 0.8, 0.5), 1.5)
+			for k in 8:
+				var p0: Vector2 = pts[k]
+				draw_colored_polygon(PackedVector2Array([p0, p0 + Vector2(22, 0), p0 + Vector2(11, 20)]), Color(cols[k % 4], 0.75))
+			bx2 += 640.0
+		draw_string(Game.font_display, Vector2(room_size.x / 2.0 - 260.0, y0 + 74.0), "WESTBROOK HIGH SCIENCE FAIR", HORIZONTAL_ALIGNMENT_LEFT, -1, 30, Color(1, 0.9, 0.8, 0.5))
+	elif room_id == "stage":
+		for side in [0, 1]:
+			var cx = 0.0 if side == 0 else room_size.x - 150.0
+			for k in 6:
+				var sx = cx + k * 25.0
+				draw_rect(Rect2(sx, 0, 25, 470), Color(0.42 + 0.06 * sin(t + k), 0.06, 0.12, 0.85))
+				draw_line(Vector2(sx, 0), Vector2(sx, 470), Color(0, 0, 0, 0.35), 2.0)
+		draw_rect(Rect2(0, 0, room_size.x, 40), Color("#3a0812"))
+		for k in 3:
+			var lx = 260.0 + k * 300.0
+			var sway = sin(t * 0.7 + k) * 60.0
+			draw_colored_polygon(PackedVector2Array([Vector2(lx - 10, 40), Vector2(lx + 10, 40), Vector2(lx + 120 + sway, 470), Vector2(lx - 120 + sway, 470)]), Color(1, 0.9, 0.7, 0.05))
+		draw_string(Game.font_display, Vector2(380, 120), "COLLECTIVE COGNITION", HORIZONTAL_ALIGNMENT_LEFT, -1, 24, Color(1, 0.6, 0.85, 0.3 + 0.1 * sin(t * 3.0)))
+
+
 func _draw() -> void:
 	var amix: float = main.astral_mix if main else 0.0
+	if room_id in ["fairhall", "gym", "stage"]:
+		_draw_fair()
 	if draw_platforms:
 		_draw_platforms()
 	for h in markers["hazard"]:
@@ -115,6 +172,9 @@ const STYLE := {
 	"hospital": {"body": Color("#1c2226"), "top": Color("#9aa8ae"), "plate": Color("#c9d2d6"), "edge": Color("#eef3f5")},
 	"waterworks": {"body": Color("#101618"), "top": Color("#46545a"), "plate": Color("#2e3a40"), "edge": Color("#7f9aa3")},
 	"pumphouse": {"body": Color("#0d1214"), "top": Color("#3c4a50"), "plate": Color("#2e3a40"), "edge": Color("#7f9aa3")},
+	"fairhall": {"body": Color("#14121a"), "top": Color("#6a6070"), "plate": Color("#8a5a3a"), "edge": Color("#e0b080")},
+	"gym": {"body": Color("#1a1210"), "top": Color("#b07a40"), "plate": Color("#3a3f4a"), "edge": Color("#c8ccd4")},
+	"stage": {"body": Color("#120c10"), "top": Color("#5a2a30"), "plate": Color("#3a2a20"), "edge": Color("#d0a070")},
 }
 
 

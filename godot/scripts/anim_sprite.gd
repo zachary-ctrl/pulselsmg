@@ -40,7 +40,7 @@ static func atlas() -> Dictionary:
 
 
 static func has_anim(k: String, a: String) -> bool:
-	return atlas()["chars"].has(k) and atlas()["chars"][k].has(a)
+	return atlas()["chars"].has(k) and atlas()["chars"][k] is Dictionary and atlas()["chars"][k].has(a)
 
 
 static func tex(path: String) -> Texture2D:
@@ -72,7 +72,10 @@ func play(name: String, restart := false) -> void:
 ## Show a frame by progress 0..1 through the current animation.
 func seek(name: String, p: float) -> void:
 	play(name)
-	var n: int = atlas()["chars"][key][anim]["frames"].size()
+	var a: Dictionary = atlas()["chars"].get(key, {}).get(anim, {})
+	if a.is_empty():
+		return
+	var n: int = a["frames"].size()
 	frame = clampi(int(p * n), 0, n - 1)
 	_t = -INF
 
@@ -85,7 +88,7 @@ func _process(delta: float) -> void:
 	_mat.set_shader_parameter("tint", tint)
 	_mat.set_shader_parameter("flash", flash)
 	if _t != -INF:
-		var a: Dictionary = atlas()["chars"][key].get(anim, {})
+		var a: Dictionary = atlas()["chars"].get(key, {}).get(anim, {})
 		if not a.is_empty():
 			_t += delta * speed
 			var n: int = a["frames"].size()

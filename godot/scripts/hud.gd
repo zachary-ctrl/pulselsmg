@@ -32,22 +32,26 @@ func _draw() -> void:
 	# resonance orb
 	var c = Vector2(56, 56)
 	var r = 34.0
-	var full: bool = p.res >= 99.0
+	var full: bool = p.res >= Game.fp_need()
 	draw_circle(c, r + 6, Color(0.02, 0.02, 0.04, 0.65))
-	var lvl: float = p.res / 99.0
+	var lvl: float = clampf(p.res / Game.fp_need(), 0.0, 1.0)
 	var ly = c.y + r - lvl * r * 2.0
-	var poly = PackedVector2Array()
-	var x = -r
-	while x <= r:
-		var yy = maxf(ly + sin(t * 3 + x * 0.15) * 2.5, c.y - sqrt(maxf(0.0, r * r - x * x)))
-		poly.append(Vector2(c.x + x, minf(yy, c.y + sqrt(maxf(0.0, r * r - x * x)))))
-		x += 4
-	x = r
-	while x >= -r:
-		poly.append(Vector2(c.x + x, c.y + sqrt(maxf(0.0, r * r - x * x))))
-		x -= 4
-	if lvl > 0.01 and poly.size() > 3:
-		draw_colored_polygon(poly, Color("#8f6cf0") if full else Color("#e0863a"))
+	if lvl > 0.01:
+		# Liquid = circle ∩ (area under a wavy surface line).
+		var circle = PackedVector2Array()
+		for i in 40:
+			var a = TAU * i / 40.0
+			circle.append(c + Vector2(cos(a), sin(a)) * r)
+		var liquid = PackedVector2Array()
+		var x = -r - 4.0
+		while x <= r + 4.0:
+			liquid.append(Vector2(c.x + x, ly + sin(t * 3 + x * 0.15) * 2.5))
+			x += 4.0
+		liquid.append(Vector2(c.x + r + 4.0, c.y + r + 4.0))
+		liquid.append(Vector2(c.x - r - 4.0, c.y + r + 4.0))
+		for part in Geometry2D.intersect_polygons(circle, liquid):
+			if part.size() >= 3:
+				draw_colored_polygon(part, Color("#8f6cf0") if full else Color("#e0863a"))
 	draw_arc(c, r, 0, TAU, 48, Color(0.93, 0.9, 0.85, 0.85), 2.0)
 	draw_arc(c, r + 5, 0, TAU, 48, Color(0.93, 0.9, 0.85, 0.3), 1.0)
 	if full:
@@ -55,9 +59,13 @@ func _draw() -> void:
 	for i in mini(Game.overdraw, 5):
 		var a = -1.2 + i * 0.6
 		draw_line(c + Vector2(cos(a), sin(a)) * r, c + Vector2(cos(a), sin(a + 0.15)) * (r - 12), Color(0.78, 0.67, 1, 0.9), 1.2)
-	for i in p.max_hp:
-		var sc = Vector2(110 + i * (30 if p.max_hp <= 7 else 24), 44)
-		var dia = PackedVector2Array([sc + Vector2(0, -13), sc + Vector2(9, -2), sc + Vector2(0, 13), sc + Vector2(-9, -2)])
+	if p.max_hp > 20:
+		_text(Game.font_display, Vector2(112, 50), "%d / %d" % [p.hp, p.max_hp], 18, Color("#efe7da"))
+	for i in (p.max_hp if p.max_hp <= 20 else 0):
+		var sp = clampf(330.0 / p.max_hp, 15.0, 30.0)
+		var kq = clampf(sp / 26.0, 0.6, 1.0)
+		var sc = Vector2(110 + i * sp, 44)
+		var dia = PackedVector2Array([sc + Vector2(0, -13) * kq, sc + Vector2(9, -2) * kq, sc + Vector2(0, 13) * kq, sc + Vector2(-9, -2) * kq])
 		if i < p.hp:
 			draw_colored_polygon(dia, Color("#efe7da"))
 			draw_circle(sc + Vector2(0, -1), 2.4, Color("#1a1420"))
@@ -66,6 +74,29 @@ func _draw() -> void:
 			dia.append(dia[0])
 			draw_polyline(dia, Color(0.93, 0.9, 0.85, 0.35), 1.2)
 	_text(Game.font_semi, Vector2(96, 78), ("FULL POTENTIAL READY [" + Game.label("fp") + "]") if full else "RESONANCE", 12, Color(0.93, 0.9, 0.85, 0.7))
+	# hero, level and party
+	for i in 10:
+		draw_rect(Rect2(0, 96 + i * 5.0, 300 - i * 12.0, 5), Color(0, 0, 0, 0.32 - i * 0.02))
+	var hd: Dictionary = Game.HEROES[p.hero]
+	var pg: Dictionary = Game.prog
+	_text(Game.font_display, Vector2(22, 112), "%s · LV %d" % [hd["name"], pg["level"]], 13, Color(hd["col"]))
+	draw_rect(Rect2(22, 118, 150, 3), Color(1, 1, 1, 0.12))
+	draw_rect(Rect2(22, 118, 150.0 * clampf(float(pg["xp"]) / Game.xp_next(pg["level"]), 0.0, 1.0), 3), Color("#fff2c8"))
+	var party: Array = Game.party()
+	if party.size() > 1:
+		for i in party.size():
+			var h: String = party[i]
+			var cc = Vector2(186 + i * 24, 114)
+			var hc = Color(Game.HEROES[h]["col"])
+			draw_circle(cc, 9, Color(hc, 0.9 if h == p.hero else 0.25))
+			draw_arc(cc, 10, 0, TAU, 20, Color(1, 1, 1, 0.6 if h == p.hero else 0.2), 1.2)
+			_text(Game.font_display, cc + Vector2(0, 4), h.substr(0, 1).to_upper(), 10, Color("#14101a"), true)
+		_text(Game.font_semi, Vector2(186 + party.size() * 24, 118), "[" + Game.label("switch") + "]", 10, Color(0.93, 0.9, 0.85, 0.5))
+	var pts = 0
+	for h in party:
+		pts += int(pg["pts"].get(h, 0))
+	if pts > 0:
+		_text(Game.font_semi, Vector2(22, 138), "%d attribute point%s · [%s]" % [pts, "" if pts == 1 else "s", Game.label("menu")], 11, Color("#fff2c8"))
 	# projection timer
 	if main.astral_active():
 		var tl: float = maxf(0.0, main.astral.timer)

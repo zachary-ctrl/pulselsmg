@@ -58,6 +58,7 @@ func hit(dmg: int, hdir: int) -> bool:
 		dead = true
 		Game.set_flag("down_" + id, true)
 		Sound.play("pop")
+		main.enemy_defeated(self, 10)
 		main.fx.burst(position, 20, 260, Color("#c9b8ff"))
 	return true
 

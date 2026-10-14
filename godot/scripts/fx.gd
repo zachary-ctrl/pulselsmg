@@ -9,6 +9,32 @@ var parts: Array = []
 var texts: Array = []
 var beams: Array = []
 var lasers: Array = []
+var rings: Array = []
+var sprites: Array = []
+var add_layer: Node2D
+static var _vfx: Dictionary = {}
+
+
+static func vfx(name: String) -> Texture2D:
+	if not _vfx.has(name):
+		var p = "res://assets/fx/%s.png" % name
+		_vfx[name] = load(p) if ResourceLoader.exists(p) else null
+	return _vfx[name]
+
+
+func _ready() -> void:
+	add_layer = Node2D.new()
+	var m = CanvasItemMaterial.new()
+	m.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	add_layer.material = m
+	add_layer.draw.connect(_draw_add)
+	add_child(add_layer)
+
+
+## A one-shot additive sprite effect (an image from assets/fx/vfx or a
+## frame sequence like "ring"/"dust").
+func sprite(name: String, pos: Vector2, size: float, life: float, rot := 0.0, col := Color.WHITE, frames := 0, start := 0) -> void:
+	sprites.append({"n": name, "p": pos, "s": size, "life": life, "max": life, "rot": rot, "c": col, "frames": frames, "start": start})
 var predict = null
 var _cid = 0
 
@@ -45,6 +71,8 @@ func clear_all() -> void:
 	texts.clear()
 	beams.clear()
 	lasers.clear()
+	rings.clear()
+	sprites.clear()
 	predict = null
 
 
@@ -52,6 +80,13 @@ func step(dt: float) -> void:
 	for l in lasers:
 		l["life"] -= dt
 	lasers = lasers.filter(func(l): return l["life"] > 0.0)
+	for r in rings:
+		r["life"] -= dt
+		r["r"] += dt * 420.0
+	rings = rings.filter(func(r): return r["life"] > 0.0)
+	for sp in sprites:
+		sp["life"] -= dt
+	sprites = sprites.filter(func(sp): return sp["life"] > 0.0)
 	var solids: Array = main.room.solid_rects(false)
 	var floors: Array = main.room.solid_rects(true)
 	for p in projectiles:
@@ -83,6 +118,9 @@ func step(dt: float) -> void:
 				if r.has_point(p["p"]):
 					p["life"] = 0.0
 					break
+		if p["life"] > 0.0 and p.get("friendly", false):
+			_friendly(p, dt)
+			continue
 		if p["life"] > 0.0:
 			var pr = Rect2(p["p"] - Vector2(p["r"], p["r"]), Vector2(p["r"], p["r"]) * 2)
 			if pr.intersects(main.player.hitbox()):
@@ -93,6 +131,40 @@ func step(dt: float) -> void:
 				p["life"] = 0.0
 	projectiles = projectiles.filter(func(p): return p["life"] > 0.0)
 	update_cosmetic(dt)
+
+
+func _friendly(p: Dictionary, dt: float) -> void:
+	if p.get("home", false):
+		var best = null
+		var bd = 520.0
+		for en in main.ents:
+			if main.alive(en):
+				var d: float = en.hurt_rect().get_center().distance_to(p["p"])
+				if d < bd:
+					bd = d
+					best = en
+		if best != null:
+			var want: Vector2 = (best.hurt_rect().get_center() - p["p"]).normalized() * 330.0
+			p["v"] = p["v"].move_toward(want, 900.0 * dt)
+	if p["k"] == "pwave":
+		var g: Vector2 = main.room.floor_below(p["p"] + Vector2(0, -20)) if main.room.has_method("floor_below") else p["p"]
+		p["p"].y = move_toward(p["p"].y, g.y - 14.0, 600.0 * dt)
+		if randf() < 0.7:
+			part(p["p"] + Vector2(randf_range(-14, 14), 8), Vector2(-p["v"].x * 0.1, -randf() * 160), "dust", Color("#9fe2ff"))
+	var pr = Rect2(p["p"] - Vector2(p["r"], p["r"]), Vector2(p["r"], p["r"]) * 2)
+	for en in main.ents:
+		if not main.alive(en) or p["hits"].has(en):
+			continue
+		if pr.intersects(en.hurt_rect()):
+			if en.hit(p["dmg"], int(signf(p["v"].x)) if p["v"].x != 0.0 else 1):
+				p["hits"][en] = true
+				main.hitstop = maxf(main.hitstop, 0.05)
+				Sound.play("hit", 0.08)
+				burst(pr.get_center(), 14, 340, p["c"])
+				sprite("vfx/burst_ice" if p["k"] == "pwave" else "vfx/burst_pink", pr.get_center(), 70.0, 0.3)
+				if not p.get("pierce", false):
+					p["life"] = 0.0
+					return
 
 
 func update_cosmetic(dt: float) -> void:
@@ -171,7 +243,7 @@ func _draw() -> void:
 		if pts.size() > 1:
 			draw_polyline(pts, Color(0.5, 0.94, 1, 0.5), 2.0)
 	for p in projectiles:
-		if p.get("delay", 0.0) > 0.0:
+		if p.get("delay", 0.0) > 0.0 or p.get("friendly", false):
 			continue
 		_glow(p["p"], p["r"] * 3.0, Color(p["c"], 0.5))
 		draw_circle(p["p"], p["r"] * 0.55, Color.WHITE)
@@ -220,11 +292,18 @@ func _draw() -> void:
 	for l in lasers:
 		var a: float = l["life"] / l["max"]
 		var wv = 1.0 + 0.15 * sin(t * 60.0)
-		draw_line(l["a"], l["b"], Color(1, 0.55, 0.25, 0.25 * a), 46.0 * a * wv)
-		draw_line(l["a"], l["b"], Color(1, 0.8, 0.45, 0.6 * a), 22.0 * a * wv)
+		var lc: Color = l.get("c", Color(1, 0.55, 0.25))
+		draw_line(l["a"], l["b"], Color(lc, 0.25 * a), 46.0 * a * wv)
+		draw_line(l["a"], l["b"], Color(lc.lerp(Color.WHITE, 0.4), 0.6 * a), 22.0 * a * wv)
 		draw_line(l["a"], l["b"], Color(1, 0.98, 0.92, a), 8.0 * a)
 		draw_circle(l["a"], 18.0 * a, Color(1, 0.95, 0.85, 0.8 * a))
-		draw_circle(l["b"], 26.0 * a, Color(1, 0.75, 0.4, 0.5 * a))
+		draw_circle(l["b"], 26.0 * a, Color(lc, 0.5 * a))
+	for r in rings:
+		var a: float = r["life"] / r["max"]
+		draw_arc(r["p"], r["r"], 0, TAU, 48, Color(r["c"], a), 10.0 * a)
+		draw_arc(r["p"], r["r"] * 0.8, 0, TAU, 48, Color(1, 1, 1, 0.6 * a), 3.0)
+	_draw_pickups(t)
+	add_layer.queue_redraw()
 	for p in parts:
 		var a: float = clampf(p["life"] / p["max"], 0.0, 1.0)
 		var k: String = p["k"]
@@ -296,3 +375,78 @@ func _kick(e: Node, col: Color) -> void:
 	for i in 3:
 		draw_arc(c2 - Vector2(e.face * i * 8, 0), 30.0 - i * 6, minf(a0, a1), maxf(a0, a1), 18, Color(Color("#fff7e8") if i == 0 else col, alpha * (1.0 - i * 0.25)), 7.0 - i * 2)
 	_glow(c2, 40, Color(col, 0.3 * alpha))
+
+
+func _tex_draw(ci: CanvasItem, tex: Texture2D, center: Vector2, size: Vector2, rot: float, col: Color) -> void:
+	ci.draw_set_transform(center, rot)
+	ci.draw_texture_rect(tex, Rect2(-size / 2.0, size), false, col)
+	ci.draw_set_transform(Vector2.ZERO)
+
+
+## Additive layer: glowing VFX sprites from assets/fx/vfx.
+func _draw_add() -> void:
+	if main == null or main.room == null:
+		return
+	for l in lasers:
+		var a: float = l["life"] / l["max"]
+		var key = {"laser": "vfx/drill_violet", "geyser": "vfx/beam_ice"}.get(l.get("k", ""), "")
+		var tex = vfx(key) if key != "" else null
+		if tex != null:
+			var d: Vector2 = l["b"] - l["a"]
+			var hgt = 70.0 * (0.6 + 0.4 * a)
+			_tex_draw(add_layer, tex, (l["a"] + l["b"]) / 2.0, Vector2(d.length() + 40.0, hgt), d.angle(), Color(1, 1, 1, a))
+	for p in projectiles:
+		if not p.get("friendly", false):
+			continue
+		var ang: float = p["v"].angle()
+		if p["k"] == "mind":
+			var tx = vfx("vfx/streak_violet")
+			if tx:
+				_tex_draw(add_layer, tx, p["p"] - p["v"].normalized() * 40.0, Vector2(120, 38), ang, Color.WHITE)
+			add_layer.draw_circle(p["p"], 9, Color(0.9, 0.8, 1, 0.9))
+		elif p["k"] == "pwave":
+			var tx2 = vfx("vfx/beam_ice")
+			if tx2:
+				_tex_draw(add_layer, tx2, p["p"] - Vector2(signf(p["v"].x) * 40.0, 0), Vector2(140, 56), ang, Color.WHITE)
+			else:
+				add_layer.draw_circle(p["p"], 18, Color(0.5, 0.8, 1, 0.6))
+	for sp in sprites:
+		var a: float = sp["life"] / sp["max"]
+		var tex: Texture2D = null
+		if sp["frames"] > 0:
+			var i = clampi(int((1.0 - a) * sp["frames"]), 0, sp["frames"] - 1)
+			tex = vfx("%s_%d" % [sp["n"], i + sp.get("start", 0)])
+		else:
+			tex = vfx(sp["n"])
+		if tex == null:
+			continue
+		var k = sp["s"] / float(maxi(tex.get_width(), tex.get_height()))
+		var sz = Vector2(tex.get_width(), tex.get_height()) * k * (1.0 + (1.0 - a) * 0.3 if sp["frames"] == 0 else 1.0)
+		var c: Color = sp["c"]
+		_tex_draw(add_layer, tex, sp["p"], sz, sp["rot"], Color(c, c.a * (a if sp["frames"] == 0 else 1.0)))
+
+
+func _draw_pickups(t: float) -> void:
+	for pk in main.pickups:
+		var c: Vector2 = pk["p"] + Vector2(0, sin(t * 4.0 + pk["seed"]) * 2.0)
+		match pk["k"]:
+			"hp":
+				_glow(c, 18, Color(0.55, 1, 0.7, 0.5))
+				var d = PackedVector2Array([c + Vector2(0, -8), c + Vector2(6, -1), c + Vector2(0, 8), c + Vector2(-6, -1)])
+				draw_colored_polygon(d, Color("#bfffd0"))
+			"res":
+				_glow(c, 16, Color(1, 0.7, 0.4, 0.5))
+				draw_circle(c, 4.5, Color("#ffd6a0"))
+			"xp":
+				_glow(c, 12, Color(0.75, 0.65, 1, 0.45))
+				draw_colored_polygon(PackedVector2Array([c + Vector2(0, -5), c + Vector2(4, 0), c + Vector2(0, 5), c + Vector2(-4, 0)]), Color("#e6dcff"))
+			"heart":
+				_glow(c, 30, Color(1, 0.45, 0.55, 0.55))
+				var d2 = PackedVector2Array([c + Vector2(0, -14), c + Vector2(10, -2), c + Vector2(0, 14), c + Vector2(-10, -2)])
+				draw_colored_polygon(d2, Color("#ffe0e6"))
+				draw_polyline(PackedVector2Array([d2[0], d2[1], d2[2], d2[3], d2[0]]), Color("#ff6a88"), 2.0)
+			"item":
+				_glow(c, 30, Color(1, 0.85, 0.4, 0.55))
+				draw_rect(Rect2(c - Vector2(8, 8), Vector2(16, 16)), Color("#2a2030"))
+				draw_rect(Rect2(c - Vector2(8, 8), Vector2(16, 16)), Color("#ffd68a"), false, 2.0)
+				draw_string(Game.font_display, c + Vector2(-4, 5), "?", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#ffd68a"))

@@ -314,3 +314,18 @@ face = 1
 position = Vector2(1760, 520)
 script = ExtResource("marker")
 kind = "bench"
+
+[node name="Spawn_i1_11" type="Node2D" parent="Markers"]
+position = Vector2(2100, 1010)
+script = ExtResource("marker")
+kind = "spawn"
+id = "i1"
+enemy = "imp"
+patrol_range = 120
+
+[node name="Loot_h_caf_12" type="Node2D" parent="Markers"]
+position = Vector2(1440, 650)
+script = ExtResource("marker")
+kind = "loot"
+id = "h_caf"
+item = "heart"

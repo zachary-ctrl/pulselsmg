@@ -182,3 +182,41 @@ script = ExtResource("marker")
 kind = "spawn"
 id = "m5"
 enemy = "mote"
+
+[node name="Spawn_i2_10" type="Node2D" parent="Markers"]
+position = Vector2(980, 410)
+script = ExtResource("marker")
+kind = "spawn"
+id = "i2"
+enemy = "imp"
+patrol_range = 60
+
+[node name="Spawn_i3_11" type="Node2D" parent="Markers"]
+position = Vector2(1980, 340)
+script = ExtResource("marker")
+kind = "spawn"
+id = "i3"
+enemy = "imp"
+patrol_range = 60
+
+[node name="Spawn_elite_r1_12" type="Node2D" parent="Markers"]
+position = Vector2(1500, 470)
+script = ExtResource("marker")
+kind = "spawn"
+id = "elite_r1"
+enemy = "rider"
+patrol_range = 260
+
+[node name="Loot_h_street_13" type="Node2D" parent="Markers"]
+position = Vector2(1240, 420)
+script = ExtResource("marker")
+kind = "loot"
+id = "h_street"
+item = "heart"
+
+[node name="Loot_l_jersey_14" type="Node2D" parent="Markers"]
+position = Vector2(2000, 340)
+script = ExtResource("marker")
+kind = "loot"
+id = "l_jersey"
+item = "jersey"

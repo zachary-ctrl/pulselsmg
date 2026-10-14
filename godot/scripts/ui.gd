@@ -18,6 +18,10 @@ var _btn_diff: Button
 var _end: PanelContainer
 var _end_body: VBoxContainer
 var _touch: Control
+var _menu: PanelContainer
+var _menu_body: VBoxContainer
+var _menu_tab = 0
+var _menu_desc: Label
 var _theme: Theme
 
 const CMD := {"READ": "Observe. Reveals memories, rules and hidden truths.", "REACH": "Emotional or psychic contact. The path toward non-destructive endings.",
@@ -58,6 +62,7 @@ func _ready() -> void:
 	_build_choice()
 	_build_pause()
 	_build_end()
+	_build_menu()
 	_build_touch()
 
 
@@ -129,15 +134,15 @@ func _build_title() -> void:
 	var chap = HBoxContainer.new()
 	chap.name = "Chapters"
 	chap.alignment = BoxContainer.ALIGNMENT_CENTER
-	chap.position = Vector2(230, 372)
-	chap.size = Vector2(500, 40)
+	chap.position = Vector2(180, 372)
+	chap.size = Vector2(600, 40)
 	chap.add_theme_constant_override("separation", 10)
 	_title.add_child(chap)
-	for n in [1, 2, 3]:
+	for n in [1, 2, 3, 4]:
 		var cb = Button.new()
 		cb.name = "Ch%d" % n
 		cb.text = "CHAPTER %d" % n
-		cb.custom_minimum_size = Vector2(150, 34)
+		cb.custom_minimum_size = Vector2(130, 34)
 		cb.add_theme_font_size_override("font_size", 12)
 		var nn = n
 		cb.pressed.connect(func(): Sound.play("select"); main.start_chapter(nn, true))
@@ -148,11 +153,11 @@ func show_title(has_save: bool, unlocked := 1) -> void:
 	_title.visible = true
 	var chap = _title.get_node("Chapters")
 	chap.visible = unlocked > 1
-	for n in [1, 2, 3]:
+	for n in [1, 2, 3, 4]:
 		chap.get_node("Ch%d" % n).visible = n <= unlocked
 	_btn_continue.visible = has_save
 	_refresh_diff()
-	_title.get_node("Hint").text = "Touch controls appear in play." if Game.touch_mode else "A/D move · Space jump · X strike · V kick · B laser · C dash · Q focus · E project · R full potential · W talk · Esc pause · gamepad"
+	_title.get_node("Hint").text = "Touch controls appear in play." if Game.touch_mode else "A/D move · Space jump · X strike · V kick · B special · Tab swap hero · I gear & skills · C dash · Q focus · E project · Esc pause"
 	(_btn_continue if has_save else _title.get_child(0).get_child(0)).call_deferred("grab_focus")
 	_touch.visible = false
 
@@ -215,7 +220,7 @@ func update_dialog(dt: float, advance: bool) -> void:
 
 
 func _process(_d: float) -> void:
-	for p in [_choice_panel, _pause, _end]:
+	for p in [_choice_panel, _pause, _end, _menu]:
 		if p and p.visible:
 			var ms: Vector2 = p.get_combined_minimum_size()
 			p.size = ms
@@ -378,6 +383,242 @@ func _refresh_diff() -> void:
 	_btn_diff.tooltip_text = "%d health" % d["hp"]
 
 
+# ---------- character menu ----------
+
+func _build_menu() -> void:
+	_menu = _center_panel(820)
+	_menu_body = VBoxContainer.new()
+	_menu_body.add_theme_constant_override("separation", 8)
+	_menu.add_child(_menu_body)
+
+
+func show_menu() -> void:
+	_menu.visible = true
+	_refresh_menu()
+
+
+func hide_menu() -> void:
+	_menu.visible = false
+
+
+func _small(text: String, size := 13, col := Color("#d6cfbf")) -> Label:
+	var l = Label.new()
+	l.text = text
+	l.add_theme_font_size_override("font_size", size)
+	l.add_theme_color_override("font_color", col)
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	return l
+
+
+func _btn(text: String, cb: Callable, w := 0.0, fs := 13) -> Button:
+	var b = Button.new()
+	b.text = text
+	b.add_theme_font_size_override("font_size", fs)
+	if w > 0.0:
+		b.custom_minimum_size = Vector2(w, 0)
+	b.pressed.connect(cb)
+	return b
+
+
+func _menu_go(i: int) -> void:
+	_menu_tab = i
+	Sound.play("select")
+	_refresh_menu(true)
+
+
+func _refresh_menu(focus_tab := false) -> void:
+	for c in _menu_body.get_children():
+		_menu_body.remove_child(c)
+		c.queue_free()
+	var pg: Dictionary = Game.prog
+	var head = HBoxContainer.new()
+	head.add_theme_constant_override("separation", 10)
+	_menu_body.add_child(head)
+	var tabs = ["PARTY", "EQUIPMENT", "ABILITIES"]
+	var tab_btns = []
+	for i in tabs.size():
+		var ii = i
+		var b = _btn(("▸ " if i == _menu_tab else "") + tabs[i], func(): _menu_go(ii), 150, 14)
+		head.add_child(b)
+		tab_btns.append(b)
+	var lv = _small("   LEVEL %d · %d / %d XP" % [pg["level"], pg["xp"], Game.xp_next(pg["level"])], 15, Color("#fff2c8"))
+	lv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	lv.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	head.add_child(lv)
+	var bar = ProgressBar.new()
+	bar.custom_minimum_size = Vector2(0, 6)
+	bar.show_percentage = false
+	bar.max_value = Game.xp_next(pg["level"])
+	bar.value = pg["xp"]
+	_menu_body.add_child(bar)
+	_menu_desc = _small("", 13, Color("#bfb6a6"))
+	_menu_desc.custom_minimum_size = Vector2(780, 36)
+	var first: Control = tab_btns[_menu_tab]
+	match _menu_tab:
+		0:
+			_menu_party()
+		1:
+			_menu_gear()
+		2:
+			_menu_skills()
+	_menu_body.add_child(_menu_desc)
+	var close = _btn("CLOSE  [" + Game.label("menu") + "]", func(): main.close_menu(), 0, 14)
+	_menu_body.add_child(close)
+	var ff = func(): if is_instance_valid(first) and first.is_inside_tree(): first.grab_focus()
+	ff.call_deferred()
+
+
+func _menu_party() -> void:
+	var row = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	_menu_body.add_child(row)
+	for h in ["max", "lana", "jason"]:
+		var hd: Dictionary = Game.HEROES[h]
+		var card = VBoxContainer.new()
+		card.custom_minimum_size = Vector2(250, 0)
+		card.add_theme_constant_override("separation", 4)
+		row.add_child(card)
+		var nm = _small(hd["name"], 20, Color(hd["col"]))
+		nm.add_theme_font_override("font", Game.font_display)
+		card.add_child(nm)
+		if not Game.hero_unlocked(h):
+			card.add_child(_small("Joins in Chapter %d" % (2 if h == "lana" else 3), 13, Color("#8a8494")))
+			continue
+		var bl = _small(hd["blurb"], 12, Color("#a8a0b0"))
+		bl.custom_minimum_size = Vector2(250, 34)
+		card.add_child(bl)
+		var pts = int(Game.prog["pts"].get(h, 0))
+		card.add_child(_small("Health %d · Strike %d · Special %d Resonance" % [Game.hero_max_hp(h), int(hd["dmg"]) + int(Game.mod("dmg")) + int(Game.attr(h, "pow") / 2), int(Game.special_cost(h))], 12))
+		card.add_child(_small("Points to spend: %d" % pts, 13, Color("#fff2c8") if pts > 0 else Color("#8a8494")))
+		for a in [["vit", "VITALITY", "+1 health"], ["pow", "POWER", "+1 damage every 2"], ["foc", "FOCUS", "cheaper specials, +10% Resonance"]]:
+			var line = HBoxContainer.new()
+			var l = _small("%s %d" % [a[1], Game.attr(h, a[0])], 13)
+			l.custom_minimum_size = Vector2(120, 0)
+			line.add_child(l)
+			var hh = h
+			var key: String = a[0]
+			var desc: String = a[2]
+			var b = _btn("+", func(): _spend(hh, key), 36, 14)
+			b.disabled = pts <= 0
+			b.focus_entered.connect(func(): _menu_desc.text = a[1].capitalize() + ": " + desc)
+			b.mouse_entered.connect(func(): _menu_desc.text = a[1].capitalize() + ": " + desc)
+			line.add_child(b)
+			card.add_child(line)
+		if main.player.hero == h:
+			card.add_child(_small("● PLAYING", 13, Color(hd["col"])))
+		else:
+			var hh2 = h
+			card.add_child(_btn("PLAY AS " + hd["name"], func(): main.switch_hero(hh2); _refresh_menu(), 0, 12))
+
+
+func _spend(h: String, a: String) -> void:
+	if int(Game.prog["pts"].get(h, 0)) <= 0:
+		return
+	Game.prog["pts"][h] = int(Game.prog["pts"][h]) - 1
+	Game.prog["attr"][h][a] = int(Game.prog["attr"][h][a]) + 1
+	Sound.play("pickup")
+	if main.player.hero == h:
+		var m: int = Game.hero_max_hp(h)
+		main.player.hp = clampi(main.player.hp + (m - main.player.max_hp), 1, m)
+		main.player.max_hp = m
+	_refresh_menu()
+
+
+func _menu_gear() -> void:
+	var pg: Dictionary = Game.prog
+	_menu_body.add_child(_small("EQUIPPED (3 slots · shared by the whole party)", 13, Color("#fff2c8")))
+	var slots = HBoxContainer.new()
+	slots.add_theme_constant_override("separation", 10)
+	_menu_body.add_child(slots)
+	for i in 3:
+		var id: String = pg["equip"][i]
+		var ii = i
+		var b = _btn(Game.ITEMS[id]["name"] if id != "" else "— empty —", func(): _unequip(ii), 255, 13)
+		if id != "":
+			var d: String = Game.ITEMS[id]["d"]
+			b.focus_entered.connect(func(): _menu_desc.text = d + "  (press to unequip)")
+			b.mouse_entered.connect(func(): _menu_desc.text = d + "  (press to unequip)")
+		slots.add_child(b)
+	_menu_body.add_child(_small("FOUND %d / %d" % [pg["items"].size(), Game.ITEMS.size()], 13, Color("#fff2c8")))
+	var grid = GridContainer.new()
+	grid.columns = 3
+	grid.add_theme_constant_override("h_separation", 10)
+	grid.add_theme_constant_override("v_separation", 6)
+	_menu_body.add_child(grid)
+	for id in Game.ITEMS:
+		var it: Dictionary = Game.ITEMS[id]
+		var owned: bool = id in pg["items"]
+		var eq: bool = id in pg["equip"]
+		var iid: String = id
+		var b = _btn(("✓ " if eq else "") + (it["name"] if owned else "???"), func(): _toggle_item(iid), 255, 12)
+		b.disabled = not owned
+		var d2: String = it["d"] if owned else "Not found yet. Explore, beat bosses and elite riders, or get lucky with drops."
+		b.focus_entered.connect(func(): _menu_desc.text = d2)
+		b.mouse_entered.connect(func(): _menu_desc.text = d2)
+		grid.add_child(b)
+
+
+func _unequip(i: int) -> void:
+	Game.prog["equip"][i] = ""
+	Sound.play("select")
+	_refresh_menu()
+
+
+func _toggle_item(id: String) -> void:
+	var eq: Array = Game.prog["equip"]
+	var at = eq.find(id)
+	if at >= 0:
+		eq[at] = ""
+	else:
+		var free = eq.find("")
+		if free < 0:
+			main.toast("All three slots are full. Unequip something first.")
+			Sound.play("glitch")
+			return
+		eq[free] = id
+	Sound.play("select")
+	_refresh_menu()
+
+
+func _menu_skills() -> void:
+	var lvl: int = Game.prog["level"]
+	for h in Game.party():
+		var hd: Dictionary = Game.HEROES[h]
+		var nm = _small(hd["name"] + ("  ·  aura: " + hd["aura"]), 15, Color(hd["col"]))
+		_menu_body.add_child(nm)
+		var moves = "Strike combo [%s] · Kick / dive kick [%s] · Dash [%s] · Focus heal [%s] · Full Potential [%s]" % [Game.label("attack"), Game.label("kick"), Game.label("dash"), Game.label("heal"), Game.label("fp")]
+		if h == "max":
+			moves += " · Astral projection [%s] · Levitation" % Game.label("project")
+		var ml = _small(moves, 12, Color("#a8a0b0"))
+		ml.custom_minimum_size = Vector2(780, 0)
+		_menu_body.add_child(ml)
+		var row = HBoxContainer.new()
+		row.add_theme_constant_override("separation", 10)
+		_menu_body.add_child(row)
+		var sl = _small("SPECIAL [%s]:" % Game.label("laser"), 13)
+		sl.autowrap_mode = TextServer.AUTOWRAP_OFF
+		sl.custom_minimum_size = Vector2(130, 0)
+		row.add_child(sl)
+		for sp in hd["specials"]:
+			var sd: Dictionary = Game.SPECIALS[sp]
+			var locked = lvl < int(sd["lv"])
+			var sel: bool = Game.prog["special"].get(h, "") == sp
+			var hh = h
+			var spp: String = sp
+			var b = _btn(("▸ " if sel else "") + sd["name"] + ("  (Lv %d)" % sd["lv"] if locked else ""), func(): _pick_special(hh, spp), 230, 12)
+			b.disabled = locked
+			var d: String = sd["d"] + "  Cost %d Resonance." % int(sd["cost"])
+			b.focus_entered.connect(func(): _menu_desc.text = d)
+			b.mouse_entered.connect(func(): _menu_desc.text = d)
+			row.add_child(b)
+
+
+func _pick_special(h: String, sp: String) -> void:
+	Game.prog["special"][h] = sp
+	Sound.play("select")
+	_refresh_menu()
+
+
 # ---------- pause ----------
 
 func _build_pause() -> void:
@@ -393,7 +634,8 @@ func _build_pause() -> void:
 	v.add_child(keys)
 	for spec in [["RESUME", func(): main.close_pause()], ["SOUND: ON", func(): Sound.set_sound(not Sound.sound_on); _refresh_pause()],
 			["MUSIC: ON", func(): Sound.set_music(not Sound.music_on); _refresh_pause()],
-			["DIFFICULTY: NORMAL", func(): Game.cycle_difficulty(); main.apply_difficulty(); _refresh_pause()], ["TITLE", func(): _pause.visible = false; main.show_title()]]:
+			["DIFFICULTY: NORMAL", func(): Game.cycle_difficulty(); main.apply_difficulty(); _refresh_pause()],
+			["CHARACTER", func(): _pause.visible = false; main.open_menu()], ["TITLE", func(): _pause.visible = false; main.show_title()]]:
 		var b = Button.new()
 		b.text = spec[0]
 		b.name = spec[0].split(":")[0].capitalize()
@@ -428,7 +670,7 @@ func _refresh_pause() -> void:
 	v.get_node("Grid/Music").text = "MUSIC: " + ("ON" if Sound.music_on else "OFF")
 	v.get_node("Grid/Difficulty").text = "DIFFICULTY: " + Game.diff()["name"]
 	var rows = [["move", "Move"], ["jump", "Jump · again midair to levitate"], ["attack", "Psychic strike · up/down to aim · 3-hit combo"],
-		["kick", "Kick · in midair, a diving kick"], ["laser", "Psychic laser · costs Resonance · hold up to aim"], ["dash", "Dash"],
+		["kick", "Kick · in midair, a diving kick"], ["laser", "Special move · costs Resonance"], ["switch", "Swap hero (1 / 2 / 3)"], ["menu", "Gear · skills · stats"], ["dash", "Dash"],
 		["heal", "Hold to focus Resonance into healing"], ["project", "Leave or return to your body"], ["fp", "Full Potential (permanent cost)"], ["up", "Talk · rest at benches"]]
 	var s = ""
 	for r in rows:
@@ -465,7 +707,7 @@ func show_end(chapter: int, title: String, lead: String, stats: Array, has_next:
 		cell.add_child(lab)
 		g.add_child(cell)
 	_end_body.add_child(g)
-	_end_body.add_child(_para(("Next: Chapter %s · %s" % [Game.CHAPTER_WORD[chapter + 1].capitalize(), Game.CHAPTERS[chapter + 1]["title"]]) if has_next else "Season One continues: #ScienceMatters · The Teacher Who Was Fired", true))
+	_end_body.add_child(_para(("Next: Chapter %s · %s" % [Game.CHAPTER_WORD[chapter + 1].capitalize(), Game.CHAPTERS[chapter + 1]["title"]]) if has_next else "Season One continues: The Teacher Who Was Fired · One Minute Outside", true))
 	var b = Button.new()
 	b.text = ("CONTINUE TO CHAPTER " + Game.CHAPTER_WORD[chapter + 1]) if has_next else "PLAY AGAIN"
 	var armed = Time.get_ticks_msec() + 1200
@@ -512,7 +754,7 @@ func _build_touch() -> void:
 	var tex = _circle_tex(30, Color(0.04, 0.05, 0.09, 0.45), Color(0.93, 0.9, 0.85, 0.35))
 	var texp = _circle_tex(30, Color(0.65, 0.55, 1, 0.4), Color(0.93, 0.9, 0.85, 0.8))
 	var specs = [["left", "◀", Vector2(20, 470)], ["right", "▶", Vector2(150, 470)], ["up", "▲", Vector2(85, 405)], ["down", "▼", Vector2(85, 470)],
-		["kick", "KICK", Vector2(810, 340)], ["laser", "LASER", Vector2(875, 340)],
+		["kick", "KICK", Vector2(810, 340)], ["laser", "SPECIAL", Vector2(875, 340)], ["switch", "SWAP", Vector2(745, 340)], ["menu", "MENU", Vector2(875, 20)],
 		["project", "PROJECT", Vector2(745, 405)], ["heal", "FOCUS", Vector2(810, 405)], ["fp", "FULL", Vector2(875, 405)],
 		["dash", "DASH", Vector2(745, 470)], ["attack", "STRIKE", Vector2(810, 470)], ["jump", "JUMP", Vector2(875, 470)]]
 	for s in specs:

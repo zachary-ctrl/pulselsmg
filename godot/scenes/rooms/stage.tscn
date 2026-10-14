@@ -1,0 +1,93 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/room.gd" id="room"]
+[ext_resource type="Script" path="res://scripts/marker.gd" id="marker"]
+[ext_resource type="Script" path="res://scripts/blocker.gd" id="blocker"]
+
+[sub_resource type="RectangleShape2D" id="shape_p0"]
+size = Vector2(1120, 70)
+
+[sub_resource type="RectangleShape2D" id="shape_p1"]
+size = Vector2(170, 12)
+
+[sub_resource type="RectangleShape2D" id="shape_p2"]
+size = Vector2(170, 12)
+
+[sub_resource type="RectangleShape2D" id="shape_b0"]
+size = Vector2(28, 240)
+
+[node name="Stage" type="Node2D"]
+script = ExtResource("room")
+room_id = "stage"
+display_name = "The Main Stage"
+subtitle = "Judging begins"
+room_size = Vector2(1120, 540)
+floor_sound = "wood"
+tint = Color(1.0000, 0.6039, 0.8471, 1)
+draw_platforms = true
+
+[node name="Platforms" type="Node2D" parent="."]
+
+[node name="Solid0" type="StaticBody2D" parent="Platforms"]
+position = Vector2(560, 505)
+collision_layer = 1
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/Solid0"]
+shape = SubResource("shape_p0")
+
+[node name="OneWay1" type="StaticBody2D" parent="Platforms"]
+position = Vector2(255, 374)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay1"]
+shape = SubResource("shape_p1")
+one_way_collision = true
+
+[node name="OneWay2" type="StaticBody2D" parent="Platforms"]
+position = Vector2(875, 374)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay2"]
+shape = SubResource("shape_p2")
+one_way_collision = true
+
+[node name="Blockers" type="Node2D" parent="."]
+
+[node name="Gate0" type="StaticBody2D" parent="Blockers"]
+position = Vector2(18, 350)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("blocker")
+kind = "gate"
+condition = "collective_fight"
+size = Vector2(28, 240)
+
+[node name="Shape" type="CollisionShape2D" parent="Blockers/Gate0"]
+shape = SubResource("shape_b0")
+
+[node name="Markers" type="Node2D" parent="."]
+
+[node name="Exit_gym_0" type="Node2D" parent="Markers"]
+position = Vector2(0, 290)
+script = ExtResource("marker")
+kind = "exit"
+size = Vector2(20, 180)
+target_room = "gym"
+spawn_point = Vector2(2320, 620)
+
+[node name="Trigger_collectiveArena_1" type="Node2D" parent="Markers"]
+position = Vector2(300, 0)
+script = ExtResource("marker")
+kind = "trigger"
+size = Vector2(40, 540)
+event = "collectiveArena"
+
+[node name="Spawn_boss4_2" type="Node2D" parent="Markers"]
+position = Vector2(900, 470)
+script = ExtResource("marker")
+kind = "spawn"
+id = "boss4"
+enemy = "collective"

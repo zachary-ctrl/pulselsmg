@@ -1,12 +1,25 @@
 # SAKAWA: Astral Max — Godot 4 project
 
-Season One, Chapters 1–3, in **Godot 4.3+**:
+Season One, Chapters 1–4, in **Godot 4.3+**:
 
 | Chapter | Rooms | Boss |
 | --- | --- | --- |
 | 1 · Class Famine | Room 101, East Hall, Cafeteria, Sub-Basement Lab | Hallway Echo, Dr. Ciencia (becomes the Viral Saint at half health) |
 | 2 · The Carrier | Westbrook Avenue, Mercy General | The Carrier (Kai Brooks); Lana's taunts stun him for double damage |
-| 3 · Red Water | Westbrook Waterworks (rescue 3 workers), The Pumphouse | The Red Tide; Jason's water awakens at half health |
+| 3 · Red Water | Westbrook Waterworks (rescue 3 workers), The Pumphouse | Elite Static Rider; the Red Tide (Jason's water awakens at half health) |
+| 4 · #ScienceMatters | Science Fair Night (East Hall), the Gymnasium (break 3 broadcasting exhibits), the Main Stage | Elite Static Rider; Collective Cognition (Dr. Ciencia wired into the fair, summoning imps and riders) |
+
+Chapter 2 also has an elite Static Rider on Westbrook Avenue. Choir Imps and Static Riders roam Chapters 1–4 alongside the infected and Choir Motes.
+
+## Party, progression and gear
+
+- **Three playable heroes.** Max leads. Lana joins in Chapter 2 (fast, durable, specials *Get Real* shockwave-and-stun or *Flurry*), Jason in Chapter 3 (strongest hits, specials *Tidal Push* wave or *Geyser*). Max's specials are the *Psychic Laser* or the homing *Mind Orb*. Swap with Tab (or 1 / 2 / 3, R3 on a gamepad). Only Max can astral-project.
+- **Fighting together.** In every boss and elite fight except the Hallway Echo, the two heroes you aren't playing fight beside you as AI allies, with their own strikes and specials.
+- **Auras.** Each hero has a flame aura (Max violet, Lana crimson, Jason sky) that flares when charging a special, focusing, swapping in, or when Full Potential is ready.
+- **Experience and levels.** Enemies drop experience shards, health, Resonance and sometimes gear. Each level gives every hero an attribute point: Vitality (+1 health), Power (+1 damage per 2 points), Focus (cheaper specials, more Resonance). Second specials unlock at levels 3–4.
+- **Heart Embers** (one hidden in each chapter, plus the cafeteria) raise the whole party's maximum health by 1.
+- **Equipment.** 12 items, 3 slots shared by the party: found in rooms, dropped by enemies and elite riders, and awarded by bosses.
+- **Character menu** (I / M, Back on a gamepad, or CHARACTER in the pause menu): Party (stats, attribute points, play as), Equipment, Abilities (pick each hero's special).
 
 Every boss ends in a READ / REACH / BIND / STRIKE choice, and choices carry across chapters. Finishing a chapter unlocks it on the title screen's chapter select.
 
@@ -16,7 +29,7 @@ Every boss ends in a READ / REACH / BIND / STRIKE choice, and choices carry acro
 2. In the Project Manager choose **Import** and pick `godot/project.godot`.
 3. Press **F5**.
 
-Difficulty (title screen or pause menu, saved between sessions): **Story** gives Max 10 health with weaker, slower enemies and faster Resonance; **Normal** gives 7 health; **Hard** gives 5 health with tougher, faster enemies.
+Difficulty (title screen or pause menu, saved between sessions): **Story** gives 10 base health with weaker, slower enemies and faster Resonance; **Normal** gives 7 health; **Hard** gives 5 health with tougher, faster enemies.
 
 Keyboard, gamepad and touch are supported:
 
@@ -26,7 +39,9 @@ Keyboard, gamepad and touch are supported:
 | Jump (again midair to levitate) | Space, Z | A |
 | Strike (hold up/down to aim; three in a row = heavy finisher) | X, J | X |
 | Kick (in midair: diving kick that bounces off enemies) | V, L | B |
-| Psychic laser (costs Resonance; hold up to fire upward) | B, I | RT |
+| Special move (costs Resonance) | B, I | RT |
+| Swap hero | Tab, 1 / 2 / 3 | R3 |
+| Character menu (party, gear, abilities) | I, M | Back |
 | Dash | C, K, Shift | RB |
 | Focus to heal (hold) | Q, F | LB |
 | Leave / return to body | E, P | Y |
@@ -42,11 +57,13 @@ scenes/rooms/*.tscn       one scene per room — edit these in the editor
 scripts/game.gd           autoload: flags, abilities, saves, input map, fonts, all dialogue
 scripts/sound.gd          autoload: sound effects, music loops, room ambience
 scripts/main.gd           game loop, rooms, camera, events, combat, boss choices, ending
-scripts/player.gd         Max's body and astral form (CharacterBody2D)
+scripts/player.gd         the controlled hero (Max, Lana or Jason) and Max's astral form
+scripts/ally.gd           party members fighting beside you in boss fights
+scripts/aura.gd           hero flame auras
 scripts/rig.gd            draws a design-sheet figure split at the hip (stride, bob, lean)
-scripts/enemies/*.gd      infected, Choir Motes, Hallway Echo, Dr. Ciencia, the Carrier, the Red Tide
+scripts/enemies/*.gd      infected, Choir Motes and Imps, Static Riders, exhibits, Hallway Echo, Dr. Ciencia, the Carrier, the Red Tide, Collective Cognition
 scripts/anim_sprite.gd    plays the sprite-sheet frame animations
-scripts/fx.gd             projectiles, beams, particles, slash arcs, astral platforms
+scripts/fx.gd             projectiles, beams, particles, slash arcs, glowing VFX sprites, pickups, astral platforms
 scripts/hud.gd, ui.gd     HUD, dialogue with portraits, choices, title, pause, end, touch buttons
 scripts/room.gd           room root: collects platforms and markers, draws animated pieces
 scripts/marker.gd         exits, triggers, benches, NPCs, anchors, sigils, spawns, hazards
@@ -72,11 +89,11 @@ Open a room in `scenes/rooms/`. Move or resize the `StaticBody2D` platforms, and
 
 ### Character animation
 
-Max, Lana, Jason, the infected student and teacher, Dr. Ciencia and the Viral Saint use frame animations sliced from their sprite sheets into `assets/anim/<character>/<anim>_<n>.png`. `assets/anim/anims.json` lists each animation's frames, speed, looping and the anchor point at the character's feet; `scripts/anim_sprite.gd` plays them. To replace an animation, swap the PNGs (any size) and update their `ax`/`ay` anchors, or add a new entry to the JSON. Dialogue portraits for Max, Lana and Jason are `assets/portraits/<who>_<expression>.png` (neutral, smile, smirk, worried, shocked, angry). The cafeteria workers still use the older single-pose rig in `scripts/rig.gd`.
+Max, Lana, Jason, the infected student and teacher, Dr. Ciencia and the Viral Saint use frame animations sliced from their sprite sheets into `assets/anim/<character>/<anim>_<n>.png`. `assets/anim/anims.json` lists each animation's frames, speed, looping and the anchor point at the character's feet; `scripts/anim_sprite.gd` plays them. To replace an animation, swap the PNGs (any size) and update their `ax`/`ay` anchors, or add a new entry to the JSON. Dialogue portraits for Max, Lana and Jason are `assets/portraits/<who>_<expression>.png` (neutral, smile, smirk, worried, shocked, angry). Lana's and Jason's run, jump, dash and strike frames were synthesized from their standing frames (hip split, rotated legs and forearms); replace them when hand-drawn frames exist. Choir Imps and Static Riders come from pixel sprite sheets (`"pixel": true` in the JSON). Auras, shockwave rings and dust are in `assets/fx/aura`, `assets/fx/ring_*`, `assets/fx/dust_*`; glowing additive effects in `assets/fx/vfx`. The cafeteria workers still use the older single-pose rig in `scripts/rig.gd`.
 
 ## Automated playthrough
 
-Plays all three chapters (every boss fight and choice, the worker rescue, and each chapter's end screen), saving a screenshot at each step:
+Plays all four chapters (every boss and elite fight and choice, the worker rescue, hero swaps, specials, loot, the character menu, and each chapter's end screen), saving a screenshot at each step:
 
 ```
 godot --path godot -- --autotest /tmp/sakawa_shots

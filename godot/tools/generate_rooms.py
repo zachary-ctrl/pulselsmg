@@ -19,7 +19,8 @@ ROOMS = {
             ('exit',dict(rect=(3178,290,22,180),target_room='cafeteria',spawn_point=(60,1010))),('anchor',dict(pos=(2130,380),id='unknownText')),
             ('trigger',dict(rect=(2520,0,40,540),event='echoArena')),('spawn',dict(pos=(1150,470),enemy='sleeper',id='s1')),
             ('spawn',dict(pos=(1880,470),enemy='sleeper',id='s2')),('spawn',dict(pos=(2280,470),enemy='sleeper',id='s3',patrol_range=70)),
-            ('npc',dict(pos=(860,470),id='lana',face=-1,dialog='lana1',dialog_repeat='lana2')),('bench',dict(pos=(300,470)))]),
+            ('npc',dict(pos=(860,470),id='lana',face=-1,dialog='lana1',dialog_repeat='lana2')),('bench',dict(pos=(300,470))),
+            ('loot',dict(pos=(660,404),id='l_lunchbox',item='lunchbox'))]),
  'cafeteria': dict(name='The Cafeteria', sub='412 lunches served · 0 eaten', size=(2400, 1080), floor='lino', tint='#b8ffd8',
    solids=[(0,1010,1300,70,'s'),(1560,1010,840,70,'s'),(1300,1080,260,10,'s'),(180,950,200,12,'o'),(520,950,200,12,'o'),(880,950,200,12,'o'),
            (1700,950,200,12,'o'),(2050,950,200,12,'o'),(1380,935,100,12,'o'),(1100,800,160,14,'o'),(1380,650,140,14,'o'),(1600,520,800,30,'s'),
@@ -29,7 +30,8 @@ ROOMS = {
             ('exit',dict(rect=(2378,380,22,140),target_room='lab',spawn_point=(60,470))),('anchor',dict(pos=(400,385),id='levitation',astral=True)),
             ('anchor',dict(pos=(2150,950),id='receipt')),('spawn',dict(pos=(1200,700),enemy='mote',id='m1')),('spawn',dict(pos=(1900,800),enemy='mote',id='m2')),
             ('spawn',dict(pos=(700,640),enemy='mote',id='m3')),('spawn',dict(pos=(1900,1010),enemy='sleeper',id='s4',patrol_range=120)),
-            ('npc',dict(pos=(760,1010),id='jason',face=1,dialog='jason1',dialog_repeat='jason2')),('bench',dict(pos=(1760,520)))]),
+            ('npc',dict(pos=(760,1010),id='jason',face=1,dialog='jason1',dialog_repeat='jason2')),('bench',dict(pos=(1760,520))),
+            ('spawn',dict(pos=(2100,1010),enemy='imp',id='i1',patrol_range=120)),('loot',dict(pos=(1440,650),id='h_caf',item='heart'))]),
  'lab': dict(name='Sub-Basement Lab', sub='Property of the Dharma Order', size=(1120, 540), floor='metal', tint='#7ff0ff',
    solids=[(0,470,1120,70,'s'),(170,368,170,12,'o'),(790,368,170,12,'o')],
    doors=[], gates=[(4,230,28,240,'ciencia_fight')],
@@ -42,13 +44,17 @@ ROOMS = {
             ('bench',dict(pos=(300,470))),('npc',dict(pos=(420,470),id='lana',face=1,dialog='c2_lana2',dialog_repeat='c2_lana2')),
             ('anchor',dict(pos=(580,360),id='dadText')),('spawn',dict(pos=(1100,470),enemy='sleeper',id='ta1',patrol_range=90)),
             ('spawn',dict(pos=(1750,470),enemy='sleeper',id='a2')),('spawn',dict(pos=(2050,470),enemy='sleeper',id='ta3',patrol_range=80)),
-            ('spawn',dict(pos=(1400,300),enemy='mote',id='m4')),('spawn',dict(pos=(2550,320),enemy='mote',id='m5'))]),
+            ('spawn',dict(pos=(1400,300),enemy='mote',id='m4')),('spawn',dict(pos=(2550,320),enemy='mote',id='m5')),
+            ('spawn',dict(pos=(980,410),enemy='imp',id='i2',patrol_range=60)),('spawn',dict(pos=(1980,340),enemy='imp',id='i3',patrol_range=60)),
+            ('spawn',dict(pos=(1500,470),enemy='rider',id='elite_r1',patrol_range=260)),
+            ('loot',dict(pos=(1240,420),id='h_street',item='heart')),('loot',dict(pos=(2000,340),id='l_jersey',item='jersey'))]),
  'hospital': dict(name='Mercy General', sub='Third floor · Visiting hours are over', size=(2000, 540), floor='tile', tint='#cfe8ff', draw=True,
    solids=[(0,470,2000,70,'s'),(400,420,120,10,'o'),(900,420,120,10,'o'),(1180,400,180,70,'s')],
    doors=[], gates=[(1380,230,28,240,'carrier_fight')],
    markers=[('exit',dict(rect=(0,290,20,180),target_room='street',spawn_point=(2730,470))),('npc',dict(pos=(250,470),id='jason',face=1,dialog='c2_jason',dialog_repeat='c2_jason2')),
             ('anchor',dict(pos=(1270,400),id='chart')),('spawn',dict(pos=(700,470),enemy='sleeper',id='t5',patrol_range=120)),('bench',dict(pos=(1050,470))),
-            ('trigger',dict(rect=(1460,0,40,540),event='carrierArena')),('spawn',dict(pos=(1820,470),enemy='carrier',id='carrier'))]),
+            ('trigger',dict(rect=(1460,0,40,540),event='carrierArena')),('spawn',dict(pos=(1820,470),enemy='carrier',id='carrier')),
+            ('spawn',dict(pos=(960,420),enemy='imp',id='i4',patrol_range=40)),('loot',dict(pos=(460,420),id='l_tot',item='tot'))]),
  'waterworks': dict(name='Westbrook Waterworks', sub='Chapter Three · Red Water', size=(2600, 1080), floor='metal', tint='#ff9a9a', draw=True,
    solids=[(0,1010,700,70,'s'),(1000,1010,600,70,'s'),(1900,1010,700,70,'s'),(700,1080,300,10,'s'),(1600,1080,300,10,'s'),
            (600,880,160,12,'o'),(1000,780,200,12,'o'),(1400,880,160,12,'o'),(1640,900,120,12,'o'),(1850,780,180,12,'o'),(2150,650,200,12,'o'),(2200,520,400,30,'s')],
@@ -58,13 +64,43 @@ ROOMS = {
             ('worker',dict(pos=(330,1010),id='w1')),('worker',dict(pos=(1150,1010),id='w2')),('worker',dict(pos=(2470,520),id='w3')),
             ('anchor',dict(pos=(1100,780),id='workOrder')),('bench',dict(pos=(2300,520))),
             ('spawn',dict(pos=(900,720),enemy='mote',id='w1m')),('spawn',dict(pos=(1750,640),enemy='mote',id='w2m')),
-            ('spawn',dict(pos=(1400,1010),enemy='sleeper',id='t6',patrol_range=120)),('spawn',dict(pos=(2200,1010),enemy='sleeper',id='t7'))]),
+            ('spawn',dict(pos=(1400,1010),enemy='sleeper',id='t6',patrol_range=120)),('spawn',dict(pos=(2200,1010),enemy='sleeper',id='t7')),
+            ('spawn',dict(pos=(400,1010),enemy='rider',id='r2',patrol_range=200)),('spawn',dict(pos=(2300,1010),enemy='rider',id='elite_r3',patrol_range=200)),
+            ('spawn',dict(pos=(1100,780),enemy='imp',id='i5',patrol_range=60)),('spawn',dict(pos=(1930,780),enemy='imp',id='i6',patrol_range=60)),
+            ('loot',dict(pos=(2250,650),id='h_water',item='heart')),('loot',dict(pos=(680,880),id='l_bell',item='bell'))]),
  'pumphouse': dict(name='The Pumphouse', sub='Intake 3', size=(1200, 540), floor='metal', tint='#ff9a9a', draw=True,
    solids=[(0,470,1200,70,'s'),(250,360,200,12,'o'),(750,360,200,12,'o'),(500,250,200,12,'o')],
    doors=[], gates=[(4,230,28,240,'tide_fight')],
    markers=[('hazard',dict(rect=(0,478,1200,62),id='tide')),('exit',dict(rect=(0,290,20,180),target_room='waterworks',spawn_point=(2480,520))),
             ('npc',dict(pos=(110,470),id='jason',face=1,dialog='c3_jason2',dialog_repeat='c3_jason2')),
             ('trigger',dict(rect=(240,0,40,540),event='tideArena')),('spawn',dict(pos=(600,470),enemy='tide',id='tide'))]),
+
+ 'fairhall': dict(name='Science Fair Night', sub='Chapter Four · #ScienceMatters', size=(3000, 540), floor='tile', tint='#ffd0f0', draw=True,
+   solids=[(0,470,1300,70,'s'),(1500,470,1500,70,'s'),(1300,540,200,10,'s'),(380,400,140,12,'o'),(700,360,160,12,'o'),(1340,390,120,12,'o'),
+           (1800,400,140,12,'o'),(2100,330,160,12,'o'),(2400,410,120,60,'s')],
+   doors=[], gates=[(2700,230,28,240,'elite_alive','elite_r4')],
+   markers=[('hazard',dict(rect=(1300,500,200,40))),('exit',dict(rect=(2978,290,22,180),target_room='gym',spawn_point=(60,1010))),
+            ('bench',dict(pos=(260,470))),('npc',dict(pos=(520,470),id='lana',face=1,dialog='c4_lana',dialog_repeat='c4_lana2')),
+            ('anchor',dict(pos=(780,360),id='flyer')),('spawn',dict(pos=(1000,470),enemy='sleeper',id='f1',patrol_range=120)),
+            ('spawn',dict(pos=(1700,470),enemy='imp',id='f2',patrol_range=80)),('spawn',dict(pos=(1880,400),enemy='imp',id='f3',patrol_range=40)),
+            ('spawn',dict(pos=(2250,470),enemy='sleeper',id='tf4',patrol_range=100)),('spawn',dict(pos=(2550,470),enemy='rider',id='elite_r4',patrol_range=120)),
+            ('trigger',dict(rect=(2420,0,40,540),event='eliteIntro')),
+            ('loot',dict(pos=(2180,330),id='h_fair',item='heart')),('loot',dict(pos=(1400,390),id='l_badge',item='badge'))]),
+ 'gym': dict(name='The Gymnasium', sub='Collective Cognition · All exhibits synchronized', size=(2400, 1080), floor='wood', tint='#ffb0e0', draw=True,
+   solids=[(0,1010,2400,70,'s'),(200,900,180,12,'o'),(520,800,180,12,'o'),(860,700,200,12,'o'),(1200,800,180,12,'o'),(1500,690,200,12,'o'),
+           (1820,800,180,12,'o'),(2050,620,350,30,'s'),(1000,560,160,12,'o'),(640,520,160,12,'o')],
+   doors=[], gates=[(2340,470,28,150,'exhibits_incomplete')],
+   markers=[('exit',dict(rect=(0,870,22,140),target_room='fairhall',spawn_point=(2930,470))),('exit',dict(rect=(2378,470,22,150),target_room='stage',spawn_point=(60,470))),
+            ('npc',dict(pos=(140,1010),id='jason',face=1,dialog='c4_jason',dialog_repeat='c4_jason2')),('bench',dict(pos=(2200,620))),
+            ('spawn',dict(pos=(600,1010),enemy='exhibit',id='x1')),('spawn',dict(pos=(1080,560),enemy='exhibit',id='x2')),('spawn',dict(pos=(1900,1010),enemy='exhibit',id='x3')),
+            ('spawn',dict(pos=(900,1010),enemy='sleeper',id='tg1',patrol_range=140)),('spawn',dict(pos=(1500,1010),enemy='rider',id='g2',patrol_range=220)),
+            ('spawn',dict(pos=(1300,700),enemy='mote',id='g3')),('spawn',dict(pos=(1600,690),enemy='imp',id='g4',patrol_range=60)),('spawn',dict(pos=(700,520),enemy='imp',id='g5',patrol_range=40)),
+            ('trigger',dict(rect=(200,0,40,1080),event='gymIntro')),('loot',dict(pos=(700,520),id='l_phone',item='phone'))]),
+ 'stage': dict(name='The Main Stage', sub='Judging begins', size=(1120, 540), floor='wood', tint='#ff9ad8', draw=True,
+   solids=[(0,470,1120,70,'s'),(170,368,170,12,'o'),(790,368,170,12,'o')],
+   doors=[], gates=[(4,230,28,240,'collective_fight')],
+   markers=[('exit',dict(rect=(0,290,20,180),target_room='gym',spawn_point=(2320,620))),('trigger',dict(rect=(300,0,40,540),event='collectiveArena')),
+            ('spawn',dict(pos=(900,470),enemy='collective',id='boss4'))]),
 }
 LAYER = {'s': 1, 'o': 2, 'a': 4}
 
@@ -87,10 +123,12 @@ def gen(rid, r):
         nodes.append(f'[node name="Shape" type="CollisionShape2D" parent="Platforms/{nm}"]\nshape = SubResource("{sid}")\n' + ('one_way_collision = true\n' if k in 'oa' else ''))
     nodes.append('[node name="Blockers" type="Node2D" parent="."]\n')
     bl = [('door', d) for d in r['doors']] + [('gate', g) for g in r['gates']]
-    for i, (kind, (x, y, w, h, c)) in enumerate(bl):
+    for i, (kind, g) in enumerate(bl):
+        x, y, w, h, c = g[:5]
+        gflag = g[5] if len(g) > 5 else ''
         sid = f'shape_b{i}'; subs.append(f'[sub_resource type="RectangleShape2D" id="{sid}"]\nsize = Vector2({w}, {h})\n')
         nm = kind.capitalize() + str(i)
-        extra = f'flag = "{c}"\n' if kind == 'door' else f'condition = "{c}"\n'
+        extra = f'flag = "{c}"\n' if kind == 'door' else f'condition = "{c}"\n' + (f'flag = "{gflag}"\n' if gflag else '')
         nodes.append(f'[node name="{nm}" type="StaticBody2D" parent="Blockers"]\nposition = {v2((x + w / 2, y + h / 2))}\ncollision_layer = {8 if kind == "door" else 16}\ncollision_mask = 0\nscript = ExtResource("blocker")\nkind = "{kind}"\n{extra}size = Vector2({w}, {h})\n')
         nodes.append(f'[node name="Shape" type="CollisionShape2D" parent="Blockers/{nm}"]\nshape = SubResource("{sid}")\n')
     nodes.append('[node name="Markers" type="Node2D" parent="."]\n')
@@ -98,7 +136,7 @@ def gen(rid, r):
         props = [f'kind = "{kind}"']
         if 'rect' in d: x, y, w, h = d['rect']; pos = (x, y); props.append(f'size = Vector2({w}, {h})')
         else: pos = d['pos']
-        for k in ('target_room', 'event', 'id', 'flag', 'dialog', 'dialog_repeat', 'enemy'):
+        for k in ('target_room', 'event', 'id', 'flag', 'dialog', 'dialog_repeat', 'enemy', 'item'):
             if k in d: props.append(f'{k} = "{d[k]}"')
         if 'spawn_point' in d: props.append(f'spawn_point = {v2(d["spawn_point"])}')
         if 'face' in d: props.append(f'face = {d["face"]}')

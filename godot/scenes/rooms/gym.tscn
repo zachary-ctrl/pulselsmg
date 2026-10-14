@@ -1,0 +1,258 @@
+[gd_scene load_steps=15 format=3]
+
+[ext_resource type="Script" path="res://scripts/room.gd" id="room"]
+[ext_resource type="Script" path="res://scripts/marker.gd" id="marker"]
+[ext_resource type="Script" path="res://scripts/blocker.gd" id="blocker"]
+
+[sub_resource type="RectangleShape2D" id="shape_p0"]
+size = Vector2(2400, 70)
+
+[sub_resource type="RectangleShape2D" id="shape_p1"]
+size = Vector2(180, 12)
+
+[sub_resource type="RectangleShape2D" id="shape_p2"]
+size = Vector2(180, 12)
+
+[sub_resource type="RectangleShape2D" id="shape_p3"]
+size = Vector2(200, 12)
+
+[sub_resource type="RectangleShape2D" id="shape_p4"]
+size = Vector2(180, 12)
+
+[sub_resource type="RectangleShape2D" id="shape_p5"]
+size = Vector2(200, 12)
+
+[sub_resource type="RectangleShape2D" id="shape_p6"]
+size = Vector2(180, 12)
+
+[sub_resource type="RectangleShape2D" id="shape_p7"]
+size = Vector2(350, 30)
+
+[sub_resource type="RectangleShape2D" id="shape_p8"]
+size = Vector2(160, 12)
+
+[sub_resource type="RectangleShape2D" id="shape_p9"]
+size = Vector2(160, 12)
+
+[sub_resource type="RectangleShape2D" id="shape_b0"]
+size = Vector2(28, 150)
+
+[node name="Gym" type="Node2D"]
+script = ExtResource("room")
+room_id = "gym"
+display_name = "The Gymnasium"
+subtitle = "Collective Cognition · All exhibits synchronized"
+room_size = Vector2(2400, 1080)
+floor_sound = "wood"
+tint = Color(1.0000, 0.6902, 0.8784, 1)
+draw_platforms = true
+
+[node name="Platforms" type="Node2D" parent="."]
+
+[node name="Solid0" type="StaticBody2D" parent="Platforms"]
+position = Vector2(1200, 1045)
+collision_layer = 1
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/Solid0"]
+shape = SubResource("shape_p0")
+
+[node name="OneWay1" type="StaticBody2D" parent="Platforms"]
+position = Vector2(290, 906)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay1"]
+shape = SubResource("shape_p1")
+one_way_collision = true
+
+[node name="OneWay2" type="StaticBody2D" parent="Platforms"]
+position = Vector2(610, 806)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay2"]
+shape = SubResource("shape_p2")
+one_way_collision = true
+
+[node name="OneWay3" type="StaticBody2D" parent="Platforms"]
+position = Vector2(960, 706)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay3"]
+shape = SubResource("shape_p3")
+one_way_collision = true
+
+[node name="OneWay4" type="StaticBody2D" parent="Platforms"]
+position = Vector2(1290, 806)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay4"]
+shape = SubResource("shape_p4")
+one_way_collision = true
+
+[node name="OneWay5" type="StaticBody2D" parent="Platforms"]
+position = Vector2(1600, 696)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay5"]
+shape = SubResource("shape_p5")
+one_way_collision = true
+
+[node name="OneWay6" type="StaticBody2D" parent="Platforms"]
+position = Vector2(1910, 806)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay6"]
+shape = SubResource("shape_p6")
+one_way_collision = true
+
+[node name="Solid7" type="StaticBody2D" parent="Platforms"]
+position = Vector2(2225, 635)
+collision_layer = 1
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/Solid7"]
+shape = SubResource("shape_p7")
+
+[node name="OneWay8" type="StaticBody2D" parent="Platforms"]
+position = Vector2(1080, 566)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay8"]
+shape = SubResource("shape_p8")
+one_way_collision = true
+
+[node name="OneWay9" type="StaticBody2D" parent="Platforms"]
+position = Vector2(720, 526)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay9"]
+shape = SubResource("shape_p9")
+one_way_collision = true
+
+[node name="Blockers" type="Node2D" parent="."]
+
+[node name="Gate0" type="StaticBody2D" parent="Blockers"]
+position = Vector2(2354, 545)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("blocker")
+kind = "gate"
+condition = "exhibits_incomplete"
+size = Vector2(28, 150)
+
+[node name="Shape" type="CollisionShape2D" parent="Blockers/Gate0"]
+shape = SubResource("shape_b0")
+
+[node name="Markers" type="Node2D" parent="."]
+
+[node name="Exit_fairhall_0" type="Node2D" parent="Markers"]
+position = Vector2(0, 870)
+script = ExtResource("marker")
+kind = "exit"
+size = Vector2(22, 140)
+target_room = "fairhall"
+spawn_point = Vector2(2930, 470)
+
+[node name="Exit_stage_1" type="Node2D" parent="Markers"]
+position = Vector2(2378, 470)
+script = ExtResource("marker")
+kind = "exit"
+size = Vector2(22, 150)
+target_room = "stage"
+spawn_point = Vector2(60, 470)
+
+[node name="Npc_jason_2" type="Node2D" parent="Markers"]
+position = Vector2(140, 1010)
+script = ExtResource("marker")
+kind = "npc"
+id = "jason"
+dialog = "c4_jason"
+dialog_repeat = "c4_jason2"
+face = 1
+
+[node name="Bench_bench_3" type="Node2D" parent="Markers"]
+position = Vector2(2200, 620)
+script = ExtResource("marker")
+kind = "bench"
+
+[node name="Spawn_x1_4" type="Node2D" parent="Markers"]
+position = Vector2(600, 1010)
+script = ExtResource("marker")
+kind = "spawn"
+id = "x1"
+enemy = "exhibit"
+
+[node name="Spawn_x2_5" type="Node2D" parent="Markers"]
+position = Vector2(1080, 560)
+script = ExtResource("marker")
+kind = "spawn"
+id = "x2"
+enemy = "exhibit"
+
+[node name="Spawn_x3_6" type="Node2D" parent="Markers"]
+position = Vector2(1900, 1010)
+script = ExtResource("marker")
+kind = "spawn"
+id = "x3"
+enemy = "exhibit"
+
+[node name="Spawn_tg1_7" type="Node2D" parent="Markers"]
+position = Vector2(900, 1010)
+script = ExtResource("marker")
+kind = "spawn"
+id = "tg1"
+enemy = "sleeper"
+patrol_range = 140
+
+[node name="Spawn_g2_8" type="Node2D" parent="Markers"]
+position = Vector2(1500, 1010)
+script = ExtResource("marker")
+kind = "spawn"
+id = "g2"
+enemy = "rider"
+patrol_range = 220
+
+[node name="Spawn_g3_9" type="Node2D" parent="Markers"]
+position = Vector2(1300, 700)
+script = ExtResource("marker")
+kind = "spawn"
+id = "g3"
+enemy = "mote"
+
+[node name="Spawn_g4_10" type="Node2D" parent="Markers"]
+position = Vector2(1600, 690)
+script = ExtResource("marker")
+kind = "spawn"
+id = "g4"
+enemy = "imp"
+patrol_range = 60
+
+[node name="Spawn_g5_11" type="Node2D" parent="Markers"]
+position = Vector2(700, 520)
+script = ExtResource("marker")
+kind = "spawn"
+id = "g5"
+enemy = "imp"
+patrol_range = 40
+
+[node name="Trigger_gymIntro_12" type="Node2D" parent="Markers"]
+position = Vector2(200, 0)
+script = ExtResource("marker")
+kind = "trigger"
+size = Vector2(40, 1080)
+event = "gymIntro"
+
+[node name="Loot_l_phone_13" type="Node2D" parent="Markers"]
+position = Vector2(700, 520)
+script = ExtResource("marker")
+kind = "loot"
+id = "l_phone"
+item = "phone"
