@@ -494,7 +494,10 @@ func pad_label(code: String) -> String:
 
 
 func key_label(k: int) -> String:
-	var s = OS.get_keycode_string(DisplayServer.keyboard_get_keycode_from_physical(k) if k > 0 else k)
+	var kc = k
+	if k > 0 and not OS.has_feature("web") and DisplayServer.get_name() != "headless":
+		kc = DisplayServer.keyboard_get_keycode_from_physical(k)
+	var s = OS.get_keycode_string(kc)
 	return s if s != "" else "?"
 
 
