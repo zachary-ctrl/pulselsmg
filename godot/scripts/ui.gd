@@ -141,7 +141,6 @@ func _build_title() -> void:
 	cb.name = "Chapters"
 	_title_main.add_child(cb)
 	_title_main.add_child(_menu_button("LSMG ARCADE", func(): main.open_arcade()))
-	_title_main.add_child(_menu_button("CO-OP", func(): show_sub("coop")))
 	_title_main.add_child(_menu_button("SETTINGS", func(): show_sub("settings")))
 	_title_main.add_child(_menu_button("CREDITS", func(): show_sub("credits")))
 	if not OS.has_feature("web"):
@@ -214,48 +213,6 @@ func show_sub(kind: String, from_pause := false) -> void:
 				v.add_child(b)
 				if first == null:
 					first = b
-		"coop":
-			v.add_child(_heading("CO-OP", 22))
-			var st = Net.status if Net.status != "" else ("Player 2 is in (couch co-op)." if main.coop == "local" else "Play the story with a friend. Player 2 controls Lana or Jason.")
-			var sl = _small(st, 13, Color("#fff2c8"))
-			sl.custom_minimum_size = Vector2(460, 0)
-			v.add_child(sl)
-			var lc = _menu_button("COUCH CO-OP: " + ("ON" if main.coop == "local" or main.want_local_coop else "OFF"), func(): main.toggle_local_coop(); show_sub("coop", _sub_from_pause))
-			lc.custom_minimum_size = Vector2(460, 38)
-			v.add_child(lc)
-			first = lc
-			var pads = Input.get_connected_joypads()
-			var pn = "Controllers: " + (", ".join(pads.map(func(j): return Input.get_joy_name(j))) if not pads.is_empty() else "none. Plug in or pair a second controller (PS5, PS4, Xbox...).")
-			var pl2 = _small(pn + "  With one controller, player 1 uses the keyboard.", 11, Color("#a8a0b0"))
-			pl2.custom_minimum_size = Vector2(460, 0)
-			v.add_child(pl2)
-			if Net.online_supported():
-				if Net.role == "":
-					var hb = _menu_button("HOST ONLINE GAME", func(): Net.host(); show_sub("coop", _sub_from_pause))
-					hb.custom_minimum_size = Vector2(460, 38)
-					v.add_child(hb)
-					var row = HBoxContainer.new()
-					row.add_theme_constant_override("separation", 8)
-					var le = LineEdit.new()
-					le.placeholder_text = "Host's IP address"
-					le.text = Game.settings.get("last_ip", "")
-					le.custom_minimum_size = Vector2(300, 38)
-					row.add_child(le)
-					var jb = _menu_button("JOIN", func(): Game.settings["last_ip"] = le.text; Game.save_settings(); Net.join(le.text); show_sub("coop", _sub_from_pause))
-					jb.custom_minimum_size = Vector2(150, 38)
-					row.add_child(jb)
-					v.add_child(row)
-				else:
-					var lb = _menu_button("LEAVE / STOP HOSTING", func(): Net.leave(true); show_sub("coop", _sub_from_pause))
-					lb.custom_minimum_size = Vector2(460, 38)
-					v.add_child(lb)
-				var note = _small("Online: the host forwards UDP port %d on their router (or plays on the same Wi-Fi). Host first, then start or continue a game." % Net.PORT, 11, Color("#a8a0b0"))
-				note.custom_minimum_size = Vector2(460, 0)
-				v.add_child(note)
-			else:
-				var wn = _small("Online co-op needs the desktop version (Windows, Mac or Linux). Couch co-op works here.", 12, Color("#a8a0b0"))
-				wn.custom_minimum_size = Vector2(460, 0)
-				v.add_child(wn)
 		"credits":
 			v.add_child(_heading("CREDITS", 22))
 			var sc = ScrollContainer.new()
@@ -919,7 +876,7 @@ func _build_pause() -> void:
 	keys.add_theme_font_size_override("font_size", 14)
 	v.add_child(keys)
 	for spec in [["RESUME", func(): main.close_pause()], ["CHARACTER", func(): _pause.visible = false; main.open_menu()],
-			["SETTINGS", func(): show_sub("settings", true)], ["CO-OP", func(): show_sub("coop", true)], ["CONTROLS", func(): _sub_from_pause = true; show_sub("controls", true)],
+			["SETTINGS", func(): show_sub("settings", true)], ["CONTROLS", func(): _sub_from_pause = true; show_sub("controls", true)],
 			["TITLE", func(): _pause.visible = false; main.show_title()]]:
 		var b = Button.new()
 		b.text = spec[0]

@@ -56,7 +56,6 @@ Modifications: icons were cropped, background-keyed to transparency and scaled (
 
 ## Networking
 
-- Online co-op networking patterns: TetraForce (MIT, Joseph Lesko and contributors)
 
 ## LSMG Arcade
 

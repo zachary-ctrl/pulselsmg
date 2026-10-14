@@ -126,9 +126,6 @@ func step(dt: float) -> void:
 			if pr.intersects(main.player.hitbox()):
 				main.hurt_player(1, p["p"].x)
 				p["life"] = 0.0
-			elif main.partner_ok() and main.partner.down_t <= 0.0 and pr.intersects(main.partner.hitbox()):
-				main.hurt_partner(1, p["p"].x)
-				p["life"] = 0.0
 			elif main.astral_active() and pr.intersects(main.astral.hitbox()):
 				main.hurt_astral()
 				p["life"] = 0.0
@@ -279,7 +276,7 @@ func _draw() -> void:
 		draw_line(predict - Vector2(80, 0), predict + Vector2(80, 0), c, 2.0)
 		draw_line(predict - Vector2(0, 80), predict + Vector2(0, 80), c, 2.0)
 		draw_string(Game.font_semi, predict + Vector2(10, -72), "▸ " + main.predict_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#ff9ad8"))
-	for who in [main.player, main.astral, main.partner]:
+	for who in [main.player, main.astral]:
 		if who == null or not is_instance_valid(who):
 			continue
 		var wc = Color("#c9b8ff") if who.is_astral else Color("#ffb06a")

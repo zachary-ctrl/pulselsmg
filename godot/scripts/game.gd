@@ -377,7 +377,6 @@ const AXIS_NAMES := {"a0-": "Left stick ←", "a0+": "Left stick →", "a1-": "L
 	"a3-": "Right stick ↑", "a3+": "Right stick ↓"}
 
 var settings = {}
-var p1_device = -1
 var using_pad = false
 
 
@@ -445,14 +444,10 @@ func apply_bindings() -> void:
 			ev.physical_keycode = int(k)
 			InputMap.action_add_event(action, ev)
 		for c in b["p"]:
-			var pe = _pad_event(c)
-			pe.device = p1_device
-			InputMap.action_add_event(action, pe)
+			InputMap.action_add_event(action, _pad_event(c))
 	# The left stick always moves, whatever the d-pad is bound to.
 	for pair in [["left", "a0-"], ["right", "a0+"], ["up", "a1-"], ["down", "a1+"]]:
-		var se = _pad_event(pair[1])
-		se.device = p1_device
-		InputMap.action_add_event(pair[0], se)
+		InputMap.action_add_event(pair[0], _pad_event(pair[1]))
 
 
 func rebind(action: String, ev: InputEvent) -> void:

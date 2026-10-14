@@ -58,15 +58,6 @@ Generous jump timing (coyote time and jump buffering), wall slides and wall jump
 
 Kandria-inspired additions: **wall climbing** (hold Up on a wall; a small stamina ring shows how long you can climb, refilled on the ground) and an **8-way air dash** (hold a direction while dashing in the air).
 
-### Co-op
-
-Title → **Co-op** (or Co-op in the pause menu):
-
-- **Couch co-op**: plug in or pair a second controller (PS5, PS4, Xbox…). Player 2 plays whichever of Max / Lana / Jason player 1 isn't. With one controller, player 1 uses the keyboard and player 2 the controller. Works in the web build too.
-- **Online co-op** (desktop builds): one player picks **Host online game** and starts or continues a game; the other enters the host's IP address and **Join**s. The host forwards UDP port 24680 on their router (or both play on the same network). The host runs the game; the guest's button presses are sent every frame and the host streams the world back 20 times a second (host-authoritative, modelled on TetraForce's networking, MIT). Browsers can't host or open UDP connections, so the web build offers couch co-op only.
-
-Player 2 has their own health, gets knocked down instead of dying (back up in 6 seconds), shares experience and gear, and the boss allies fill in whoever isn't being played.
-
 ### Map
 
 The character menu has a **Map** tab in the style of Knytt Stories / YKnytt: each room of the chapter is a box, lit once explored, with your position blinking, save benches and boss rooms marked.
@@ -97,8 +88,7 @@ scripts/fx.gd             projectiles, beams, particles, slash arcs, glowing VFX
 scripts/hud.gd, ui.gd     HUD, dialogue with portraits, choices, title menu, settings, control remapping, pause, end, touch buttons
 scripts/splash.gd         8-bit LSMG boot splash
 scripts/arcade.gd         LSMG ARCADE · LAST SHOT minigame
-scripts/net.gd            autoload: online co-op (ENet host/guest, snapshots)
-scripts/vinput.gd         per-player input source (keyboard/pad, a specific controller, or the network)
+scripts/vinput.gd         samples the player's buttons once per physics frame
 scripts/pixelfont.gd      3x5 pixel font for the 8-bit screens
 scripts/room.gd           room root: collects platforms and markers, draws animated pieces
 scripts/marker.gd         exits, triggers, benches, NPCs, anchors, sigils, spawns, hazards

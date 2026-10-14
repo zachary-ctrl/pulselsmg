@@ -11,7 +11,6 @@ const PRM_ASTRAL := {"run": 280.0, "grav": 1300.0, "max_fall": 520.0, "jump": 62
 
 var main: Node
 var inp = VInput.new()
-var is_partner = false
 var down_t = 0.0
 var is_astral = false
 var rig: Node2D

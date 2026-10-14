@@ -19,7 +19,6 @@ const Rider = preload("res://scripts/enemies/rider.gd")
 const Collective = preload("res://scripts/enemies/collective.gd")
 const AllyScript = preload("res://scripts/ally.gd")
 const SplashScript = preload("res://scripts/splash.gd")
-const VInput = preload("res://scripts/vinput.gd")
 const ArcadeScript = preload("res://scripts/arcade.gd")
 const Exhibit = preload("res://scripts/enemies/exhibit.gd")
 const FxScript = preload("res://scripts/fx.gd")
@@ -53,8 +52,6 @@ var player: CharacterBody2D
 var astral: CharacterBody2D = null
 var ents: Array = []
 var pickups: Array = []
-var partner: CharacterBody2D = null
-var coop = ""
 var allies: Array = []
 var npcs: Array = []
 var fight = null
@@ -153,14 +150,9 @@ func _ready() -> void:
 	player = PlayerScript.new()
 	player.main = self
 	player.setup(false)
-	Net.main = self
-	var args = OS.get_cmdline_user_args()
-	if "--autotest" in args or "--guest" in args:
+	if "--autotest" in OS.get_cmdline_user_args():
 		show_title()
-		if "--guest" in args:
-			Net.join(args[args.find("--guest") + 1] if args.find("--guest") + 1 < args.size() else "127.0.0.1")
-		if "--autotest" in args:
-			add_child(load("res://tools/autotest.gd").new())
+		add_child(load("res://tools/autotest.gd").new())
 	else:
 		mode = "splash"
 		var sp = SplashScript.new()
@@ -192,8 +184,6 @@ func close_arcade() -> void:
 # ---------- modes ----------
 
 func show_title() -> void:
-	if Net.is_host():
-		Net.send_title()
 	mode = "title"
 	fight = null
 	ui.hide_end()
@@ -210,9 +200,6 @@ func new_game() -> void:
 ## Begins chapter `n`. `fresh` resets story state (title or chapter select);
 ## otherwise flags, choices and anchors carry over from the previous chapter.
 func start_chapter(n: int, fresh: bool) -> void:
-	if Net.is_guest():
-		toast("The host chooses the chapter")
-		return
 	ui.hide_end()
 	if fresh:
 		Game.clear_save()
@@ -233,46 +220,7 @@ func start_chapter(n: int, fresh: bool) -> void:
 		card = {"name": "Chapter " + Game.CHAPTER_WORD[n].capitalize(), "sub": c["title"], "t": 0.0}
 
 
-func start_local_coop() -> bool:
-	var pads = Input.get_connected_joypads()
-	if pads.is_empty():
-		toast("Connect a controller for player 2")
-		return false
-	var p2 = pads[0]
-	if pads.size() >= 2:
-		Game.p1_device = pads[0]
-		p2 = pads[1]
-	else:
-		Game.p1_device = 99
-	Game.apply_bindings()
-	add_partner("pad", p2)
-	return true
-
-
-var want_local_coop = false
-
-
-func toggle_local_coop() -> void:
-	if coop == "local" or want_local_coop:
-		want_local_coop = false
-		stop_local_coop()
-	elif room != null and mode != "title":
-		start_local_coop()
-	else:
-		want_local_coop = true
-		toast("Couch co-op will start with your game")
-
-
-func stop_local_coop() -> void:
-	Game.p1_device = -1
-	Game.apply_bindings()
-	if coop == "local":
-		remove_partner()
-
-
 func continue_game() -> void:
-	if Net.is_guest():
-		return
 	var s = Game.read_save()
 	if s == null:
 		new_game()
@@ -302,9 +250,6 @@ func _reset_player() -> void:
 
 
 func _enter_play() -> void:
-	if want_local_coop and coop == "" and not Net.is_guest():
-		want_local_coop = false
-		call_deferred("start_local_coop")
 	ui.hide_title()
 	ui.hide_end()
 	world.visible = true
@@ -400,12 +345,6 @@ func load_room(id: String, spawn: Vector2) -> void:
 	player.atk_t = 0.0
 	player.heal_t = 0.0
 	player.safe = spawn
-	if partner_ok():
-		if partner.get_parent() == null:
-			ents_root.add_child(partner)
-		partner.position = spawn + Vector2(-36, 0)
-		partner.velocity = Vector2.ZERO
-		partner.safe = partner.position
 	for s in room.markers["spawn"]:
 		_spawn(s)
 	for lm in room.markers["loot"]:
@@ -431,14 +370,11 @@ func load_room(id: String, spawn: Vector2) -> void:
 	var vw = W / zoom
 	var vh = H / zoom
 	cam = Vector2(clampf(spawn.x - vw / 2, 0, room.room_size.x - vw), clampf(spawn.y - vh * 0.62, 0, room.room_size.y - vh))
-	call_deferred("_after_room_loaded")
 	Sound.ambience(id)
 	if not Game.visited.has(id):
 		Game.visited[id] = true
 		card = {"name": room.display_name, "sub": room.subtitle, "t": 0.0}
 		Sound.play("gong")
-	if Net.is_guest():
-		return
 	if id == "classroom" and not Game.flag("intro"):
 		Game.set_flag("intro")
 		start_dialog("intro")
@@ -520,11 +456,6 @@ func spawn_add() -> void:
 	toast("A listener stumbles in from the stairwell")
 
 
-func _after_room_loaded() -> void:
-	if Net.is_host():
-		Net.send_room()
-
-
 func go_room(ex: Node) -> void:
 	if trans != null:
 		return
@@ -557,9 +488,6 @@ func say(lines: Array, on_end := Callable()) -> void:
 
 func _physics_process(dt: float) -> void:
 	t += dt
-	if Net.is_guest() and mode != "title":
-		_guest_tick(dt)
-		return
 	match mode:
 		"splash", "arcade":
 			return
@@ -640,7 +568,6 @@ func _physics_process(dt: float) -> void:
 		player.move_and_slide()
 	else:
 		player.control(dt)
-	_partner_tick(dt)
 	if Input.is_action_just_pressed("fp") and player.res >= Game.fp_need() and not astral_active():
 		_full_potential()
 	if not astral_active():
@@ -710,10 +637,6 @@ func _update_view(dt: float) -> void:
 	var vw = W / zoom
 	var vh = H / zoom
 	var focus: Vector2 = c.position
-	if Net.is_guest() and partner_ok():
-		focus = partner.position
-	elif partner_ok() and c == player:
-		focus = (player.position + partner.position) / 2.0
 	var target = Vector2(clampf(focus.x - vw / 2 + c.face * 34, 0, maxf(0.0, room.room_size.x - vw)), clampf(focus.y - vh * 0.62, 0, maxf(0.0, room.room_size.y - vh)))
 	cam = cam.lerp(target, minf(1.0, dt * 5.5))
 	cam.x = clampf(cam.x, 0, maxf(0.0, room.room_size.x - vw))
@@ -724,12 +647,8 @@ func _update_view(dt: float) -> void:
 	camera.offset = so / zoom
 	grade_rect.visible = astral_mix > 0.0
 	(grade_rect.material as ShaderMaterial).set_shader_parameter("amount", astral_mix)
-	if not Net.is_guest():
-		player.update_pose(t, astral_active())
-	if partner_ok() and not Net.is_guest():
-		partner.update_pose(t, false)
-		partner.rig.alpha = 0.35 if partner.down_t > 0.0 else 1.0
-	if astral_active() and not Net.is_guest():
+	player.update_pose(t, astral_active())
+	if astral_active():
 		astral.update_pose(t, false)
 	var speaker = ""
 	if ui.dlg != null:
@@ -979,7 +898,7 @@ func apply_difficulty() -> void:
 
 
 func _gain_res(n: float, who = null) -> void:
-	var p = player if who == null or not (who == partner) else partner
+	var p = player
 	var m: float = Game.diff()["res"] * (1.0 + Game.mod("res") + Game.attr(p.hero, "foc") * 0.1)
 	p.res = minf(99.0, p.res + n * m)
 
@@ -1500,7 +1419,6 @@ func _chapter_end(n: int) -> void:
 	if n == 3:
 		stats.append(["Workers saved", "%d / 3" % int(Game.flags.get("rescued", 0))])
 	ui.show_end(n, titles[n].get(k, "Chapter Complete"), lead, stats, has_next)
-	Net.send_end([n, titles[n].get(k, "Chapter Complete"), lead, stats, has_next])
 
 
 # ---------- party ----------
@@ -1556,7 +1474,7 @@ func _spawn_allies() -> void:
 	var present = ["max", "lana", "jason"]
 	var i = 0
 	for h in present:
-		if h == player.hero or (partner_ok() and h == partner.hero):
+		if h == player.hero:
 			continue
 		var a = AllyScript.new()
 		a.main = self
@@ -1644,9 +1562,6 @@ func _update_pickups(dt: float) -> void:
 	var pc: Vector2 = c.position + Vector2(0, -28)
 	for pk in pickups:
 		pk["age"] += dt
-		if partner_ok() and partner.down_t <= 0.0 and partner.position.distance_to(pk["p"] - Vector2(0, -28)) < 40.0 and pk["age"] > 0.45:
-			_collect(pk, partner)
-			continue
 		if pk.get("fixed", false):
 			if pc.distance_to(pk["p"]) < 34.0 and not astral_active():
 				_collect(pk)
@@ -1674,12 +1589,7 @@ func _update_pickups(dt: float) -> void:
 	pickups = pickups.filter(func(x): return not x.get("gone", false))
 
 
-func _collect(pk: Dictionary, who = null) -> void:
-	if who != null and pk["k"] == "hp":
-		pk["gone"] = true
-		Sound.play("heal", 0.05, -4.0)
-		who.hp = mini(who.max_hp, who.hp + 1)
-		return
+func _collect(pk: Dictionary) -> void:
 	pk["gone"] = true
 	match pk["k"]:
 		"xp":
@@ -1723,389 +1633,3 @@ func _level_up() -> void:
 	fx.burst(player.position + Vector2(0, -34), 40, 420, Color("#fff2c8"))
 	fx.sprite("ring", player.position, 180.0, 0.4, 0.0, Color("#fff2c8"), 4, 2)
 	toast("LEVEL %d · Attribute points to spend [%s]" % [Game.prog["level"], Game.label("menu")])
-
-
-# ---------- co-op partner (couch or online) ----------
-
-func partner_ok() -> bool:
-	return partner != null and is_instance_valid(partner)
-
-
-func partner_hero() -> String:
-	for h in ["lana", "jason", "max"]:
-		if h != player.hero:
-			return h
-	return "lana"
-
-
-## Player 2 joins: `source` is "pad" (couch co-op on controller `device`) or
-## "remote" (an online guest's inputs).
-func add_partner(source: String, device := 1) -> void:
-	if partner_ok():
-		partner.inp.source = source
-		partner.inp.device = device
-		return
-	partner = PlayerScript.new()
-	partner.main = self
-	partner.setup(false)
-	partner.is_partner = true
-	partner.inp.source = source
-	partner.inp.device = device
-	var h = partner_hero()
-	partner.set_hero(h)
-	partner.max_hp = Game.hero_max_hp(h)
-	partner.hp = partner.max_hp
-	partner.swap_t = 0.0
-	if room != null:
-		ents_root.add_child(partner)
-		partner.position = player.position + Vector2(-40, -10)
-		partner.safe = partner.position
-		fx.burst(partner.position + Vector2(0, -34), 30, 320, Color(Game.HEROES[h]["col"]))
-	Sound.play("swap")
-	toast("Player 2 joined as " + Game.HEROES[h]["name"].capitalize())
-	coop = "local" if source == "pad" else "host"
-
-
-func remove_partner() -> void:
-	if partner_ok():
-		partner.queue_free()
-	partner = null
-	coop = ""
-	toast("Player 2 left")
-
-
-func _partner_tick(dt: float) -> void:
-	if not partner_ok() or room == null:
-		return
-	if partner.get_parent() == null:
-		ents_root.add_child(partner)
-		partner.position = player.position + Vector2(-40, 0)
-	if partner.hero == player.hero:
-		var h = partner_hero()
-		partner.set_hero(h)
-		partner.max_hp = Game.hero_max_hp(h)
-		partner.hp = mini(partner.hp, partner.max_hp)
-	partner.inv = maxf(0.0, partner.inv - dt)
-	if partner.down_t > 0.0:
-		partner.down_t -= dt
-		partner.velocity = Vector2.ZERO
-		partner.position = partner.position.lerp(player.position + Vector2(-40, -20), dt * 3.0)
-		if partner.down_t <= 0.0:
-			partner.hp = maxi(1, partner.max_hp / 2)
-			partner.inv = 1.5
-			partner.position = player.position + Vector2(-40, 0)
-			fx.burst(partner.position + Vector2(0, -34), 24, 260, Color("#8affb0"))
-			toast(Game.HEROES[partner.hero]["name"].capitalize() + " is back up")
-		return
-	partner.control(dt)
-	# Hazards, falling out, or straying off screen bring player 2 back.
-	var far = partner.position.distance_to(player.position) > 900.0
-	if room.hazard_at(partner.hitbox()) != null or partner.position.y > room.room_size.y + 120 or far:
-		if not far:
-			hurt_partner(1, partner.position.x)
-		partner.position = player.position + Vector2(-40, -10)
-		partner.velocity = Vector2.ZERO
-	var hb: Rect2 = partner.hitbox()
-	for e in ents:
-		if alive(e) and e.kind not in ["exhibit"] and e.hurt_rect().grow(-6).intersects(hb):
-			if not (e.kind == "ciencia" or e.kind == "collective") or e.alpha > 0.6:
-				hurt_partner(1, e.position.x)
-				break
-
-
-func hurt_partner(d: int, from_x: float) -> void:
-	if not partner_ok() or partner.inv > 0.0 or partner.down_t > 0.0 or mode != "play":
-		return
-	partner.hp -= d
-	partner.inv = 1.3
-	partner.heal_t = 0.0
-	partner.dash_t = 0.0
-	partner.dive = false
-	partner.laser_t = 0.0
-	var dir = signf(partner.position.x - from_x)
-	if dir == 0:
-		dir = -partner.face
-	partner.velocity = Vector2(dir * 330.0, -380.0)
-	partner.recoil_t = 0.15
-	partner.recoil_v = dir * 330.0
-	Sound.play("hurt", 0.1, -3.0)
-	fx.burst(partner.position + Vector2(0, -30), 12, 260, Color.WHITE)
-	if Net.is_host():
-		Net.rumble_guest(0.5, 0.8, 0.25)
-	if partner.hp <= 0:
-		partner.down_t = 6.0
-		toast(Game.HEROES[partner.hero]["name"].capitalize() + " is down! Back in 6 seconds")
-		Sound.play("death", 0.0, -6.0)
-
-
-# ---------- online guest: mirror the host's game ----------
-
-const SYNC_PROPS := ["position", "velocity", "face", "state", "hp", "max_hp", "flash", "alpha", "dead", "phase2", "broken", "sub", "tm", "lana_t", "level"]
-
-
-func _actor(p: Node) -> Dictionary:
-	return {"x": p.position, "f": p.face, "k": p.rig.key, "a": p.rig.anim, "fr": p.rig.frame, "ti": p.rig.tilt, "fl": p.rig.flash, "v": p.rig.visible,
-		"al": p.rig.alpha, "tn": p.rig.tint, "hp": p.hp, "mh": p.max_hp, "r": p.res, "h": p.hero, "sh": p.shinobi, "au": p.aura.level, "ac": p.aura.color,
-		"at": [p.atk_t, p.atk_dir, p.atk_kind, p.kick_t, p.dive, p.laser_t, p.laser_fired, p.laser_dir, p.timer, p.down_t]}
-
-
-func _apply_actor(p: Node, d: Dictionary) -> void:
-	p.position = d["x"]
-	p.face = d["f"]
-	p.rig.key = d["k"]
-	p.rig.anim = d["a"]
-	p.rig.frame = d["fr"]
-	p.rig._t = -INF
-	p.rig.face = d["f"]
-	p.rig.tilt = d["ti"]
-	p.rig.flash = d["fl"]
-	p.rig.visible = d["v"]
-	p.rig.alpha = d["al"]
-	p.rig.tint = d["tn"]
-	p.hp = d["hp"]
-	p.max_hp = d["mh"]
-	p.res = d["r"]
-	p.hero = d["h"]
-	p.shinobi = d["sh"]
-	p.aura.level = d["au"]
-	p.aura.target = d["au"]
-	p.aura.color = d["ac"]
-	var a: Array = d["at"]
-	p.atk_t = a[0]
-	p.atk_dir = a[1]
-	p.atk_kind = a[2]
-	p.kick_t = a[3]
-	p.dive = a[4]
-	p.laser_t = a[5]
-	p.laser_fired = a[6]
-	p.laser_dir = a[7]
-	p.timer = a[8]
-	p.down_t = a[9]
-
-
-func build_snapshot() -> Dictionary:
-	var es = []
-	for e in ents:
-		if not is_instance_valid(e):
-			continue
-		var pr = {}
-		for k in SYNC_PROPS:
-			if k in e:
-				pr[k] = e.get(k)
-		es.append([e.kind, e.id if "id" in e else "", pr])
-	var al = []
-	for a in allies:
-		if is_instance_valid(a):
-			al.append([a.hero, a.position, a.rig.anim, a.rig.frame, a.face, a.aura.level])
-	var prj = []
-	for q in fx.projectiles:
-		var qq: Dictionary = q.duplicate()
-		qq.erase("hits")
-		qq.erase("f")
-		prj.append(qq)
-	var pk = []
-	for q in pickups:
-		pk.append([q["p"], q["k"], q.get("seed", 0.0)])
-	var fi = -1
-	if fight != null:
-		fi = ents.find(fight["e"])
-	var dg = null
-	if ui.dlg != null:
-		dg = {"l": ui.dlg["lines"], "i": ui.dlg["i"], "c": ui.dlg["chars"]}
-	var tst = []
-	for x in toasts:
-		tst.append([x["s"], x["life"], x["max"]])
-	return {"m": mode, "pl": _actor(player), "pa": _actor(partner) if partner_ok() else null, "as": _actor(astral) if astral_active() else null,
-		"e": es, "al": al, "pr": prj, "bm": fx.beams.duplicate(true), "ls": fx.lasers.duplicate(true), "rg": fx.rings.duplicate(true),
-		"pk": pk, "f": [fight["id"], fight["name"], fight["sub"], fi] if fight != null else null, "dg": dg, "to": tst, "cd": card,
-		"sh": shake, "fs": [flash, flash_col], "am": astral_mix, "lv": [Game.prog["level"], Game.prog["xp"]], "pt": predict_text, "pd": fx.predict}
-
-
-func guest_joined() -> void:
-	guest_waiting("Connected! Waiting for the host to start or continue a game...")
-
-
-func guest_waiting(msg: String) -> void:
-	mode = "title"
-	ui.show_title(false, 1)
-	ui.show_sub("coop")
-	toast(msg)
-
-
-func guest_left() -> void:
-	if partner_ok():
-		partner.queue_free()
-	partner = null
-	coop = ""
-	show_title()
-	toast("Left the co-op session")
-
-
-func guest_load_room(id: String, pos: Vector2) -> void:
-	ui.hide_title()
-	ui.hide_pause()
-	_enter_play()
-	if not partner_ok():
-		partner = PlayerScript.new()
-		partner.main = self
-		partner.setup(false)
-		partner.is_partner = true
-		partner.set_hero(partner_hero())
-	coop = "guest"
-	load_room(id, pos)
-	for e in ents:
-		if is_instance_valid(e):
-			e.set_physics_process(false)
-
-
-var _guest_ents_room = ""
-
-
-func apply_snapshot(s: Dictionary) -> void:
-	if room == null or mode == "title":
-		return
-	var m: String = s["m"]
-	mode = "play" if m in ["pause", "menu", "title", "arcade", "splash"] else m
-	_apply_actor(player, s["pl"])
-	if s["pa"] != null and partner_ok():
-		_apply_actor(partner, s["pa"])
-	if s["as"] != null:
-		if not astral_active():
-			astral = PlayerScript.new()
-			astral.main = self
-			astral.setup(true)
-			top_layer.add_child(astral)
-		_apply_actor(astral, s["as"])
-	elif astral_active():
-		_end_astral_now()
-	# Entities, matched by order; extra host summons are created by kind.
-	var es: Array = s["e"]
-	for i in es.size():
-		var row: Array = es[i]
-		if i >= ents.size() or not is_instance_valid(ents[i]) or ents[i].kind != row[0]:
-			var ne = _guest_make(row[0], row[1])
-			if ne == null:
-				continue
-			if i < ents.size():
-				if is_instance_valid(ents[i]):
-					ents[i].queue_free()
-				ents[i] = ne
-			else:
-				ents.append(ne)
-		var e = ents[i]
-		for k in row[2]:
-			e.set(k, row[2][k])
-	while ents.size() > es.size():
-		var x = ents.pop_back()
-		if is_instance_valid(x):
-			x.queue_free()
-	# Allies
-	var al: Array = s["al"]
-	while allies.size() < al.size():
-		var a = AllyScript.new()
-		a.main = self
-		a.hero = al[allies.size()][0]
-		a.set_process(false)
-		ents_root.add_child(a)
-		allies.append(a)
-	while allies.size() > al.size():
-		var y = allies.pop_back()
-		if is_instance_valid(y):
-			y.queue_free()
-	for i in al.size():
-		var a2 = allies[i]
-		if not is_instance_valid(a2) or a2.rig == null:
-			continue
-		a2.position = al[i][1]
-		a2.rig.anim = al[i][2]
-		a2.rig.frame = al[i][3]
-		a2.rig._t = -INF
-		a2.rig.face = al[i][4]
-		a2.aura.level = al[i][5]
-		a2.queue_redraw()
-	fx.projectiles = s["pr"]
-	fx.beams = s["bm"]
-	fx.lasers = s["ls"]
-	fx.rings = s["rg"]
-	fx.predict = s["pd"]
-	predict_text = s["pt"]
-	pickups.clear()
-	for q in s["pk"]:
-		pickups.append({"p": q[0], "k": q[1], "seed": q[2], "age": 1.0})
-	if s["f"] != null:
-		var fi: int = s["f"][3]
-		var fe = ents[fi] if fi >= 0 and fi < ents.size() else player
-		fight = {"id": s["f"][0], "name": s["f"][1], "sub": s["f"][2], "e": fe}
-	else:
-		fight = null
-	if s["dg"] != null:
-		ui.dlg = {"lines": s["dg"]["l"], "i": s["dg"]["i"], "chars": s["dg"]["c"], "on_end": Callable()}
-	elif ui.dlg != null:
-		ui.dlg = null
-	toasts.clear()
-	for x2 in s["to"]:
-		toasts.append({"s": x2[0], "life": x2[1], "max": x2[2]})
-	card = s["cd"]
-	shake = maxf(shake, s["sh"])
-	if s["fs"][0] > flash:
-		flash = s["fs"][0]
-		flash_col = s["fs"][1]
-	astral_mix = s["am"]
-	Game.prog["level"] = s["lv"][0]
-	Game.prog["xp"] = s["lv"][1]
-	for snd in s.get("snd", []):
-		Sound.play(snd[0], snd[1], snd[2])
-	var rb: Array = s.get("rb", [])
-	if rb.size() == 3:
-		Game.rumble(rb[0], rb[1], rb[2])
-
-
-func _guest_make(kind: String, id: String) -> Node:
-	var e: Node = null
-	match kind:
-		"sleeper":
-			e = Sleeper.new()
-			e.main = self
-			e.setup(id, Vector2.ZERO, 100, false)
-		"mote":
-			e = Mote.new()
-			e.main = self
-			e.setup(id, Vector2.ZERO)
-		"imp", "rider":
-			e = Imp.new() if kind == "imp" else Rider.new()
-			e.main = self
-			e.setup(id, Vector2.ZERO, 100)
-		"echo":
-			e = Echo.new()
-			e.main = self
-			e.setup(Vector2.ZERO)
-		_:
-			return null
-	ents_root.add_child(e)
-	e.set_physics_process(false)
-	return e
-
-
-func _guest_tick(dt: float) -> void:
-	shake = maxf(0.0, shake - dt)
-	flash = maxf(0.0, flash - dt * 1.5)
-	fx.update_cosmetic(dt)
-	if Input.is_action_just_pressed("pause"):
-		if Time.get_ticks_msec() - _guest_pause_ms < 1500:
-			Net.leave(true)
-			return
-		_guest_pause_ms = Time.get_ticks_msec()
-		toast("Press %s again to leave the co-op session" % Game.label("pause"))
-	if Net.last_snap_ms > 0 and Time.get_ticks_msec() - Net.last_snap_ms > 8000:
-		Net.leave(true)
-		return
-	_update_view(dt)
-
-
-var _guest_pause_ms = 0
-
-
-func guest_show_end(args: Array) -> void:
-	mode = "end"
-	Sound.play("endsting")
-	ui.show_end(args[0], args[1], args[2], args[3], args[4])

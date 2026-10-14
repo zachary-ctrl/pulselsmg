@@ -42,7 +42,6 @@ func _ready() -> void:
 
 
 func play(name: String, pitch_var := 0.0, volume_db := 0.0) -> void:
-	Net.queue_sound(name, pitch_var, volume_db)
 	if name.begins_with("tp_") and not _sfx.has(name):
 		var path = "res://assets/third_party/audio/sfx_%s.wav" % name.substr(3)
 		if ResourceLoader.exists(path):

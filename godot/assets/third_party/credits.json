@@ -1,77 +1,71 @@
 [
-  {
-    "section": "Item Icons",
-    "lines": [
-      "icons/lunchbox.png (closed chest) - Art by Dan Allen (CC-BY 4.0) - https://github.com/dsallen7/ransack-python",
-      "icons/charger.png (blue potion) - Art by Dan Allen (CC-BY 4.0) - https://github.com/dsallen7/ransack-python",
-      "icons/wristband.png (gold ring) - Art by Dan Allen (CC-BY 4.0) - https://github.com/dsallen7/ransack-python",
-      "icons/phone.png (spellbook) - Art by Dan Allen (CC-BY 4.0) - https://github.com/dsallen7/ransack-python",
-      "icons/goggles.png (fireball) - Art by Dan Allen (CC-BY 4.0) - https://github.com/dsallen7/ransack-python",
-      "icons/hallpass.png (parchment) - Art by Dan Allen (CC-BY 4.0) - https://github.com/dsallen7/ransack-python",
-      "icons/jersey.png (leather shirt) - Art by Dan Allen (CC-BY 4.0) - https://github.com/dsallen7/ransack-python",
-      "icons/bell.png (bell amulet) - Art by Dan Allen (CC-BY 4.0) - https://github.com/dsallen7/ransack-python",
-      "icons/stone.png (crystal) - Titan Tactics art by Romaselli, Federico Calchera & contributors (CC-BY 4.0) - https://gitlab.com/team-potato/titan_tactics",
-      "icons/tot.png (bread loaf) - Art by Dan Allen (CC-BY 4.0) - https://github.com/dsallen7/ransack-python",
-      "icons/badge.png (certificate) - Art by Dan Allen (CC-BY 4.0) - https://github.com/dsallen7/ransack-python",
-      "icons/seal.png (gold cross) - Art by Dan Allen (CC-BY 4.0) - https://github.com/dsallen7/ransack-python",
-      "icons/xp.png (level-up chevrons) - Titan Tactics art by Romaselli, Federico Calchera & contributors (CC-BY 4.0) - https://gitlab.com/team-potato/titan_tactics",
-      "icons/health.png (heart) - Art by Dan Allen (CC-BY 4.0) - https://github.com/dsallen7/ransack-python",
-      "icons/resonance.png (magic sparkle) - Titan Tactics art by Romaselli, Federico Calchera & contributors (CC-BY 4.0) - https://gitlab.com/team-potato/titan_tactics"
-    ]
-  },
-  {
-    "section": "Music",
-    "lines": [
-      "audio/mus_boss_clash.ogg (orig. boss_theme) - Titan Tactics music/SFX by Ondjon & Kssio (CC-BY 4.0) - https://gitlab.com/team-potato/titan_tactics",
-      "audio/mus_fair_bustle.ogg (orig. city_theme) - Titan Tactics music/SFX by Ondjon & Kssio (CC-BY 4.0) - https://gitlab.com/team-potato/titan_tactics",
-      "audio/mus_menu_dark_synth.ogg (orig. menu_intro_music) - Godot TPS Demo music by Christian Fernando Perucchi (CC-BY 3.0) - https://github.com/godotengine/tps-demo"
-    ]
-  },
-  {
-    "section": "Sound Effects",
-    "lines": [
-      "audio/sfx_menu_move.wav (orig. char_select1) - Titan Tactics music/SFX by Ondjon & Kssio (CC-BY 4.0) - https://gitlab.com/team-potato/titan_tactics",
-      "audio/sfx_menu_confirm.wav (orig. select) - Titan Tactics music/SFX by Ondjon & Kssio (CC-BY 4.0) - https://gitlab.com/team-potato/titan_tactics",
-      "audio/sfx_shield_parry.wav (orig. defend1) - Titan Tactics music/SFX by Ondjon & Kssio (CC-BY 4.0) - https://gitlab.com/team-potato/titan_tactics",
-      "audio/sfx_item_pickup.wav (orig. chest_opening) - Titan Tactics music/SFX by Ondjon & Kssio (CC-BY 4.0) - https://gitlab.com/team-potato/titan_tactics",
-      "audio/sfx_gate_open.wav (orig. gate_opening) - Titan Tactics music/SFX by Ondjon & Kssio (CC-BY 4.0) - https://gitlab.com/team-potato/titan_tactics",
-      "audio/sfx_explosion_big.wav (orig. red_robot explosion) - Godot TPS Demo sounds by Juan Linietsky & Fernando Miguel Calabró (CC-BY 3.0) - https://github.com/godotengine/tps-demo",
-      "audio/sfx_impact_metal.wav (orig. red_robot hit) - Godot TPS Demo sounds by Juan Linietsky & Fernando Miguel Calabró (CC-BY 3.0) - https://github.com/godotengine/tps-demo",
-      "audio/sfx_energy_charge.wav (orig. red_robot charge) - Godot TPS Demo sounds by Juan Linietsky & Fernando Miguel Calabró (CC-BY 3.0) - https://github.com/godotengine/tps-demo",
-      "audio/sfx_robot_laser.wav (orig. red_robot shoot) - Godot TPS Demo sounds by Juan Linietsky & Fernando Miguel Calabró (CC-BY 3.0) - https://github.com/godotengine/tps-demo",
-      "audio/sfx_door_slide.wav (orig. door open_close) - Godot TPS Demo sounds by Juan Linietsky & Fernando Miguel Calabró (CC-BY 3.0) - https://github.com/godotengine/tps-demo"
-    ]
-  },
-  {
-    "section": "Characters & UI",
-    "lines": [
-      "Shinobi sprites and Cyberpunk GUI — craftpix.net free assets (craftpix.net/file-licenses)"
-    ]
-  },
-  {
-    "section": "Fonts",
-    "lines": [
-      "Fonts: Cinzel and Spectral (SIL OFL)"
-    ]
-  },
-  {
-    "section": "Networking",
-    "lines": [
-      "Online co-op networking patterns: TetraForce (MIT, Joseph Lesko and contributors)"
-    ]
-  },
-  {
-    "section": "LSMG Arcade",
-    "lines": [
-      "Arcade: Mighty Knight (MIT, KOBUGE Project Incubator)",
-      "Arcade: Steamer Duck assets (CC0, drummyfish)"
-    ]
-  },
-  {
-    "section": "Design References",
-    "lines": [
-      "Design reference: Kandria (zlib, Shirakumo)",
-      "Map design reference: YKnytt (MIT code; no assets used)"
-    ]
-  }
+ {
+  "section": "Item Icons",
+  "lines": [
+   "icons/lunchbox.png (closed chest) - Art by Dan Allen (CC-BY 4.0) - https://github.com/dsallen7/ransack-python",
+   "icons/charger.png (blue potion) - Art by Dan Allen (CC-BY 4.0) - https://github.com/dsallen7/ransack-python",
+   "icons/wristband.png (gold ring) - Art by Dan Allen (CC-BY 4.0) - https://github.com/dsallen7/ransack-python",
+   "icons/phone.png (spellbook) - Art by Dan Allen (CC-BY 4.0) - https://github.com/dsallen7/ransack-python",
+   "icons/goggles.png (fireball) - Art by Dan Allen (CC-BY 4.0) - https://github.com/dsallen7/ransack-python",
+   "icons/hallpass.png (parchment) - Art by Dan Allen (CC-BY 4.0) - https://github.com/dsallen7/ransack-python",
+   "icons/jersey.png (leather shirt) - Art by Dan Allen (CC-BY 4.0) - https://github.com/dsallen7/ransack-python",
+   "icons/bell.png (bell amulet) - Art by Dan Allen (CC-BY 4.0) - https://github.com/dsallen7/ransack-python",
+   "icons/stone.png (crystal) - Titan Tactics art by Romaselli, Federico Calchera & contributors (CC-BY 4.0) - https://gitlab.com/team-potato/titan_tactics",
+   "icons/tot.png (bread loaf) - Art by Dan Allen (CC-BY 4.0) - https://github.com/dsallen7/ransack-python",
+   "icons/badge.png (certificate) - Art by Dan Allen (CC-BY 4.0) - https://github.com/dsallen7/ransack-python",
+   "icons/seal.png (gold cross) - Art by Dan Allen (CC-BY 4.0) - https://github.com/dsallen7/ransack-python",
+   "icons/xp.png (level-up chevrons) - Titan Tactics art by Romaselli, Federico Calchera & contributors (CC-BY 4.0) - https://gitlab.com/team-potato/titan_tactics",
+   "icons/health.png (heart) - Art by Dan Allen (CC-BY 4.0) - https://github.com/dsallen7/ransack-python",
+   "icons/resonance.png (magic sparkle) - Titan Tactics art by Romaselli, Federico Calchera & contributors (CC-BY 4.0) - https://gitlab.com/team-potato/titan_tactics"
+  ]
+ },
+ {
+  "section": "Music",
+  "lines": [
+   "audio/mus_boss_clash.ogg (orig. boss_theme) - Titan Tactics music/SFX by Ondjon & Kssio (CC-BY 4.0) - https://gitlab.com/team-potato/titan_tactics",
+   "audio/mus_fair_bustle.ogg (orig. city_theme) - Titan Tactics music/SFX by Ondjon & Kssio (CC-BY 4.0) - https://gitlab.com/team-potato/titan_tactics",
+   "audio/mus_menu_dark_synth.ogg (orig. menu_intro_music) - Godot TPS Demo music by Christian Fernando Perucchi (CC-BY 3.0) - https://github.com/godotengine/tps-demo"
+  ]
+ },
+ {
+  "section": "Sound Effects",
+  "lines": [
+   "audio/sfx_menu_move.wav (orig. char_select1) - Titan Tactics music/SFX by Ondjon & Kssio (CC-BY 4.0) - https://gitlab.com/team-potato/titan_tactics",
+   "audio/sfx_menu_confirm.wav (orig. select) - Titan Tactics music/SFX by Ondjon & Kssio (CC-BY 4.0) - https://gitlab.com/team-potato/titan_tactics",
+   "audio/sfx_shield_parry.wav (orig. defend1) - Titan Tactics music/SFX by Ondjon & Kssio (CC-BY 4.0) - https://gitlab.com/team-potato/titan_tactics",
+   "audio/sfx_item_pickup.wav (orig. chest_opening) - Titan Tactics music/SFX by Ondjon & Kssio (CC-BY 4.0) - https://gitlab.com/team-potato/titan_tactics",
+   "audio/sfx_gate_open.wav (orig. gate_opening) - Titan Tactics music/SFX by Ondjon & Kssio (CC-BY 4.0) - https://gitlab.com/team-potato/titan_tactics",
+   "audio/sfx_explosion_big.wav (orig. red_robot explosion) - Godot TPS Demo sounds by Juan Linietsky & Fernando Miguel Calabr\u00f3 (CC-BY 3.0) - https://github.com/godotengine/tps-demo",
+   "audio/sfx_impact_metal.wav (orig. red_robot hit) - Godot TPS Demo sounds by Juan Linietsky & Fernando Miguel Calabr\u00f3 (CC-BY 3.0) - https://github.com/godotengine/tps-demo",
+   "audio/sfx_energy_charge.wav (orig. red_robot charge) - Godot TPS Demo sounds by Juan Linietsky & Fernando Miguel Calabr\u00f3 (CC-BY 3.0) - https://github.com/godotengine/tps-demo",
+   "audio/sfx_robot_laser.wav (orig. red_robot shoot) - Godot TPS Demo sounds by Juan Linietsky & Fernando Miguel Calabr\u00f3 (CC-BY 3.0) - https://github.com/godotengine/tps-demo",
+   "audio/sfx_door_slide.wav (orig. door open_close) - Godot TPS Demo sounds by Juan Linietsky & Fernando Miguel Calabr\u00f3 (CC-BY 3.0) - https://github.com/godotengine/tps-demo"
+  ]
+ },
+ {
+  "section": "Characters & UI",
+  "lines": [
+   "Shinobi sprites and Cyberpunk GUI \u2014 craftpix.net free assets (craftpix.net/file-licenses)"
+  ]
+ },
+ {
+  "section": "Fonts",
+  "lines": [
+   "Fonts: Cinzel and Spectral (SIL OFL)"
+  ]
+ },
+ {
+  "section": "LSMG Arcade",
+  "lines": [
+   "Arcade: Mighty Knight (MIT, KOBUGE Project Incubator)",
+   "Arcade: Steamer Duck assets (CC0, drummyfish)"
+  ]
+ },
+ {
+  "section": "Design References",
+  "lines": [
+   "Design reference: Kandria (zlib, Shirakumo)",
+   "Map design reference: YKnytt (MIT code; no assets used)"
+  ]
+ }
 ]

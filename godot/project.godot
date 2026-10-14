@@ -15,7 +15,6 @@ config/icon="res://icon.svg"
 
 Game="*res://scripts/game.gd"
 Sound="*res://scripts/sound.gd"
-Net="*res://scripts/net.gd"
 
 [display]
 
