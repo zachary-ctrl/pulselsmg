@@ -143,5 +143,103 @@ func _run() -> void:
 	await advance(12)
 	await wait(1.0)
 	await shot("18_end")
-	print("AUTOTEST DONE mode=", main.mode, " ending=", Game.flags.get("ending", ""))
+	print("CH1 DONE mode=", main.mode, " ending=", Game.flags.get("ending", ""))
+	# ---- chapter 2 ----
+	main.start_chapter(2, false)
+	await wait(1.0)
+	await shot("20_ch2_intro")
+	await advance(10)
+	await wait(0.6)
+	Input.action_press("right")
+	await wait(0.5)
+	await shot("21_street_run")
+	Input.action_release("right")
+	main.player.position = Vector2(1000, 470)
+	await wait(0.8)
+	await tap("attack")
+	await shot("22_street_strike")
+	await wait(0.6)
+	await shot("23_street_enemy")
+	main.player.hp = 5
+	main.load_room("hospital", Vector2(160, 470))
+	await wait(0.6)
+	await hold("right", 0.4)
+	await wait(0.5)
+	await shot("24_hospital_jason")
+	await advance(8)
+	main.player.position = Vector2(1420, 470)
+	await wait(0.3)
+	await hold("right", 0.4)
+	await wait(0.4)
+	await advance(8)
+	await wait(2.5)
+	await shot("25_carrier_fight")
+	for e in main.ents:
+		if e.kind == "carrier":
+			e.lana_t = 0.0
+	await wait(0.3)
+	await shot("26_carrier_stunned")
+	for e in main.ents:
+		if e.kind == "carrier":
+			e.hit(99, 1)
+	await wait(1.6)
+	await shot("27_carrier_choice")
+	main._on_choice("REACH")
+	await wait(0.3)
+	await advance(12)
+	await wait(1.0)
+	await shot("28_ch2_end")
+	print("CH2 mode=", main.mode, " carrier=", Game.flags.get("carrierDone_choice", ""))
+	# ---- chapter 3 ----
+	main.start_chapter(3, false)
+	await wait(1.0)
+	await advance(10)
+	await wait(0.5)
+	await shot("30_waterworks")
+	for wk in ["w1", "w2", "w3"]:
+		for n in main.npcs:
+			if n.get("worker", false) and n["m"].id == wk:
+				main.player.position = n["m"].position
+		await wait(0.4)
+	await advance(4)
+	await wait(0.4)
+	print("rescued=", Game.flags.get("rescued", 0))
+	main.player.position = Vector2(1300, 1010)
+	await wait(0.6)
+	await shot("31_waterworks_upper")
+	main.player.hp = 5
+	main.load_room("pumphouse", Vector2(160, 470))
+	await wait(0.4)
+	await hold("right", 0.4)
+	await wait(0.4)
+	await advance(8)
+	await wait(1.5)
+	await shot("32_tide_fight")
+	main.player.hp = 99
+	main.player.max_hp = 99
+	for e in main.ents:
+		if e.kind == "tide":
+			e.state = "surge"
+			e.tm = 2.0
+	await wait(0.9)
+	await shot("33_tide_surge")
+	for e in main.ents:
+		if e.kind == "tide":
+			e.hp = 19
+	await wait(0.4)
+	await advance(10)
+	await wait(1.5)
+	await shot("34_tide_phase2")
+	for e in main.ents:
+		if e.kind == "tide":
+			e.hit(99, 1)
+	await wait(1.6)
+	await shot("35_tide_choice")
+	main._on_choice("BIND")
+	await wait(0.3)
+	await advance(12)
+	await wait(1.0)
+	await shot("36_ch3_end")
+	main.player.max_hp = 5
+	print("AUTOTEST DONE mode=", main.mode, " tide=", Game.flags.get("tideDone_choice", ""), " unlocked=", Game.unlocked())
 	get_tree().quit()

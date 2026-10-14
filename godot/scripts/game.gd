@@ -24,13 +24,29 @@ const ROOM_SCENES := {
 	"hallway": "res://scenes/rooms/hallway.tscn",
 	"cafeteria": "res://scenes/rooms/cafeteria.tscn",
 	"lab": "res://scenes/rooms/lab.tscn",
+	"street": "res://scenes/rooms/street.tscn",
+	"hospital": "res://scenes/rooms/hospital.tscn",
+	"waterworks": "res://scenes/rooms/waterworks.tscn",
+	"pumphouse": "res://scenes/rooms/pumphouse.tscn",
 }
+
+const CHAPTERS := {
+	1: {"title": "Class Famine", "room": "classroom", "spawn": Vector2(140, 470)},
+	2: {"title": "The Carrier", "room": "street", "spawn": Vector2(120, 470)},
+	3: {"title": "Red Water", "room": "waterworks", "spawn": Vector2(120, 1010)},
+}
+const CHAPTER_WORD := {1: "ONE", 2: "TWO", 3: "THREE"}
+const PROGRESS_PATH := "user://sakawa_progress.json"
+var chapter = 1
 
 const ANCH := {
 	"momText": {"title": "Text · Mom · 3:12 PM", "body": "School called. They said lunch was \"weird\"? Eat something. Love you. Dad says bring back his charger."},
 	"unknownText": {"title": "Text · Unknown · arrived 3:58 PM, sent 4:01 PM", "body": "Look at the sun, Max."},
 	"receipt": {"title": "Receipt · Cafeteria · Yesterday", "body": "412 lunches served. 0 eaten. Staff note scribbled on the back: \"kids just stared at the trays like they were listening to them.\""},
 	"dharmaNote": {"title": "Letter · The Dharma Order", "body": "Dr. Ciencia: your access is revoked. The Order funds adaptation, not receivers. Whatever you are listening to is listening back."},
+	"dadText": {"title": "Text · Dad · 6:40 PM", "body": "Your mom says you are \"out with friends.\" Which friends. Name them. Also bring milk."},
+	"chart": {"title": "Patient Chart · Kai Brooks", "body": "Found at the reservoir edge in dry clothes. Core temperature 91°F. Patient speaks in three distinct voices. One voice requested \"more water.\""},
+	"workOrder": {"title": "Work Order · Westbrook Waterworks", "body": "Intake 3 flagged: red discoloration, faint singing in the pipes. Supervisor note: \"Pipes don't sing. Close ticket.\""},
 	"levitation": {"title": "Memory Anchor · Levitation", "body": "Your body remembers what your mind just learned. Press JUMP again in midair to levitate once.", "ability": "double"},
 }
 
@@ -72,13 +88,43 @@ const DLG := {
 	"cienciaGo": [["ciencia", "angry", "Let me show you what a mind is for."]],
 	"ending": [["lana", "shocked", "Max! Your nose is bleeding. Also you are glowing? Also what did you DO to Dr. C?"], ["jason", "worried", "Is it over? Tell me it is over."],
 		["max", "worried", "Every one of them was looking at the same thing. Down there, in the dark. A black sun."],
+		[N, "", "The next morning, Kai Brooks comes home after nine days missing."], [N, "", "He answers his mother in three different voices."]],
+	"c2Intro": [[N, "", "Two days after the lab. Westbrook Avenue at dusk."],
+		["lana", "smirk", "So we are just not talking about how you threw a science teacher through reality."], ["max", "worried", "I am talking about it. Inside. A lot."],
+		["lana", "neutral", "Kai Brooks walked out of Mercy General an hour ago. Nine days missing, then he shows up at the reservoir in dry clothes."],
+		["max", "worried", "And the three voices?"], ["lana", "angry", "One of them told his mom she looked tired. In HER mom's voice. Her mom has been dead six years."],
+		["lana", "neutral", "Everybody he passes stops talking. Then they start listening. Follow the quiet."], [N, "", "Reach Mercy General at the end of the avenue."]],
+	"c2_lana2": [["lana", "smirk", "Hospital is that way. The quiet way."]],
+	"c2_jason": [["jason", "smirk", "Inoki. Lana. I already called it in. Channel 6 is on the way."], ["max", "shocked", "You called the NEWS?"],
+		["jason", "neutral", "Somebody has to be the face of this. You two can be the hands."], ["lana", "angry", "I am about to be a hand."],
+		["jason", "worried", "...He is up on the ward. He said my name, man. In my dad's voice."]],
+	"c2_jason2": [["jason", "neutral", "Channel 6 says five minutes. Hurry up and look heroic."]],
+	"carrierIntro": [[N, "", "Kai stands in the ward. Three shadows move behind him, out of step."], ["choir", "", "WE CARRIED HIM HOME."],
+		["max", "worried", "Kai? Kai, can you hear me?"], ["lana", "smirk", "They flinch when you get personal. Let me get personal."],
+		[N, "", "Lana will shout something real every few seconds. When Kai staggers, strike hard."]],
+	"c2End": [["jason", "smirk", "Channel 6 is here. Everybody look normal. Max, stop glowing."],
+		["lana", "neutral", "He is asleep. Just one voice now. His."], [N, "", "Almost. Something in Kai keeps humming one word, over and over: reservoir."],
+		[N, "", "That night the tap water in four neighborhoods runs red for one second, then clear."]],
+	"c3Intro": [[N, "", "Westbrook Municipal Waterworks. 2:14 AM."], ["jason", "worried", "You two dragged me out of bed to trespass at a WATER plant."],
+		["lana", "smirk", "You came. You wore the blazer."], ["max", "neutral", "Ciencia's lab drained into the city lines. Whatever the Choir left in it is in the pipes now."],
+		["jason", "angry", "There are night workers in there. My cousin works the night shift."],
+		[N, "", "Find the three trapped workers before the red water reaches them. Touch a worker to guide them out."]],
+	"c3_jason2": [["jason", "worried", "I can hear the water. That is normal, right? Everybody can hear water."]],
+	"c3Rescued": [["jason", "neutral", "That is all of them. My cousin says the pumphouse has been singing since midnight."], ["max", "worried", "Pumphouse it is. Great. Love that for us."]],
+	"tideIntro": [[N, "", "The pumphouse floor is a lake. The lake is breathing."], ["choir", "", "WE REMEMBER EVERYONE WHO DRANK."],
+		["jason", "shocked", "There is somebody under there! A worker—"], ["max", "angry", "Jason, stay back!"], [N, "", "When the tide rises, get high."]],
+	"tideAwaken": [["jason", "angry", "No. NO. You do not get him."], [N, "", "Jason dives. The red water closes over him. Then it stops. Then it moves for him."],
+		["jason", "shocked", "...It is listening to me. Max, it is LISTENING to me."], [N, "", "JASON'S WATER awakens. The tide runs clear and turns on its source."],
+		["max", "smile", "Okay, that is extremely cool. Do it again."]],
+	"c3End": [["lana", "shocked", "Everybody breathing? Jason, you are dry. You were UNDER the water."], ["jason", "worried", "I can still hear it. All of it. Every pipe in the city."],
+		["max", "worried", "Every infected mind was looking at the same black sun. Now the water is looking back."],
 		[N, "", "Three weeks later, rain falls on a clear day."], [N, "", "Jason hears hundreds of voices inside a puddle. One of them says his name from beneath the water."]],
 }
 
 const PORTRAIT := {
-	"max": {"neutral": "max_0", "worried": "max_1", "shocked": "max_1", "smile": "max_2", "smirk": "max_2", "angry": "max_0", "sad": "max_0"},
-	"lana": {"smile": "lana_0", "smirk": "lana_1", "neutral": "lana_1", "angry": "lana_2", "shocked": "lana_2", "worried": "lana_2", "sad": "lana_2"},
-	"jason": {"smirk": "jason_0", "smile": "jason_0", "neutral": "jason_2", "worried": "jason_1", "angry": "jason_1", "shocked": "jason_1", "sad": "jason_1"},
+	"max": {"neutral": "max_neutral", "smile": "max_smile", "smirk": "max_smirk", "worried": "max_worried", "shocked": "max_shocked", "angry": "max_angry", "sad": "max_worried"},
+	"lana": {"neutral": "lana_neutral", "smile": "lana_smile", "smirk": "lana_smirk", "worried": "lana_worried", "shocked": "lana_shocked", "angry": "lana_angry", "sad": "lana_worried"},
+	"jason": {"neutral": "jason_neutral", "smile": "jason_smile", "smirk": "jason_smirk", "worried": "jason_worried", "shocked": "jason_shocked", "angry": "jason_angry", "sad": "jason_worried"},
 	"ciencia": {"*": "ciencia_0"},
 	"choir": {"*": "choir_0"},
 }
@@ -165,7 +211,23 @@ func _setup_input() -> void:
 
 # ---------- saves ----------
 
-func new_game() -> void:
+func unlocked() -> int:
+	if not FileAccess.file_exists(PROGRESS_PATH):
+		return 1
+	var d = JSON.parse_string(FileAccess.get_file_as_string(PROGRESS_PATH))
+	return int(d.get("unlocked", 1)) if d is Dictionary else 1
+
+
+func unlock(n: int) -> void:
+	if n <= unlocked():
+		return
+	var f = FileAccess.open(PROGRESS_PATH, FileAccess.WRITE)
+	if f:
+		f.store_string(JSON.stringify({"unlocked": n}))
+
+
+func new_game(ch := 1) -> void:
+	chapter = ch
 	flags = {}
 	ability = {"project": false, "double": false}
 	tend = {"connection": 0, "control": 0, "rupture": 0}
@@ -173,11 +235,15 @@ func new_game() -> void:
 	overdraw = 0
 	anchors = {}
 	visited = {}
-	save_data = {"room": "classroom", "x": 140.0, "y": 470.0}
+	if ch >= 2:
+		ability = {"project": true, "double": ch >= 2}
+		flags = {"intro": true, "projected": true, "echoDone": true, "cienciaDone": true}
+	var c: Dictionary = CHAPTERS[ch]
+	save_data = {"room": c["room"], "x": c["spawn"].x, "y": c["spawn"].y}
 
 
 func write_save(room_id: String, pos: Vector2) -> void:
-	save_data = {"room": room_id, "x": pos.x, "y": pos.y, "flags": flags, "ability": ability, "tend": tend,
+	save_data = {"room": room_id, "x": pos.x, "y": pos.y, "chapter": chapter, "flags": flags, "ability": ability, "tend": tend,
 		"witness": witness, "overdraw": overdraw, "anchors": anchors, "visited": visited}
 	var f = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if f:
@@ -202,6 +268,7 @@ func load_save(d: Dictionary) -> void:
 	overdraw = int(d.get("overdraw", 0))
 	anchors = d.get("anchors", {})
 	visited = d.get("visited", {})
+	chapter = int(d.get("chapter", 1))
 	save_data = d
 
 

@@ -3,7 +3,7 @@ extends StaticBody2D
 
 @export_enum("door", "gate") var kind: String = "door"
 @export var flag = ""
-@export_enum("echo_fight", "echo_unresolved", "ciencia_fight") var condition: String = "echo_fight"
+@export_enum("echo_fight", "echo_unresolved", "ciencia_fight", "carrier_fight", "tide_fight", "rescue_incomplete") var condition: String = "echo_fight"
 @export var size = Vector2(22, 172)
 var active = true
 
@@ -22,8 +22,10 @@ func refresh(main: Node) -> void:
 				on = main.fight_id() == "echo"
 			"echo_unresolved":
 				on = not Game.flag("echoDone")
-			"ciencia_fight":
-				on = main.fight_id() == "ciencia"
+			"ciencia_fight", "carrier_fight", "tide_fight":
+				on = main.fight_id() == condition.trim_suffix("_fight")
+			"rescue_incomplete":
+				on = int(Game.flags.get("rescued", 0)) < 3
 	if on != active:
 		active = on
 		$Shape.set_deferred("disabled", not on)

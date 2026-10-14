@@ -1,0 +1,1039 @@
+{
+ "scale": 0.5,
+ "chars": {
+  "max": {
+   "idle": {
+    "fps": 6,
+    "loop": true,
+    "frames": [
+     {
+      "f": "max/idle_0.png",
+      "ax": 27.5,
+      "ay": 144
+     },
+     {
+      "f": "max/idle_1.png",
+      "ax": 26.4,
+      "ay": 146
+     },
+     {
+      "f": "max/idle_2.png",
+      "ax": 25.0,
+      "ay": 144
+     },
+     {
+      "f": "max/idle_3.png",
+      "ax": 25.3,
+      "ay": 143
+     },
+     {
+      "f": "max/idle_4.png",
+      "ax": 24.5,
+      "ay": 144
+     },
+     {
+      "f": "max/idle_5.png",
+      "ax": 29.9,
+      "ay": 142
+     }
+    ]
+   },
+   "run": {
+    "fps": 14,
+    "loop": true,
+    "frames": [
+     {
+      "f": "max/run_0.png",
+      "ax": 68.6,
+      "ay": 124
+     },
+     {
+      "f": "max/run_1.png",
+      "ax": 62.3,
+      "ay": 120
+     },
+     {
+      "f": "max/run_2.png",
+      "ax": 65.1,
+      "ay": 122
+     },
+     {
+      "f": "max/run_3.png",
+      "ax": 63.3,
+      "ay": 126
+     },
+     {
+      "f": "max/run_4.png",
+      "ax": 65.7,
+      "ay": 120
+     },
+     {
+      "f": "max/run_5.png",
+      "ax": 73.6,
+      "ay": 124
+     },
+     {
+      "f": "max/run_6.png",
+      "ax": 66.1,
+      "ay": 126
+     },
+     {
+      "f": "max/run_7.png",
+      "ax": 61.8,
+      "ay": 120
+     }
+    ]
+   },
+   "jump": {
+    "fps": 8,
+    "loop": false,
+    "frames": [
+     {
+      "f": "max/jump_0.png",
+      "ax": 58.8,
+      "ay": 87
+     },
+     {
+      "f": "max/jump_1.png",
+      "ax": 46.4,
+      "ay": 99
+     },
+     {
+      "f": "max/jump_2.png",
+      "ax": 51.0,
+      "ay": 121
+     }
+    ]
+   },
+   "land": {
+    "fps": 14,
+    "loop": false,
+    "frames": [
+     {
+      "f": "max/land_0.png",
+      "ax": 46.9,
+      "ay": 83
+     },
+     {
+      "f": "max/land_1.png",
+      "ax": 40.5,
+      "ay": 114
+     }
+    ]
+   },
+   "dash": {
+    "fps": 18,
+    "loop": false,
+    "frames": [
+     {
+      "f": "max/dash_0.png",
+      "ax": 75.7,
+      "ay": 89
+     },
+     {
+      "f": "max/dash_1.png",
+      "ax": 101.8,
+      "ay": 89
+     },
+     {
+      "f": "max/dash_2.png",
+      "ax": 92.3,
+      "ay": 89
+     }
+    ]
+   },
+   "strike": {
+    "fps": 20,
+    "loop": false,
+    "frames": [
+     {
+      "f": "max/strike_0.png",
+      "ax": 60.8,
+      "ay": 141
+     },
+     {
+      "f": "max/strike_1.png",
+      "ax": 49.9,
+      "ay": 141
+     },
+     {
+      "f": "max/strike_2.png",
+      "ax": 72.2,
+      "ay": 138
+     },
+     {
+      "f": "max/strike_3.png",
+      "ax": 70.9,
+      "ay": 140
+     },
+     {
+      "f": "max/strike_4.png",
+      "ax": 50.9,
+      "ay": 144
+     }
+    ]
+   },
+   "strike_up": {
+    "fps": 20,
+    "loop": false,
+    "frames": [
+     {
+      "f": "max/strike_up_0.png",
+      "ax": 58.7,
+      "ay": 123
+     },
+     {
+      "f": "max/strike_up_1.png",
+      "ax": 62.6,
+      "ay": 146
+     },
+     {
+      "f": "max/strike_up_2.png",
+      "ax": 44.8,
+      "ay": 160
+     },
+     {
+      "f": "max/strike_up_3.png",
+      "ax": 59.1,
+      "ay": 155
+     },
+     {
+      "f": "max/strike_up_4.png",
+      "ax": 34.9,
+      "ay": 143
+     }
+    ]
+   },
+   "strike_down": {
+    "fps": 20,
+    "loop": false,
+    "frames": [
+     {
+      "f": "max/strike_down_0.png",
+      "ax": 46.2,
+      "ay": 110
+     },
+     {
+      "f": "max/strike_down_1.png",
+      "ax": 45.3,
+      "ay": 105
+     },
+     {
+      "f": "max/strike_down_2.png",
+      "ax": 50.4,
+      "ay": 97
+     },
+     {
+      "f": "max/strike_down_3.png",
+      "ax": 49.8,
+      "ay": 110
+     },
+     {
+      "f": "max/strike_down_4.png",
+      "ax": 39.8,
+      "ay": 119
+     }
+    ]
+   }
+  },
+  "lana": {
+   "idle": {
+    "fps": 5,
+    "loop": true,
+    "frames": [
+     {
+      "f": "lana/idle_0.png",
+      "ax": 23.8,
+      "ay": 140
+     },
+     {
+      "f": "lana/idle_1.png",
+      "ax": 22.6,
+      "ay": 141
+     },
+     {
+      "f": "lana/idle_2.png",
+      "ax": 25.2,
+      "ay": 140
+     },
+     {
+      "f": "lana/idle_3.png",
+      "ax": 24.7,
+      "ay": 140
+     },
+     {
+      "f": "lana/idle_4.png",
+      "ax": 24.1,
+      "ay": 140
+     },
+     {
+      "f": "lana/idle_5.png",
+      "ax": 22.8,
+      "ay": 140
+     }
+    ]
+   },
+   "talk": {
+    "fps": 6,
+    "loop": true,
+    "frames": [
+     {
+      "f": "lana/talk_0.png",
+      "ax": 24.0,
+      "ay": 141
+     },
+     {
+      "f": "lana/talk_1.png",
+      "ax": 23.8,
+      "ay": 142
+     },
+     {
+      "f": "lana/talk_2.png",
+      "ax": 28.0,
+      "ay": 141
+     },
+     {
+      "f": "lana/talk_3.png",
+      "ax": 22.8,
+      "ay": 141
+     }
+    ]
+   }
+  },
+  "jason": {
+   "idle": {
+    "fps": 5,
+    "loop": true,
+    "frames": [
+     {
+      "f": "jason/idle_0.png",
+      "ax": 28.0,
+      "ay": 156
+     },
+     {
+      "f": "jason/idle_1.png",
+      "ax": 26.8,
+      "ay": 156
+     },
+     {
+      "f": "jason/idle_2.png",
+      "ax": 27.5,
+      "ay": 155
+     },
+     {
+      "f": "jason/idle_3.png",
+      "ax": 30.1,
+      "ay": 154
+     },
+     {
+      "f": "jason/idle_4.png",
+      "ax": 28.2,
+      "ay": 156
+     },
+     {
+      "f": "jason/idle_5.png",
+      "ax": 27.2,
+      "ay": 156
+     }
+    ]
+   },
+   "talk": {
+    "fps": 6,
+    "loop": true,
+    "frames": [
+     {
+      "f": "jason/talk_0.png",
+      "ax": 36.6,
+      "ay": 154
+     },
+     {
+      "f": "jason/talk_1.png",
+      "ax": 39.9,
+      "ay": 154
+     },
+     {
+      "f": "jason/talk_2.png",
+      "ax": 37.5,
+      "ay": 154
+     },
+     {
+      "f": "jason/talk_3.png",
+      "ax": 39.9,
+      "ay": 154
+     }
+    ]
+   }
+  },
+  "returned": {
+   "idle": {
+    "fps": 4,
+    "loop": true,
+    "frames": [
+     {
+      "f": "returned/idle_0.png",
+      "ax": 36.6,
+      "ay": 144
+     },
+     {
+      "f": "returned/idle_1.png",
+      "ax": 34.6,
+      "ay": 144
+     },
+     {
+      "f": "returned/idle_2.png",
+      "ax": 36.2,
+      "ay": 145
+     }
+    ]
+   },
+   "walk": {
+    "fps": 10,
+    "loop": true,
+    "frames": [
+     {
+      "f": "returned/walk_0.png",
+      "ax": 55.1,
+      "ay": 143
+     },
+     {
+      "f": "returned/walk_1.png",
+      "ax": 64.1,
+      "ay": 143
+     },
+     {
+      "f": "returned/walk_2.png",
+      "ax": 57.3,
+      "ay": 142
+     },
+     {
+      "f": "returned/walk_3.png",
+      "ax": 48.7,
+      "ay": 144
+     },
+     {
+      "f": "returned/walk_4.png",
+      "ax": 48.0,
+      "ay": 145
+     },
+     {
+      "f": "returned/walk_5.png",
+      "ax": 47.9,
+      "ay": 144
+     },
+     {
+      "f": "returned/walk_6.png",
+      "ax": 49.4,
+      "ay": 144
+     },
+     {
+      "f": "returned/walk_7.png",
+      "ax": 62.6,
+      "ay": 145
+     }
+    ]
+   },
+   "notice": {
+    "fps": 8,
+    "loop": false,
+    "frames": [
+     {
+      "f": "returned/notice_0.png",
+      "ax": 67.9,
+      "ay": 129
+     },
+     {
+      "f": "returned/notice_1.png",
+      "ax": 52.1,
+      "ay": 130
+     },
+     {
+      "f": "returned/notice_2.png",
+      "ax": 52.7,
+      "ay": 130
+     }
+    ]
+   },
+   "lunge": {
+    "fps": 12,
+    "loop": false,
+    "frames": [
+     {
+      "f": "returned/lunge_0.png",
+      "ax": 80.0,
+      "ay": 99
+     },
+     {
+      "f": "returned/lunge_1.png",
+      "ax": 110.2,
+      "ay": 112
+     },
+     {
+      "f": "returned/lunge_2.png",
+      "ax": 122.2,
+      "ay": 114
+     },
+     {
+      "f": "returned/lunge_3.png",
+      "ax": 110.7,
+      "ay": 117
+     }
+    ]
+   },
+   "hurt": {
+    "fps": 10,
+    "loop": false,
+    "frames": [
+     {
+      "f": "returned/hurt_0.png",
+      "ax": 51.4,
+      "ay": 129
+     },
+     {
+      "f": "returned/hurt_1.png",
+      "ax": 42.4,
+      "ay": 132
+     }
+    ]
+   },
+   "collapse": {
+    "fps": 8,
+    "loop": false,
+    "frames": [
+     {
+      "f": "returned/collapse_0.png",
+      "ax": 44.6,
+      "ay": 153
+     },
+     {
+      "f": "returned/collapse_1.png",
+      "ax": 53.8,
+      "ay": 121
+     },
+     {
+      "f": "returned/collapse_2.png",
+      "ax": 79.8,
+      "ay": 110
+     },
+     {
+      "f": "returned/collapse_3.png",
+      "ax": 93.5,
+      "ay": 72
+     },
+     {
+      "f": "returned/collapse_4.png",
+      "ax": 93.5,
+      "ay": 67
+     }
+    ]
+   }
+  },
+  "teacher": {
+   "walk": {
+    "fps": 10,
+    "loop": true,
+    "frames": [
+     {
+      "f": "teacher/walk_0.png",
+      "ax": 37.9,
+      "ay": 140
+     },
+     {
+      "f": "teacher/walk_1.png",
+      "ax": 42.3,
+      "ay": 140
+     },
+     {
+      "f": "teacher/walk_2.png",
+      "ax": 43.2,
+      "ay": 138
+     },
+     {
+      "f": "teacher/walk_3.png",
+      "ax": 45.0,
+      "ay": 140
+     },
+     {
+      "f": "teacher/walk_4.png",
+      "ax": 45.3,
+      "ay": 141
+     },
+     {
+      "f": "teacher/walk_5.png",
+      "ax": 41.5,
+      "ay": 139
+     },
+     {
+      "f": "teacher/walk_6.png",
+      "ax": 44.7,
+      "ay": 138
+     },
+     {
+      "f": "teacher/walk_7.png",
+      "ax": 46.1,
+      "ay": 142
+     }
+    ]
+   },
+   "notice": {
+    "fps": 8,
+    "loop": false,
+    "frames": [
+     {
+      "f": "teacher/notice_0.png",
+      "ax": 52.3,
+      "ay": 104
+     },
+     {
+      "f": "teacher/notice_1.png",
+      "ax": 46.0,
+      "ay": 105
+     },
+     {
+      "f": "teacher/notice_2.png",
+      "ax": 60.1,
+      "ay": 108
+     }
+    ]
+   },
+   "lunge": {
+    "fps": 12,
+    "loop": false,
+    "frames": [
+     {
+      "f": "teacher/lunge_0.png",
+      "ax": 60.6,
+      "ay": 103
+     },
+     {
+      "f": "teacher/lunge_1.png",
+      "ax": 74.7,
+      "ay": 103
+     },
+     {
+      "f": "teacher/lunge_2.png",
+      "ax": 89.7,
+      "ay": 104
+     },
+     {
+      "f": "teacher/lunge_3.png",
+      "ax": 94.4,
+      "ay": 105
+     }
+    ]
+   },
+   "hurt": {
+    "fps": 10,
+    "loop": false,
+    "frames": [
+     {
+      "f": "teacher/hurt_0.png",
+      "ax": 42.1,
+      "ay": 100
+     },
+     {
+      "f": "teacher/hurt_1.png",
+      "ax": 54.1,
+      "ay": 83
+     }
+    ]
+   },
+   "collapse": {
+    "fps": 8,
+    "loop": false,
+    "frames": [
+     {
+      "f": "teacher/collapse_0.png",
+      "ax": 37.9,
+      "ay": 128
+     },
+     {
+      "f": "teacher/collapse_1.png",
+      "ax": 50.0,
+      "ay": 115
+     },
+     {
+      "f": "teacher/collapse_2.png",
+      "ax": 83.7,
+      "ay": 90
+     },
+     {
+      "f": "teacher/collapse_3.png",
+      "ax": 72.5,
+      "ay": 63
+     },
+     {
+      "f": "teacher/collapse_4.png",
+      "ax": 94.5,
+      "ay": 49
+     }
+    ]
+   }
+  },
+  "ciencia": {
+   "idle": {
+    "fps": 6,
+    "loop": true,
+    "frames": [
+     {
+      "f": "ciencia/idle_0.png",
+      "ax": 54.6,
+      "ay": 207
+     },
+     {
+      "f": "ciencia/idle_1.png",
+      "ax": 51.4,
+      "ay": 210
+     },
+     {
+      "f": "ciencia/idle_2.png",
+      "ax": 49.6,
+      "ay": 209
+     },
+     {
+      "f": "ciencia/idle_3.png",
+      "ax": 46.6,
+      "ay": 207
+     },
+     {
+      "f": "ciencia/idle_4.png",
+      "ax": 53.6,
+      "ay": 207
+     },
+     {
+      "f": "ciencia/idle_5.png",
+      "ax": 47.3,
+      "ay": 210
+     }
+    ]
+   },
+   "cast": {
+    "fps": 10,
+    "loop": false,
+    "frames": [
+     {
+      "f": "ciencia/cast_0.png",
+      "ax": 65.2,
+      "ay": 204
+     },
+     {
+      "f": "ciencia/cast_1.png",
+      "ax": 64.7,
+      "ay": 203
+     },
+     {
+      "f": "ciencia/cast_2.png",
+      "ax": 72.0,
+      "ay": 204
+     },
+     {
+      "f": "ciencia/cast_3.png",
+      "ax": 75.2,
+      "ay": 202
+     },
+     {
+      "f": "ciencia/cast_4.png",
+      "ax": 58.4,
+      "ay": 203
+     }
+    ]
+   },
+   "throw": {
+    "fps": 12,
+    "loop": false,
+    "frames": [
+     {
+      "f": "ciencia/throw_0.png",
+      "ax": 67.6,
+      "ay": 197
+     },
+     {
+      "f": "ciencia/throw_1.png",
+      "ax": 71.8,
+      "ay": 201
+     },
+     {
+      "f": "ciencia/throw_2.png",
+      "ax": 93.6,
+      "ay": 198
+     },
+     {
+      "f": "ciencia/throw_3.png",
+      "ax": 110.7,
+      "ay": 198
+     },
+     {
+      "f": "ciencia/throw_4.png",
+      "ax": 126.5,
+      "ay": 201
+     }
+    ]
+   },
+   "teleport": {
+    "fps": 14,
+    "loop": false,
+    "frames": [
+     {
+      "f": "ciencia/teleport_0.png",
+      "ax": 55.9,
+      "ay": 213
+     },
+     {
+      "f": "ciencia/teleport_1.png",
+      "ax": 54.9,
+      "ay": 214
+     },
+     {
+      "f": "ciencia/teleport_2.png",
+      "ax": 51.7,
+      "ay": 215
+     },
+     {
+      "f": "ciencia/teleport_3.png",
+      "ax": 30.7,
+      "ay": 179
+     },
+     {
+      "f": "ciencia/teleport_4.png",
+      "ax": 66.5,
+      "ay": 216
+     },
+     {
+      "f": "ciencia/teleport_5.png",
+      "ax": 53.3,
+      "ay": 216
+     }
+    ]
+   },
+   "stagger": {
+    "fps": 8,
+    "loop": false,
+    "frames": [
+     {
+      "f": "ciencia/stagger_0.png",
+      "ax": 98.3,
+      "ay": 188
+     },
+     {
+      "f": "ciencia/stagger_1.png",
+      "ax": 87.6,
+      "ay": 192
+     },
+     {
+      "f": "ciencia/stagger_2.png",
+      "ax": 87.0,
+      "ay": 184
+     },
+     {
+      "f": "ciencia/stagger_3.png",
+      "ax": 84.5,
+      "ay": 157
+     }
+    ]
+   },
+   "kneel": {
+    "fps": 6,
+    "loop": false,
+    "frames": [
+     {
+      "f": "ciencia/kneel_0.png",
+      "ax": 49.4,
+      "ay": 196
+     },
+     {
+      "f": "ciencia/kneel_1.png",
+      "ax": 74.7,
+      "ay": 160
+     },
+     {
+      "f": "ciencia/kneel_2.png",
+      "ax": 102.8,
+      "ay": 142
+     }
+    ]
+   }
+  },
+  "saint": {
+   "idle": {
+    "fps": 6,
+    "loop": true,
+    "frames": [
+     {
+      "f": "saint/idle_0.png",
+      "ax": 80.4,
+      "ay": 256
+     },
+     {
+      "f": "saint/idle_1.png",
+      "ax": 65.0,
+      "ay": 256
+     },
+     {
+      "f": "saint/idle_2.png",
+      "ax": 69.9,
+      "ay": 256
+     },
+     {
+      "f": "saint/idle_3.png",
+      "ax": 81.2,
+      "ay": 255
+     },
+     {
+      "f": "saint/idle_4.png",
+      "ax": 75.2,
+      "ay": 257
+     },
+     {
+      "f": "saint/idle_5.png",
+      "ax": 75.7,
+      "ay": 257
+     }
+    ]
+   },
+   "cast": {
+    "fps": 10,
+    "loop": false,
+    "frames": [
+     {
+      "f": "saint/cast_0.png",
+      "ax": 66.2,
+      "ay": 262
+     },
+     {
+      "f": "saint/cast_1.png",
+      "ax": 70.1,
+      "ay": 237
+     },
+     {
+      "f": "saint/cast_2.png",
+      "ax": 78.0,
+      "ay": 237
+     },
+     {
+      "f": "saint/cast_3.png",
+      "ax": 86.8,
+      "ay": 235
+     },
+     {
+      "f": "saint/cast_4.png",
+      "ax": 84.6,
+      "ay": 234
+     }
+    ]
+   },
+   "throw": {
+    "fps": 12,
+    "loop": false,
+    "frames": [
+     {
+      "f": "saint/throw_0.png",
+      "ax": 87.2,
+      "ay": 262
+     },
+     {
+      "f": "saint/throw_1.png",
+      "ax": 81.6,
+      "ay": 262
+     },
+     {
+      "f": "saint/throw_2.png",
+      "ax": 96.6,
+      "ay": 262
+     },
+     {
+      "f": "saint/throw_3.png",
+      "ax": 104.2,
+      "ay": 262
+     },
+     {
+      "f": "saint/throw_4.png",
+      "ax": 88.9,
+      "ay": 262
+     }
+    ]
+   },
+   "teleport": {
+    "fps": 14,
+    "loop": false,
+    "frames": [
+     {
+      "f": "saint/teleport_0.png",
+      "ax": 62.2,
+      "ay": 262
+     },
+     {
+      "f": "saint/teleport_1.png",
+      "ax": 67.9,
+      "ay": 262
+     },
+     {
+      "f": "saint/teleport_2.png",
+      "ax": 64.2,
+      "ay": 262
+     },
+     {
+      "f": "saint/teleport_3.png",
+      "ax": 58.3,
+      "ay": 223
+     },
+     {
+      "f": "saint/teleport_4.png",
+      "ax": 76.3,
+      "ay": 231
+     },
+     {
+      "f": "saint/teleport_5.png",
+      "ax": 69.6,
+      "ay": 234
+     }
+    ]
+   },
+   "stagger": {
+    "fps": 8,
+    "loop": false,
+    "frames": [
+     {
+      "f": "saint/stagger_0.png",
+      "ax": 75.1,
+      "ay": 262
+     },
+     {
+      "f": "saint/stagger_1.png",
+      "ax": 92.6,
+      "ay": 262
+     },
+     {
+      "f": "saint/stagger_2.png",
+      "ax": 99.4,
+      "ay": 262
+     },
+     {
+      "f": "saint/stagger_3.png",
+      "ax": 71.9,
+      "ay": 262
+     }
+    ]
+   },
+   "kneel": {
+    "fps": 6,
+    "loop": false,
+    "frames": [
+     {
+      "f": "saint/kneel_0.png",
+      "ax": 94.4,
+      "ay": 231
+     },
+     {
+      "f": "saint/kneel_1.png",
+      "ax": 100.5,
+      "ay": 231
+     },
+     {
+      "f": "saint/kneel_2.png",
+      "ax": 90.3,
+      "ay": 228
+     }
+    ]
+   }
+  }
+ }
+}

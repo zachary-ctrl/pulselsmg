@@ -11,6 +11,9 @@ const Mote = preload("res://scripts/enemies/mote.gd")
 const Echo = preload("res://scripts/enemies/echo.gd")
 const Ciencia = preload("res://scripts/enemies/ciencia.gd")
 const Rig = preload("res://scripts/rig.gd")
+const Anim = preload("res://scripts/anim_sprite.gd")
+const Carrier = preload("res://scripts/enemies/carrier.gd")
+const Tide = preload("res://scripts/enemies/tide.gd")
 const FxScript = preload("res://scripts/fx.gd")
 const HudScript = preload("res://scripts/hud.gd")
 const UiScript = preload("res://scripts/ui.gd")
@@ -150,17 +153,36 @@ func show_title() -> void:
 	fight = null
 	ui.hide_end()
 	ui.hide_pause()
-	ui.show_title(Game.read_save() != null)
+	ui.show_title(Game.read_save() != null, Game.unlocked())
 	Sound.music("title")
 	world.visible = false
 
 
 func new_game() -> void:
-	Game.clear_save()
-	Game.new_game()
+	start_chapter(1, true)
+
+
+## Begins chapter `n`. `fresh` resets story state (title or chapter select);
+## otherwise flags, choices and anchors carry over from the previous chapter.
+func start_chapter(n: int, fresh: bool) -> void:
+	ui.hide_end()
+	if fresh:
+		Game.clear_save()
+		Game.new_game(n)
+	else:
+		Game.chapter = n
+		Game.ability["project"] = true
+		Game.ability["double"] = true
+	Game.unlock(n)
+	toasts.clear()
+	card = null
 	_reset_player()
 	_enter_play()
-	load_room("classroom", Vector2(140, 470))
+	var c: Dictionary = Game.CHAPTERS[n]
+	load_room(c["room"], c["spawn"])
+	Game.write_save(c["room"], c["spawn"])
+	if n > 1:
+		card = {"name": "Chapter " + Game.CHAPTER_WORD[n].capitalize(), "sub": c["title"], "t": 0.0}
 
 
 func continue_game() -> void:
@@ -250,8 +272,10 @@ func load_room(id: String, spawn: Vector2) -> void:
 	_bg_tex.clear()
 	for L in m["layers"]:
 		_bg_tex.append({"tex": load("res://assets/rooms/" + L["file"]), "f": L["f"], "w": L["w"], "h": L["h"]})
-	world_art.texture = load("res://assets/rooms/%s_world.png" % id)
-	_fg_tex = load("res://assets/rooms/%s_fg.png" % id)
+	var wp = "res://assets/rooms/%s_world.png" % id
+	world_art.texture = load(wp) if ResourceLoader.exists(wp) else null
+	var fp = "res://assets/rooms/%s_fg.png" % id
+	_fg_tex = load(fp) if ResourceLoader.exists(fp) else null
 	if player.get_parent() == null:
 		ents_root.add_child(player)
 	player.position = spawn
@@ -263,11 +287,20 @@ func load_room(id: String, spawn: Vector2) -> void:
 	for s in room.markers["spawn"]:
 		_spawn(s)
 	for n in room.markers["npc"]:
-		var r = Rig.new()
+		var r = Anim.new()
 		r.key = n.id
 		r.position = n.position
+		r.play("idle")
 		ents_root.add_child(r)
 		npcs.append({"m": n, "node": r, "near": false, "face": n.face})
+	for wk in room.markers["worker"]:
+		if Game.flag("rescued_" + wk.id):
+			continue
+		var r = Rig.new()
+		r.key = "teacher"
+		r.position = wk.position
+		ents_root.add_child(r)
+		npcs.append({"m": wk, "node": r, "near": false, "face": -1, "worker": true})
 	zoom = 1.0 if fight != null else 1.22
 	var vw = W / zoom
 	var vh = H / zoom
@@ -280,6 +313,10 @@ func load_room(id: String, spawn: Vector2) -> void:
 	if id == "classroom" and not Game.flag("intro"):
 		Game.set_flag("intro")
 		start_dialog("intro")
+	for pair in [["street", "c2Intro"], ["waterworks", "c3Intro"]]:
+		if id == pair[0] and not Game.flag(pair[1]):
+			Game.set_flag(pair[1])
+			start_dialog(pair[1])
 
 
 func _spawn(s: Node) -> void:
@@ -299,6 +336,18 @@ func _spawn(s: Node) -> void:
 			if Game.flag("cienciaDone"):
 				return
 			e = Ciencia.new()
+			e.main = self
+			e.setup(s.position)
+		"carrier":
+			if Game.flag("carrierDone"):
+				return
+			e = Carrier.new()
+			e.main = self
+			e.setup(s.position)
+		"tide":
+			if Game.flag("tideDone"):
+				return
+			e = Tide.new()
 			e.main = self
 			e.setup(s.position)
 		_:
@@ -498,16 +547,32 @@ func _update_view(dt: float) -> void:
 	player.update_pose(t, astral_active())
 	if astral_active():
 		astral.update_pose(t, false)
+	var speaker = ""
+	if ui.dlg != null:
+		speaker = ui.dlg["lines"][ui.dlg["i"]][0]
 	for n in npcs:
 		var m: Node = n["m"]
-		n["node"].pose = {"face": n["face"], "t": t, "seed": m.position.x}
+		if n.get("worker", false):
+			n["node"].pose = {"face": n["face"], "t": t, "seed": m.position.x, "kneel": true}
+			n["node"].tint = Color(0.9, 0.5, 0.4, 0.15 + 0.1 * sin(t * 3.0))
+		else:
+			n["node"].face = n["face"]
+			n["node"].play("talk" if speaker == m.id else "idle")
 	bg.queue_redraw()
 	fg.queue_redraw()
 	var mus = "explore"
 	if mode == "end":
 		mus = "end"
 	elif fight != null:
-		mus = "echo" if fight["id"] == "echo" else ("ciencia2" if (is_instance_valid(fight["e"]) and fight["e"].phase2) else "ciencia")
+		match fight["id"]:
+			"echo":
+				mus = "echo"
+			"carrier":
+				mus = "carrier"
+			"tide":
+				mus = "tide"
+			_:
+				mus = "ciencia2" if (is_instance_valid(fight["e"]) and fight["e"].phase2) else "ciencia"
 	elif astral_active():
 		mus = "astral"
 	Sound.music(mus)
@@ -556,6 +621,23 @@ func _world_interactions() -> void:
 			Game.set_flag("doorTold")
 			start_dialog("doorLocked")
 	for n in npcs:
+		if not n.get("worker", false):
+			continue
+		var wm: Node = n["m"]
+		if not Game.flag("rescued_" + wm.id) and absf(player.position.x - wm.position.x) < 40.0 and absf(player.position.y - wm.position.y) < 50.0:
+			Game.set_flag("rescued_" + wm.id)
+			Game.flags["rescued"] = int(Game.flags.get("rescued", 0)) + 1
+			Sound.play("stabilize")
+			fx.burst(wm.position + Vector2(0, -30), 24, 240, Color("#ffd6a0"))
+			toast("Worker guided to safety (%d / 3)" % Game.flags["rescued"])
+			n["node"].queue_free()
+			npcs.erase(n)
+			if Game.flags["rescued"] >= 3:
+				start_dialog("c3Rescued")
+			return
+	for n in npcs:
+		if n.get("worker", false):
+			continue
 		var m: Node = n["m"]
 		n["near"] = absf(player.position.x - m.position.x) < 70.0 and absf(player.position.y - m.position.y) < 40.0
 		if n["near"] and (not Game.flag("met_" + m.id) or Input.is_action_just_pressed("up")):
@@ -792,6 +874,38 @@ func _fire_event(ev: String) -> void:
 				Sound.play("gate")
 				shake = 0.3
 			start_dialog("echoIntro", begin)
+		"carrierArena":
+			if Game.flag("carrierDone") or fight != null:
+				return
+			var kai: Node = null
+			for e in ents:
+				if is_instance_valid(e) and e.kind == "carrier":
+					kai = e
+			if kai == null:
+				return
+			var go_c = func():
+				kai.state = "idle"
+				kai.tm = 1.0
+				fight = {"id": "carrier", "name": "THE CARRIER", "sub": "Kai Brooks, speaking in three voices", "e": kai}
+				Sound.play("gate")
+				shake = 0.3
+			start_dialog("carrierIntro", go_c)
+		"tideArena":
+			if Game.flag("tideDone") or fight != null:
+				return
+			var tide: Node = null
+			for e in ents:
+				if is_instance_valid(e) and e.kind == "tide":
+					tide = e
+			if tide == null:
+				return
+			var go_t = func():
+				tide.state = "idle"
+				tide.tm = 1.2
+				fight = {"id": "tide", "name": "THE RED TIDE", "sub": "Everything the town drank", "e": tide}
+				Sound.play("gate")
+				shake = 0.3
+			start_dialog("tideIntro", go_t)
 		"cienciaArena":
 			if Game.flag("cienciaDone") or fight != null:
 				return
@@ -903,20 +1017,100 @@ func _ciencia_pick(k: String) -> void:
 		Game.tend["rupture"] += 2
 	if k != "STRIKE":
 		lines.append(["ciencia", "shocked", "No... it was never in my system. It was in theirs. It is in ALL of them."])
-	say(lines, func(): start_dialog("ending", _show_end))
+	say(lines, func(): start_dialog("ending", func(): _chapter_end(1)))
 
 
-func _show_end() -> void:
+func set_tide(level: float) -> void:
+	for h in room.markers["hazard"]:
+		if h.id == "tide":
+			h.position.y = level
+			h.size.y = 540.0 - level
+
+
+func tide_awaken(_e: Node) -> void:
+	fx.projectiles.clear()
+	set_tide(478.0)
+	var after = func():
+		Game.set_flag("tideClear")
+		flash_screen(0.6, Color("#9fe2ff"))
+		Sound.play("djump")
+	start_dialog("tideAwaken", after)
+
+
+var _bc := {}
+
+
+func _boss_choice(title: String, sub: String, opts: Array, read_lines: Array, results: Dictionary, done_flag: String, end_dialog: String, chapter: int) -> void:
+	_bc = {"title": title, "sub": sub, "opts": opts, "read": read_lines, "results": results, "flag": done_flag, "end": end_dialog, "chapter": chapter}
+	_bc_show(false)
+
+
+func _bc_show(read: bool) -> void:
+	var o: Array = _bc["opts"].duplicate(true)
+	o[0]["disabled"] = read
+	_show_choice(_bc["title"], _bc["sub"], o, _bc_pick)
+
+
+func _bc_pick(k: String) -> void:
+	if k == "READ":
+		Game.witness += 1
+		say(_bc["read"], func(): _bc_show(true))
+		return
+	Game.set_flag(_bc["flag"])
+	Game.flags[_bc["flag"] + "_choice"] = k
+	fight = null
+	Game.tend[{"REACH": "connection", "BIND": "control", "STRIKE": "rupture"}[k]] += 2
+	var ch: int = _bc["chapter"]
+	var end_d: String = _bc["end"]
+	say(_bc["results"][k], func(): start_dialog(end_d, func(): _chapter_end(ch)))
+
+
+func resolve_carrier(_e: Node) -> void:
+	_boss_choice("KAI BROOKS", "Three voices argue inside him. One of them is his.",
+		[{"k": "READ"}, {"k": "REACH", "d": "Say his name together with Lana until only his voice answers."}, {"k": "BIND", "d": "Hold the voices asleep inside him. Safe now. They stay."}, {"k": "STRIKE", "d": "Tear the voices out. Some of Kai may come with them."}],
+		[["narr", "", "READ: Three voices. Kai's. A woman who drowned in the reservoir in 1962. And something that only counts, very slowly, toward seven."]],
+		{"REACH": [["lana", "neutral", "Kai. Kai Brooks. You owe me five dollars and an apology for second grade."], ["max", "neutral", "Kai. Come on back. It's loud out here, but it's ours."], ["narr", "", "The second voice says thank you, and goes. The third does not answer at all."]],
+		"BIND": [["narr", "", "You fold the voices down into him and hold them there until he sleeps."], ["narr", "", "He wakes as himself. Sometimes, when it rains, he hums."]],
+		"STRIKE": [["narr", "", "You pull the voices out like threads. They come loose. So does something else."], ["narr", "", "Kai wakes up and cannot remember his little sister's name."]]},
+		"carrierDone", "c2End", 2)
+
+
+func resolve_tide(_e: Node) -> void:
+	_boss_choice("THE RED TIDE", "Jason holds it still. It is waiting to see who decides.",
+		[{"k": "READ"}, {"k": "REACH", "d": "Let Jason ask the water to let go of everyone it remembers."}, {"k": "BIND", "d": "Jason seals it in the reservoir and keeps watch. Forever."}, {"k": "STRIKE", "d": "Boil it apart. The memories it holds go with it."}],
+		[["narr", "", "READ: It is not waste. It is memory. Every glass of water this town drank left something behind."]],
+		{"REACH": [["jason", "worried", "You can go. All of you. Nobody is going to forget you. I promise."], ["narr", "", "The tide comes apart into warm rain on the pumphouse roof."]],
+		"BIND": [["jason", "angry", "You stay down there. I will be listening."], ["narr", "", "The red sinks into the reservoir and goes still. Jason does not sleep well after that."]],
+		"STRIKE": [["narr", "", "You and Jason boil it apart. The pumphouse fills with steam that smells like a hundred different kitchens."], ["narr", "", "Something under the reservoir learns Jason's name anyway."]]},
+		"tideDone", "c3End", 3)
+
+
+func _chapter_end(n: int) -> void:
 	mode = "end"
-	Game.clear_save()
 	Sound.play("endsting")
-	var k: String = Game.flags.get("ending", "")
-	var title: String = {"REACH": "The Signal Goes Quiet", "BIND": "A Patch on a Broken Wall", "STRIKE": "Very Bright, Then Very Dark"}.get(k, "Chapter Complete")
+	var has_next: bool = Game.CHAPTERS.has(n + 1)
+	if has_next:
+		Game.unlock(n + 1)
+		var c: Dictionary = Game.CHAPTERS[n + 1]
+		Game.chapter = n + 1
+		Game.write_save(c["room"], c["spawn"])
+	else:
+		Game.clear_save()
+	var key = {1: "ending", 2: "carrierDone_choice", 3: "tideDone_choice"}[n]
+	var k: String = Game.flags.get(key, "")
+	var titles = {
+		1: {"REACH": "The Signal Goes Quiet", "BIND": "A Patch on a Broken Wall", "STRIKE": "Very Bright, Then Very Dark"},
+		2: {"REACH": "One Voice Answers", "BIND": "He Hums When It Rains", "STRIKE": "A Name Left Behind"},
+		3: {"REACH": "Warm Rain", "BIND": "The Listener Under the Water", "STRIKE": "A Hundred Kitchens"},
+	}
 	var td: Dictionary = Game.tend
 	var lead = "RUPTURE"
 	if td["connection"] >= td["control"] and td["connection"] >= td["rupture"]:
 		lead = "CONNECTION"
 	elif td["control"] >= td["rupture"]:
 		lead = "CONTROL"
-	ui.show_end(title, lead, [["Connection", td["connection"]], ["Control", td["control"]], ["Rupture", td["rupture"]], ["Witness", Game.witness],
-		["Stabilized", "%d / 4" % int(Game.flags.get("stabilized", 0))], ["Anchors", "%d / 5" % Game.anchors.size()], ["Overdraws", Game.overdraw]])
+	var stats = [["Connection", td["connection"]], ["Control", td["control"]], ["Rupture", td["rupture"]], ["Witness", Game.witness],
+		["Stabilized", int(Game.flags.get("stabilized", 0))], ["Anchors", "%d / 8" % Game.anchors.size()], ["Overdraws", Game.overdraw]]
+	if n == 3:
+		stats.append(["Workers saved", "%d / 3" % int(Game.flags.get("rescued", 0))])
+	ui.show_end(n, titles[n].get(k, "Chapter Complete"), lead, stats, has_next)

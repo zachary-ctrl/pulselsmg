@@ -64,5 +64,53 @@
     "h": 540
    }
   ]
+ },
+ "street": {
+  "w": 2800,
+  "h": 540,
+  "layers": [
+   {
+    "file": "street_bg0.jpg",
+    "f": 0.3,
+    "w": 1512,
+    "h": 540
+   }
+  ]
+ },
+ "hospital": {
+  "w": 2000,
+  "h": 540,
+  "layers": [
+   {
+    "file": "hospital_bg0.jpg",
+    "f": 0.3,
+    "w": 1272,
+    "h": 540
+   }
+  ]
+ },
+ "waterworks": {
+  "w": 2600,
+  "h": 1080,
+  "layers": [
+   {
+    "file": "waterworks_bg0.jpg",
+    "f": 0.3,
+    "w": 1452,
+    "h": 702
+   }
+  ]
+ },
+ "pumphouse": {
+  "w": 1200,
+  "h": 540,
+  "layers": [
+   {
+    "file": "pumphouse_bg0.jpg",
+    "f": 0.3,
+    "w": 1032,
+    "h": 540
+   }
+  ]
  }
 }

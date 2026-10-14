@@ -3,7 +3,7 @@ extends Node2D
 ## beakers. Phase 2 (half health): faster, adds horizontal beams and attacks
 ## aimed at where Max is about to be.
 
-const Rig = preload("res://scripts/rig.gd")
+const Anim = preload("res://scripts/anim_sprite.gd")
 const TELEPORT_POINTS := [Vector2(150, 470), Vector2(970, 470), Vector2(560, 340), Vector2(300, 320), Vector2(820, 320)]
 
 var main: Node
@@ -30,7 +30,7 @@ var rig: Node2D
 func setup(pos: Vector2) -> void:
 	position = pos
 	base_y = pos.y
-	rig = Rig.new()
+	rig = Anim.new()
 	rig.key = "ciencia"
 	add_child(rig)
 
@@ -233,9 +233,24 @@ func hit(dmg: int, _hdir: int) -> bool:
 
 
 func _process(_d: float) -> void:
-	var kneel = state == "defeated"
-	rig.pose = {"face": face, "t": main.t, "kneel": kneel, "tilt": 0.4 if state == "stagger" else (0.35 if kneel else 0.0)}
-	rig.alpha = alpha
+	rig.key = "saint" if phase2 else "ciencia"
+	rig.face = face
+	match state:
+		"defeated":
+			rig.play("kneel")
+		"stagger":
+			rig.play("stagger")
+		"tpOut":
+			rig.seek("teleport", (1.0 - alpha) * 0.6)
+		"tpIn":
+			rig.seek("teleport", 0.6 + alpha * 0.4)
+		"grid", "predict":
+			rig.play("cast")
+		"mimic", "chain":
+			rig.play("throw")
+		_:
+			rig.play("idle")
+	rig.alpha = maxf(alpha, 0.35) if state in ["tpOut", "tpIn"] else 1.0
 	rig.flash = clampf(flash * 6.0, 0.0, 1.0)
 	queue_redraw()
 

@@ -65,13 +65,13 @@ func step(dt: float) -> void:
 		p["life"] -= dt
 		if p["p"].x < -40 or p["p"].x > main.room.room_size.x + 40:
 			p["life"] = 0.0
-		if p["k"] == "beaker":
+		if p["k"] == "beaker" or p["k"] == "sludge":
 			for r in floors:
 				if r.has_point(p["p"]):
 					p["life"] = 0.0
-					Sound.play("glass", 0.1)
+					Sound.play("glass" if p["k"] == "beaker" else "land", 0.1)
 					for i in 14:
-						part(Vector2(p["p"].x, r.position.y - 4), Vector2(randf_range(-130, 130), -randf() * 240), "dust", Color("#9ff0d0"))
+						part(Vector2(p["p"].x, r.position.y - 4), Vector2(randf_range(-130, 130), -randf() * 240), "dust", p["c"])
 					break
 		elif p["k"] != "chain":
 			for r in solids:

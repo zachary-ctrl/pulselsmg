@@ -9,6 +9,7 @@ extends Node2D
 @export var room_size = Vector2(960, 540)
 @export_enum("wood", "tile", "lino", "metal") var floor_sound: String = "wood"
 @export var tint = Color.WHITE
+@export var draw_platforms = false
 
 var solids: Array = []
 var markers = {}
@@ -18,7 +19,7 @@ var t = 0.0
 
 
 func _ready() -> void:
-	for k in ["exit", "trigger", "bench", "npc", "anchor", "sigil", "spawn", "hazard"]:
+	for k in ["exit", "trigger", "bench", "npc", "anchor", "sigil", "spawn", "hazard", "worker"]:
 		markers[k] = []
 	for c in $Platforms.get_children():
 		var sh: CollisionShape2D = c.get_node("Shape")
@@ -52,6 +53,8 @@ func ground_at(p: Vector2) -> bool:
 
 func hazard_at(r: Rect2):
 	for h in markers["hazard"]:
+		if h.id == "tide" and Game.flag("tideClear"):
+			continue
 		if h.rect().intersects(r):
 			return h
 	return null
@@ -67,8 +70,10 @@ func _process(delta: float) -> void:
 
 func _draw() -> void:
 	var amix: float = main.astral_mix if main else 0.0
+	if draw_platforms:
+		_draw_platforms()
 	for h in markers["hazard"]:
-		_draw_sludge(h.rect())
+		_draw_sludge(h.rect(), h.id == "tide" and Game.flag("tideClear"))
 	for b in blockers:
 		if b.kind == "door":
 			_draw_door(b)
@@ -105,7 +110,51 @@ func _draw() -> void:
 		draw_circle(Vector2(x, y - 240), 14, Color("#0a0e10"))
 
 
-func _draw_sludge(r: Rect2) -> void:
+const STYLE := {
+	"street": {"body": Color("#15161c"), "top": Color("#5a5650"), "plate": Color("#3a3f4a"), "edge": Color("#8a8478")},
+	"hospital": {"body": Color("#1c2226"), "top": Color("#9aa8ae"), "plate": Color("#c9d2d6"), "edge": Color("#eef3f5")},
+	"waterworks": {"body": Color("#101618"), "top": Color("#46545a"), "plate": Color("#2e3a40"), "edge": Color("#7f9aa3")},
+	"pumphouse": {"body": Color("#0d1214"), "top": Color("#3c4a50"), "plate": Color("#2e3a40"), "edge": Color("#7f9aa3")},
+}
+
+
+func _draw_platforms() -> void:
+	var st: Dictionary = STYLE.get(room_id, STYLE["waterworks"])
+	for s in solids:
+		if s["astral"]:
+			continue
+		var r: Rect2 = s["rect"]
+		if s["oneway"]:
+			draw_rect(Rect2(r.position + Vector2(0, 2), Vector2(r.size.x, r.size.y)), Color(0, 0, 0, 0.35))
+			draw_rect(r, st["plate"])
+			draw_rect(Rect2(r.position, Vector2(r.size.x, 2)), st["edge"])
+			var x = r.position.x + 10
+			while x < r.end.x - 4:
+				draw_line(Vector2(x, r.end.y), Vector2(x, r.end.y + 26), Color(st["plate"], 0.8), 3.0)
+				x += maxf(40.0, r.size.x / 3.0)
+			if room_id in ["waterworks", "pumphouse"]:
+				draw_line(r.position + Vector2(0, -22), Vector2(r.end.x, r.position.y - 22), Color(st["edge"], 0.5), 2.0)
+				var px = r.position.x
+				while px <= r.end.x:
+					draw_line(Vector2(px, r.position.y), Vector2(px, r.position.y - 22), Color(st["edge"], 0.5), 2.0)
+					px += 40.0
+		else:
+			draw_rect(r, st["body"])
+			draw_rect(Rect2(r.position, Vector2(r.size.x, 6)), st["top"])
+			draw_rect(Rect2(r.position, Vector2(r.size.x, 1)), Color(st["edge"], 0.6))
+			if room_id == "hospital":
+				var tx = r.position.x
+				while tx < r.end.x:
+					draw_line(Vector2(tx, r.position.y), Vector2(tx, r.position.y + 6), Color(0, 0, 0, 0.25), 1.0)
+					tx += 48.0
+			elif room_id in ["waterworks", "pumphouse"]:
+				var gx = r.position.x
+				while gx < r.end.x:
+					draw_line(Vector2(gx, r.position.y + 1), Vector2(gx - 8, r.position.y + 6), Color(0, 0, 0, 0.4), 1.0)
+					gx += 14.0
+
+
+func _draw_sludge(r: Rect2, clear := false) -> void:
 	var pts = PackedVector2Array()
 	pts.append(Vector2(r.position.x, r.end.y))
 	var x = 0.0
@@ -113,9 +162,9 @@ func _draw_sludge(r: Rect2) -> void:
 		pts.append(Vector2(r.position.x + x, r.position.y + sin(t * 2 + x * 0.08) * 3))
 		x += 10
 	pts.append(r.end)
-	draw_colored_polygon(pts, Color("#7a1218"))
-	draw_rect(Rect2(r.position.x, r.position.y + 8, r.size.x, r.size.y - 8), Color("#3a0a0e"))
-	_glow(Vector2(r.get_center().x, r.position.y), r.size.x * 0.7, Color(1, 0.25, 0.25, 0.14))
+	draw_colored_polygon(pts, Color("#1f6a8a") if clear else Color("#7a1218"))
+	draw_rect(Rect2(r.position.x, r.position.y + 8, r.size.x, r.size.y - 8), Color("#0c2a3a") if clear else Color("#3a0a0e"))
+	_glow(Vector2(r.get_center().x, r.position.y), r.size.x * 0.7, Color(0.4, 0.8, 1, 0.14) if clear else Color(1, 0.25, 0.25, 0.14))
 	for i in 4:
 		var ph = fmod(t * 1.3 + i, 1.0)
 		var bx = r.position.x + fmod(i * 67.0 + t * 30.0, r.size.x)

@@ -35,6 +35,36 @@ ROOMS = {
    doors=[], gates=[(4,230,28,240,'ciencia_fight')],
    markers=[('exit',dict(rect=(0,290,20,180),target_room='cafeteria',spawn_point=(2330,520))),('anchor',dict(pos=(110,470),id='dharmaNote')),
             ('trigger',dict(rect=(300,0,40,540),event='cienciaArena')),('spawn',dict(pos=(900,470),enemy='ciencia',id='boss'))]),
+ 'street': dict(name='Westbrook Avenue', sub='Chapter Two · The Carrier', size=(2800, 540), floor='lino', tint='#ffc890', draw=True,
+   solids=[(0,470,2250,70,'s'),(2390,470,410,70,'s'),(2250,540,140,10,'s'),(500,360,160,12,'o'),(900,410,180,12,'o'),(1500,410,180,12,'o'),(1200,420,80,50,'s'),(1900,340,200,12,'o')],
+   doors=[], gates=[],
+   markers=[('hazard',dict(rect=(2250,500,140,40))),('exit',dict(rect=(2778,290,22,180),target_room='hospital',spawn_point=(60,470))),
+            ('bench',dict(pos=(300,470))),('npc',dict(pos=(420,470),id='lana',face=1,dialog='c2_lana2',dialog_repeat='c2_lana2')),
+            ('anchor',dict(pos=(580,360),id='dadText')),('spawn',dict(pos=(1100,470),enemy='sleeper',id='ta1',patrol_range=90)),
+            ('spawn',dict(pos=(1750,470),enemy='sleeper',id='a2')),('spawn',dict(pos=(2050,470),enemy='sleeper',id='ta3',patrol_range=80)),
+            ('spawn',dict(pos=(1400,300),enemy='mote',id='m4')),('spawn',dict(pos=(2550,320),enemy='mote',id='m5'))]),
+ 'hospital': dict(name='Mercy General', sub='Third floor · Visiting hours are over', size=(2000, 540), floor='tile', tint='#cfe8ff', draw=True,
+   solids=[(0,470,2000,70,'s'),(400,420,120,10,'o'),(900,420,120,10,'o'),(1180,400,180,70,'s')],
+   doors=[], gates=[(1380,230,28,240,'carrier_fight')],
+   markers=[('exit',dict(rect=(0,290,20,180),target_room='street',spawn_point=(2730,470))),('npc',dict(pos=(250,470),id='jason',face=1,dialog='c2_jason',dialog_repeat='c2_jason2')),
+            ('anchor',dict(pos=(1270,400),id='chart')),('spawn',dict(pos=(700,470),enemy='sleeper',id='t5',patrol_range=120)),('bench',dict(pos=(1050,470))),
+            ('trigger',dict(rect=(1460,0,40,540),event='carrierArena')),('spawn',dict(pos=(1820,470),enemy='carrier',id='carrier'))]),
+ 'waterworks': dict(name='Westbrook Waterworks', sub='Chapter Three · Red Water', size=(2600, 1080), floor='metal', tint='#ff9a9a', draw=True,
+   solids=[(0,1010,700,70,'s'),(1000,1010,600,70,'s'),(1900,1010,700,70,'s'),(700,1080,300,10,'s'),(1600,1080,300,10,'s'),
+           (600,880,160,12,'o'),(1000,780,200,12,'o'),(1400,880,160,12,'o'),(1640,900,120,12,'o'),(1850,780,180,12,'o'),(2150,650,200,12,'o'),(2200,520,400,30,'s')],
+   doors=[], gates=[(2540,380,28,140,'rescue_incomplete')],
+   markers=[('hazard',dict(rect=(700,1030,300,50))),('hazard',dict(rect=(1600,1030,300,50))),
+            ('exit',dict(rect=(2578,380,22,140),target_room='pumphouse',spawn_point=(60,470))),('npc',dict(pos=(150,1010),id='jason',face=1,dialog='c3_jason2',dialog_repeat='c3_jason2')),
+            ('worker',dict(pos=(330,1010),id='w1')),('worker',dict(pos=(1150,1010),id='w2')),('worker',dict(pos=(2470,520),id='w3')),
+            ('anchor',dict(pos=(1100,780),id='workOrder')),('bench',dict(pos=(2300,520))),
+            ('spawn',dict(pos=(900,720),enemy='mote',id='w1m')),('spawn',dict(pos=(1750,640),enemy='mote',id='w2m')),
+            ('spawn',dict(pos=(1400,1010),enemy='sleeper',id='t6',patrol_range=120)),('spawn',dict(pos=(2200,1010),enemy='sleeper',id='t7'))]),
+ 'pumphouse': dict(name='The Pumphouse', sub='Intake 3', size=(1200, 540), floor='metal', tint='#ff9a9a', draw=True,
+   solids=[(0,470,1200,70,'s'),(250,360,200,12,'o'),(750,360,200,12,'o'),(500,250,200,12,'o')],
+   doors=[], gates=[(4,230,28,240,'tide_fight')],
+   markers=[('hazard',dict(rect=(0,478,1200,62),id='tide')),('exit',dict(rect=(0,290,20,180),target_room='waterworks',spawn_point=(2480,520))),
+            ('npc',dict(pos=(110,470),id='jason',face=1,dialog='c3_jason2',dialog_repeat='c3_jason2')),
+            ('trigger',dict(rect=(240,0,40,540),event='tideArena')),('spawn',dict(pos=(600,470),enemy='tide',id='tide'))]),
 }
 LAYER = {'s': 1, 'o': 2, 'a': 4}
 
@@ -48,7 +78,7 @@ def gen(rid, r):
            '[ext_resource type="Script" path="res://scripts/marker.gd" id="marker"]',
            '[ext_resource type="Script" path="res://scripts/blocker.gd" id="blocker"]']
     title = rid.capitalize()
-    nodes.append(f'[node name="{title}" type="Node2D"]\nscript = ExtResource("room")\nroom_id = "{rid}"\ndisplay_name = "{r["name"]}"\nsubtitle = "{r["sub"]}"\nroom_size = {v2(r["size"])}\nfloor_sound = "{r["floor"]}"\ntint = {col(r["tint"])}\n')
+    nodes.append(f'[node name="{title}" type="Node2D"]\nscript = ExtResource("room")\nroom_id = "{rid}"\ndisplay_name = "{r["name"]}"\nsubtitle = "{r["sub"]}"\nroom_size = {v2(r["size"])}\nfloor_sound = "{r["floor"]}"\ntint = {col(r["tint"])}\n' + ('draw_platforms = true\n' if r.get('draw') else ''))
     nodes.append('[node name="Platforms" type="Node2D" parent="."]\n')
     for i, (x, y, w, h, k) in enumerate(r['solids']):
         sid = f'shape_p{i}'; subs.append(f'[sub_resource type="RectangleShape2D" id="{sid}"]\nsize = Vector2({w}, {h})\n')

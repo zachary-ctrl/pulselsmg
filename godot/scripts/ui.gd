@@ -121,10 +121,30 @@ func _build_title() -> void:
 	hint.add_theme_font_size_override("font_size", 13)
 	hint.add_theme_color_override("font_color", Color("#9c97a8"))
 	_title.add_child(hint)
+	var chap = HBoxContainer.new()
+	chap.name = "Chapters"
+	chap.alignment = BoxContainer.ALIGNMENT_CENTER
+	chap.position = Vector2(230, 372)
+	chap.size = Vector2(500, 40)
+	chap.add_theme_constant_override("separation", 10)
+	_title.add_child(chap)
+	for n in [1, 2, 3]:
+		var cb = Button.new()
+		cb.name = "Ch%d" % n
+		cb.text = "CHAPTER %d" % n
+		cb.custom_minimum_size = Vector2(150, 34)
+		cb.add_theme_font_size_override("font_size", 12)
+		var nn = n
+		cb.pressed.connect(func(): Sound.play("select"); main.start_chapter(nn, true))
+		chap.add_child(cb)
 
 
-func show_title(has_save: bool) -> void:
+func show_title(has_save: bool, unlocked := 1) -> void:
 	_title.visible = true
+	var chap = _title.get_node("Chapters")
+	chap.visible = unlocked > 1
+	for n in [1, 2, 3]:
+		chap.get_node("Ch%d" % n).visible = n <= unlocked
 	_btn_continue.visible = has_save
 	_title.get_node("Hint").text = "Touch controls appear in play." if Game.touch_mode else "A/D move · Space jump · X strike · C dash · Q focus · E project · R full potential · W talk · Esc pause · gamepad supported"
 	(_btn_continue if has_save else _title.get_child(0).get_child(0)).call_deferred("grab_focus")
@@ -249,8 +269,6 @@ func _draw() -> void:
 		if full:
 			dst = Rect2(px + (200 - dw) / 2.0, py + (236 - dh) / 2.0, dw, dh)
 		var src = Rect2(0, 0, iw, ih)
-		if not full and not left:
-			dst = Rect2(dst.position.x + dw, dst.position.y, -dw, dh)
 		var clip_src = src
 		var clip_dst = dst
 		if full:
@@ -258,7 +276,12 @@ func _draw() -> void:
 			var vis = Rect2(px, py, 200, 236).intersection(Rect2(dst.position, dst.size))
 			clip_src = Rect2((vis.position - dst.position) / s, vis.size / s)
 			clip_dst = vis
+		var flip = not full and not left
+		if flip:
+			draw_set_transform(Vector2(2.0 * (px + 100.0), 0), 0.0, Vector2(-1, 1))
 		draw_texture_rect_region(tex, clip_dst, clip_src)
+		if flip:
+			draw_set_transform(Vector2.ZERO)
 		if who == "max" and Game.overdraw > 0:
 			draw_rect(Rect2(px, py, 200, 236), Color(0.65, 0.55, 1, 0.12))
 		draw_rect(Rect2(px + 0.5, py + 0.5, 199, 235), Color(0.93, 0.9, 0.85, 0.6), false, 1.5)
@@ -396,10 +419,10 @@ func _build_end() -> void:
 	_end.add_child(_end_body)
 
 
-func show_end(title: String, lead: String, stats: Array) -> void:
+func show_end(chapter: int, title: String, lead: String, stats: Array, has_next: bool) -> void:
 	for c in _end_body.get_children():
 		c.queue_free()
-	_end_body.add_child(_heading("END OF CHAPTER ONE", 26))
+	_end_body.add_child(_heading("END OF CHAPTER " + Game.CHAPTER_WORD[chapter], 26))
 	_end_body.add_child(_heading(title, 16))
 	_end_body.add_child(_para("Your choices leaned toward %s. The game will remember." % lead, true))
 	var g = GridContainer.new()
@@ -416,17 +439,24 @@ func show_end(title: String, lead: String, stats: Array) -> void:
 		cell.add_child(lab)
 		g.add_child(cell)
 	_end_body.add_child(g)
-	_end_body.add_child(_para("Season One continues: The Carrier · Red Water · #ScienceMatters", true))
+	_end_body.add_child(_para(("Next: Chapter %s · %s" % [Game.CHAPTER_WORD[chapter + 1].capitalize(), Game.CHAPTERS[chapter + 1]["title"]]) if has_next else "Season One continues: #ScienceMatters · The Teacher Who Was Fired", true))
 	var b = Button.new()
-	b.text = "PLAY AGAIN"
+	b.text = ("CONTINUE TO CHAPTER " + Game.CHAPTER_WORD[chapter + 1]) if has_next else "PLAY AGAIN"
 	var armed = Time.get_ticks_msec() + 1200
 	var on_press = func():
 		if Time.get_ticks_msec() < armed:
 			return
 		_end.visible = false
-		main.new_game()
+		if has_next:
+			main.start_chapter(chapter + 1, false)
+		else:
+			main.new_game()
 	b.pressed.connect(on_press)
 	_end_body.add_child(b)
+	var tb = Button.new()
+	tb.text = "TITLE"
+	tb.pressed.connect(func(): _end.visible = false; main.show_title())
+	_end_body.add_child(tb)
 	_end.visible = true
 	get_tree().create_timer(1.25).timeout.connect(func(): if is_instance_valid(b): b.grab_focus())
 

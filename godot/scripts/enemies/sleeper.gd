@@ -1,7 +1,7 @@
 extends CharacterBody2D
 ## An infected student: patrols, notices Max, lunges. Strikes "stabilize" them.
 
-const Rig = preload("res://scripts/rig.gd")
+const Anim = preload("res://scripts/anim_sprite.gd")
 const PHRASES := ["seven circles...", "are you listening", "not hungry", "it is so loud", "we see it", "the sun is black", "almost synchronized", "do you hear it"]
 
 var main: Node
@@ -43,8 +43,8 @@ func setup(sid: String, pos: Vector2, rng: float, down: bool) -> void:
 	add_child(cs)
 	collision_layer = 0
 	collision_mask = 1 | 2 | 8 | 16
-	rig = Rig.new()
-	rig.key = "teacher" if (sid == "s2" or sid == "sx") else "returned"
+	rig = Anim.new()
+	rig.key = "teacher" if (sid == "s2" or sid == "sx" or sid.begins_with("t")) else "returned"
 	add_child(rig)
 
 
@@ -144,12 +144,22 @@ func hit(dmg: int, hdir: int) -> bool:
 
 
 func _process(_d: float) -> void:
-	if state == "down":
-		rig.pose = {"face": face, "lying": true}
-		rig.eyes = ""
-	else:
-		rig.pose = {"face": face, "t": main.t, "ph": ph, "moving": absf(velocity.x) > 8.0 and is_on_floor(), "air": not is_on_floor(), "vy": velocity.y,
-			"dash": state == "lunge", "tilt": -0.25 if state == "notice" else 0.12 + sin(main.t * 1.3 + seed) * 0.05, "seed": seed, "eyes": "hollow"}
+	rig.face = face
+	match state:
+		"down":
+			rig.play("collapse")
+		"notice":
+			rig.play("notice")
+		"lunge":
+			rig.play("lunge")
+		"hurt":
+			rig.play("hurt")
+		_:
+			if absf(velocity.x) > 8.0 and is_on_floor():
+				rig.play("walk")
+				rig.speed = clampf(absf(velocity.x) / 45.0, 0.6, 1.4)
+			else:
+				rig.seek("walk", 0.0)
 	rig.flash = clampf(flash * 6.0, 0.0, 1.0)
 	queue_redraw()
 

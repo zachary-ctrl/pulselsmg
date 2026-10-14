@@ -2,7 +2,7 @@ extends CharacterBody2D
 ## Max's body, or his astral form when `is_astral` is true.
 ## Collision layers: 1 solid, 2 one-way, 3 astral-only, 4 doors, 5 gates.
 
-const Rig = preload("res://scripts/rig.gd")
+const Anim = preload("res://scripts/anim_sprite.gd")
 const PRM_BODY := {"run": 300.0, "grav": 2400.0, "max_fall": 880.0, "jump": 760.0, "dash": 760.0}
 const PRM_ASTRAL := {"run": 280.0, "grav": 1300.0, "max_fall": 520.0, "jump": 620.0, "dash": 700.0}
 
@@ -39,6 +39,7 @@ var safe = Vector2.ZERO
 var timer = 60.0
 var ret = 0.0
 var ret_from = Vector2.ZERO
+var land_t = 0.0
 
 
 func setup(astral: bool) -> void:
@@ -56,11 +57,10 @@ func setup(astral: bool) -> void:
 	collision_mask = (1 | 2 | 4 | 16) if astral else (1 | 2 | 8 | 16)
 	floor_snap_length = 6.0
 	floor_max_angle = deg_to_rad(50)
-	rig = Rig.new()
+	rig = Anim.new()
 	rig.key = "max"
 	if astral:
 		rig.tint = Color(0.56, 0.45, 1.0, 0.82)
-		rig.eyes = "echo"
 	add_child(rig)
 
 
@@ -185,6 +185,7 @@ func control(dt: float) -> void:
 		used_double = false
 		air_dash = true
 		if not was_floor and vy_before > 320.0:
+			land_t = 0.12
 			Sound.play("land", 0.05, linear_to_db(clampf(vy_before / 900.0, 0.3, 1.0)))
 		if absf(velocity.x) > 60.0 and dash_t <= 0.0:
 			step_acc += absf(velocity.x) * dt
@@ -206,11 +207,33 @@ func attack_box() -> Rect2:
 
 
 func update_pose(t: float, slumped: bool) -> void:
-	rig.pose = {
-		"face": face, "t": t, "ph": run_ph, "moving": absf(velocity.x) > 20.0 and is_on_floor(), "air": not is_on_floor(), "vy": velocity.y,
-		"atk": atk_dir if atk_t > 0.0 else "", "dash": dash_t > 0.0, "heal": heal_t > 0.0, "slump": slumped,
-		"eyes": ("echo" if is_astral else ("echo" if slumped else ("glow" if Game.overdraw > 0 else ""))),
-	}
+	land_t = maxf(0.0, land_t - get_physics_process_delta_time())
+	rig.face = face
+	rig.tilt = 0.0
+	if atk_t > 0.0:
+		var name: String = {"side": "strike", "up": "strike_up", "down": "strike_down"}[atk_dir]
+		rig.seek(name, 1.0 - atk_t / 0.24)
+	elif dash_t > 0.0:
+		rig.seek("dash", 1.0 - dash_t / 0.17)
+	elif heal_t > 0.0:
+		rig.seek("land", 0.0)
+	elif slumped:
+		rig.seek("idle", 0.0)
+		rig.tilt = -0.08
+	elif not is_on_floor():
+		rig.seek("jump", 0.4 if velocity.y < -120.0 else (0.95 if velocity.y > 120.0 else 0.5))
+	elif land_t > 0.0:
+		rig.seek("land", 1.0 - land_t / 0.12)
+	elif absf(velocity.x) > 20.0:
+		rig.play("run")
+		rig.speed = clampf(absf(velocity.x) / 300.0, 0.6, 1.2)
+	else:
+		rig.play("idle")
+		rig.speed = 1.0
+	if slumped:
+		rig.tint = Color(0.75, 0.7, 1.0, 0.25)
+	elif not is_astral:
+		rig.tint = Color(0.65, 0.55, 1.0, 0.18) if Game.overdraw > 0 else Color(0, 0, 0, 0)
 	rig.flash = 0.5 if (not is_astral and inv > 1.0) else 0.0
 	var blink = inv > 0.0 and not is_astral and not slumped and int(inv * 14.0) % 2 == 1
 	rig.visible = not blink

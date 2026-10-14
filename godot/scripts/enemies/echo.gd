@@ -1,7 +1,7 @@
 extends Node2D
 ## The Hallway Echo: replays Max's own path a second behind him.
 
-const Rig = preload("res://scripts/rig.gd")
+const Anim = preload("res://scripts/anim_sprite.gd")
 
 var main: Node
 var id = "echo"
@@ -23,12 +23,11 @@ var trail: Array = []
 
 func setup(pos: Vector2) -> void:
 	position = pos
-	rig = Rig.new()
+	rig = Anim.new()
 	rig.key = "max"
-	rig.tint = Color(0.04, 0.05, 0.09, 0.96)
-	rig.eyes = "echo"
+	rig.tint = Color(0.04, 0.05, 0.09, 0.94)
 	for i in 4:
-		var g = Rig.new()
+		var g = Anim.new()
 		g.key = "max"
 		g.tint = Color(0.56, 0.45, 1.0, 0.82)
 		g.alpha = 0.04 + i * 0.035
@@ -97,10 +96,19 @@ func hit(dmg: int, _hdir: int) -> bool:
 	return true
 
 
+static func _apply(r: Node, face: int, p: Dictionary) -> void:
+	r.face = face
+	if p.get("air", false):
+		r.seek("jump", 0.4 if p.get("vy", 0.0) < 0.0 else 0.95)
+	elif p.get("moving", false):
+		r.seek("run", fmod(p.get("ph", 0.0) / 11.5 * 14.0 / 8.0, 1.0))
+	else:
+		r.play("idle")
+
+
 func _process(_d: float) -> void:
 	var a = 1.0 - tm / 1.2 if state == "rise" else 1.0
-	var p = {"face": face, "t": main.t, "ph": pose.get("ph", 0.0), "moving": pose.get("moving", false), "air": pose.get("air", false), "vy": pose.get("vy", 0.0), "eyes": "echo"}
-	rig.pose = p
+	_apply(rig, face, pose)
 	rig.alpha = clampf(a, 0.0, 1.0) * ((0.4 if randf() < 0.5 else 1.0) if state == "stutter" else 1.0)
 	rig.position.x = randf_range(-3, 3) if state == "stutter" else 0.0
 	rig.flash = clampf(flash * 6.0, 0.0, 1.0)
@@ -110,7 +118,7 @@ func _process(_d: float) -> void:
 			var tr: Dictionary = trail[idx]
 			ghosts[i].visible = true
 			ghosts[i].position = tr["p"] - position
-			ghosts[i].pose = {"face": tr["face"], "t": main.t, "ph": tr["pose"].get("ph", 0.0), "moving": tr["pose"].get("moving", false), "air": tr["pose"].get("air", false), "vy": tr["pose"].get("vy", 0.0)}
+			_apply(ghosts[i], tr["face"], tr["pose"])
 		else:
 			ghosts[i].visible = false
 	queue_redraw()

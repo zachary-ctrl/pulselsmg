@@ -1,6 +1,14 @@
 # SAKAWA: Astral Max — Godot 4 project
 
-Chapter One (*Class Famine*) ported from the web prototype to **Godot 4.3+**. Same rooms, story, bosses, choices, endings, art and sound.
+Season One, Chapters 1–3, in **Godot 4.3+**:
+
+| Chapter | Rooms | Boss |
+| --- | --- | --- |
+| 1 · Class Famine | Room 101, East Hall, Cafeteria, Sub-Basement Lab | Hallway Echo, Dr. Ciencia (becomes the Viral Saint at half health) |
+| 2 · The Carrier | Westbrook Avenue, Mercy General | The Carrier (Kai Brooks); Lana's taunts stun him for double damage |
+| 3 · Red Water | Westbrook Waterworks (rescue 3 workers), The Pumphouse | The Red Tide; Jason's water awakens at half health |
+
+Every boss ends in a READ / REACH / BIND / STRIKE choice, and choices carry across chapters. Finishing a chapter unlocks it on the title screen's chapter select.
 
 ## Open and play
 
@@ -32,7 +40,8 @@ scripts/sound.gd          autoload: sound effects, music loops, room ambience
 scripts/main.gd           game loop, rooms, camera, events, combat, boss choices, ending
 scripts/player.gd         Max's body and astral form (CharacterBody2D)
 scripts/rig.gd            draws a design-sheet figure split at the hip (stride, bob, lean)
-scripts/enemies/*.gd      infected students, Choir Motes, Hallway Echo, Dr. Ciencia
+scripts/enemies/*.gd      infected, Choir Motes, Hallway Echo, Dr. Ciencia, the Carrier, the Red Tide
+scripts/anim_sprite.gd    plays the sprite-sheet frame animations
 scripts/fx.gd             projectiles, beams, particles, slash arcs, astral platforms
 scripts/hud.gd, ui.gd     HUD, dialogue with portraits, choices, title, pause, end, touch buttons
 scripts/room.gd           room root: collects platforms and markers, draws animated pieces
@@ -57,13 +66,13 @@ tools/autotest.gd         scripted playthrough that saves screenshots
 
 Open a room in `scenes/rooms/`. Move or resize the `StaticBody2D` platforms, and select nodes under **Markers** to change exits, triggers, spawns, NPC dialogue and anchors in the Inspector. Each room's painted art lives in `assets/rooms/` as background layers (`*_bg*.jpg/png`, with their parallax factors in `meta.json`), the playable layer (`*_world.png`, drawn at 1.5× and scaled down) and foreground silhouettes (`*_fg.png`). When you get final art, replace those images; the physics stays in the scenes.
 
-### Replacing the placeholder animation
+### Character animation
 
-Characters are single design-sheet poses animated by `rig.gd`. Once animators deliver frames, give each character an `AnimatedSprite2D` (or a `Skeleton2D`/Spine rig) and drive it from the same pose fields (`moving`, `air`, `atk`, `dash`, `heal`) that `player.gd` and the enemies already set.
+Max, Lana, Jason, the infected student and teacher, Dr. Ciencia and the Viral Saint use frame animations sliced from their sprite sheets into `assets/anim/<character>/<anim>_<n>.png`. `assets/anim/anims.json` lists each animation's frames, speed, looping and the anchor point at the character's feet; `scripts/anim_sprite.gd` plays them. To replace an animation, swap the PNGs (any size) and update their `ax`/`ay` anchors, or add a new entry to the JSON. Dialogue portraits for Max, Lana and Jason are `assets/portraits/<who>_<expression>.png` (neutral, smile, smirk, worried, shocked, angry). The cafeteria workers still use the older single-pose rig in `scripts/rig.gd`.
 
 ## Automated playthrough
 
-Runs the intro, projection, hallway, Hallway Echo fight and choice, cafeteria astral platforms, Dr. Ciencia fight and choice, and the end screen, saving a screenshot at each step:
+Plays all three chapters (every boss fight and choice, the worker rescue, and each chapter's end screen), saving a screenshot at each step:
 
 ```
 godot --path godot -- --autotest /tmp/sakawa_shots
