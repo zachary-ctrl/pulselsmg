@@ -31,23 +31,38 @@ Every boss ends in a READ / REACH / BIND / STRIKE choice, and choices carry acro
 
 Difficulty (title screen or pause menu, saved between sessions): **Story** gives 10 base health with weaker, slower enemies and faster Resonance; **Normal** gives 7 health; **Hard** gives 5 health with tougher, faster enemies.
 
-Keyboard, gamepad and touch are supported:
+Keyboard, gamepad and touch are supported. **Every control can be remapped** in Settings → Controls (title screen or pause menu); bindings are saved to `user://sakawa_settings.json`. **PS5 DualSense, PS4 and Xbox controllers** work over USB or Bluetooth (desktop builds and the web build); prompts show PlayStation names (Cross, Circle, Square, Triangle, L1/R1/L2/R2) automatically when a PlayStation controller is detected, or pick the icon style in Settings. Controllers rumble on hits, damage, lasers and transformations (toggle in Settings).
 
-| Action | Keyboard | Gamepad |
-| --- | --- | --- |
-| Move | A / D, arrows | D-pad, left stick |
-| Jump (again midair to levitate) | Space, Z | A |
-| Strike (hold up/down to aim; three in a row = heavy finisher) | X, J | X |
-| Kick (in midair: diving kick that bounces off enemies) | V, L | B |
-| Special move (costs Resonance) | B, I | RT |
-| Swap hero | Tab, 1 / 2 / 3 | R3 |
-| Character menu (party, gear, abilities) | I, M | Back |
-| Dash | C, K, Shift | RB |
-| Focus to heal (hold) | Q, F | LB |
-| Leave / return to body | E, P | Y |
-| Full Potential | R | LT |
-| Talk, rest at benches | W, Up | D-pad up |
-| Pause | Esc | Start |
+Default bindings:
+
+| Action | Keyboard | PlayStation | Xbox |
+| --- | --- | --- | --- |
+| Move | A / D, arrows | Left stick, D-pad | Left stick, D-pad |
+| Jump · wall jump · air jump | Space, Z | Cross | A |
+| Strike (up/down to aim; 3 in a row = finisher) | X, J | Square | X |
+| Kick (midair: diving kick) | V, L | Circle | B |
+| Special move (costs Resonance) | B, I | R2 | RT |
+| Dash | C, K, Shift | R1 | RB |
+| Focus to heal (hold) | Q, F | L1 | LB |
+| Astral projection (Max) | E, P | Triangle | Y |
+| Full Potential | R | L2 | LT |
+| Alter ego (shinobi transformation) | T, G | L3 | LS |
+| Swap hero | Tab, 1 / 2 / 3 | R3 | RS |
+| Character menu | M, N | Create, Touchpad | View |
+| Talk, rest at benches | W, Up | D-pad Up | D-pad Up |
+| Pause | Esc | Options | Menu |
+
+### Movement
+
+Generous jump timing (coyote time and jump buffering), wall slides and wall jumps for every hero, automatic ledge climbing when you just miss a ledge, sliding around ceiling corners, and hold down on a desk or ledge to drop through.
+
+### Alter egos
+
+Each hero can transform into a shinobi alter ego (craftpix *Shinobi* sprites): Max becomes **Shadow** (shinobi), Lana **Ronin** (samurai), Jason **Brawler** (fighter). Transforming needs 30 Resonance and slowly burns it; while it lasts the hero runs 25% faster, jumps higher, gets an extra air jump, attacks faster and hits 1 harder.
+
+### Menus and the LSMG arcade
+
+The game boots with an 8-bit **Last Shot Media Group** splash (the LSMG wordmark pixelated, with a chiptune jingle). The title menu (Continue, New Game, Chapters, LSMG Arcade, Settings, Quit) and all panels use the craftpix *Cyberpunk GUI* pixel frames and buttons; the HUD sits on one of its plates. **LSMG ARCADE · LAST SHOT** is an 8-bit buzzer-beater basketball minigame: hold and release Jump to shoot, 45 seconds, 3-pointers from behind the line, the last five seconds count double, and three makes in a row put you on fire. The high score is saved.
 
 ## How it's organized
 
@@ -64,7 +79,10 @@ scripts/rig.gd            draws a design-sheet figure split at the hip (stride, 
 scripts/enemies/*.gd      infected, Choir Motes and Imps, Static Riders, exhibits, Hallway Echo, Dr. Ciencia, the Carrier, the Red Tide, Collective Cognition
 scripts/anim_sprite.gd    plays the sprite-sheet frame animations
 scripts/fx.gd             projectiles, beams, particles, slash arcs, glowing VFX sprites, pickups, astral platforms
-scripts/hud.gd, ui.gd     HUD, dialogue with portraits, choices, title, pause, end, touch buttons
+scripts/hud.gd, ui.gd     HUD, dialogue with portraits, choices, title menu, settings, control remapping, pause, end, touch buttons
+scripts/splash.gd         8-bit LSMG boot splash
+scripts/arcade.gd         LSMG ARCADE · LAST SHOT minigame
+scripts/pixelfont.gd      3x5 pixel font for the 8-bit screens
 scripts/room.gd           room root: collects platforms and markers, draws animated pieces
 scripts/marker.gd         exits, triggers, benches, NPCs, anchors, sigils, spawns, hazards
 scripts/blocker.gd        doors and arena gates
@@ -103,4 +121,4 @@ godot --path godot -- --autotest /tmp/sakawa_shots
 
 Install export templates from **Editor → Manage Export Templates**, then **Project → Export** and add presets for Windows, macOS, Linux, Android, iOS or Web. The project uses the Compatibility renderer so it runs on phones and in browsers.
 
-Fonts are Cinzel and Spectral (SIL Open Font License, see `assets/fonts/OFL-*.txt`).
+Fonts are Cinzel and Spectral (SIL Open Font License, see `assets/fonts/OFL-*.txt`). The shinobi alter-ego sprites (`assets/anim/*_sh`) and the GUI frames (`assets/gui`) are free craftpix.net assets (craftpix.net/file-licenses); extra sound effects (`assets/audio/u_*.wav`) come from the supplied sound pack.

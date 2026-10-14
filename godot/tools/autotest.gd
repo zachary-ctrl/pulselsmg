@@ -66,11 +66,82 @@ func _quick(ch: int) -> void:
 
 
 func _run() -> void:
+	if OS.get_environment("QUICK") == "ui":
+		await wait(0.5)
+		await shot("q_title")
+		main.ui.show_sub("controls")
+		await wait(0.3)
+		await shot("q_controls")
+		main.ui.sub_back()
+		main.ui.sub_back()
+		main.open_arcade()
+		await wait(0.8)
+		await tap("jump")
+		await wait(0.4)
+		Input.action_press("jump")
+		await wait(0.45)
+		await shot("q_arcade_charge")
+		Input.action_release("jump")
+		await wait(0.6)
+		await shot("q_arcade_shot")
+		print("arcade state=", main.arcade.state)
+		main.arcade.score = 17
+		main.arcade._game_over()
+		await wait(0.3)
+		await shot("q_arcade_over")
+		get_tree().quit()
+		return
 	if OS.get_environment("QUICK") != "":
 		await _quick(int(OS.get_environment("QUICK")))
 		return
 	await wait(1.0)
 	await shot("01_title")
+	# splash
+	var sp = main.SplashScript.new()
+	sp.main = main
+	main.mode = "splash"
+	main.ui_layer.add_child(sp)
+	await wait(1.6)
+	await shot("00_splash")
+	await wait(2.4)
+	# settings and controls
+	main.ui.show_sub("settings")
+	await wait(0.3)
+	await shot("01b_settings")
+	main.ui.show_sub("controls")
+	await wait(0.3)
+	await shot("01c_controls")
+	var ev = InputEventKey.new()
+	ev.physical_keycode = KEY_K
+	Game.rebind("jump", ev)
+	var pj = InputEventJoypadButton.new()
+	pj.button_index = JOY_BUTTON_A
+	print("REBIND jump=", Game.bind_label("jump", false), " dash_keys=", Game.settings["bind"]["dash"]["k"].size(), " ps=", Game.PAD_NAMES["ps"]["b0"])
+	Game.reset_bindings()
+	main.ui.sub_back()
+	main.ui.sub_back()
+	# LSMG arcade
+	main.open_arcade()
+	await wait(0.8)
+	await shot("02a_arcade_title")
+	await tap("jump")
+	await wait(0.4)
+	Input.action_press("jump")
+	await wait(0.45)
+	await shot("02b_arcade_charge")
+	Input.action_release("jump")
+	await wait(0.7)
+	await shot("02c_arcade_shot")
+	main.arcade.clock = 4.0
+	await wait(0.4)
+	await shot("02d_arcade_lastshot")
+	main.arcade.score = 17
+	main.arcade._game_over()
+	await wait(0.3)
+	await shot("02e_arcade_over")
+	main.arcade._exit()
+	await wait(0.4)
+	print("ARCADE mode=", main.mode, " high=", Game.settings.get("high", 0))
 	main.new_game()
 	await wait(1.2)
 	await shot("02_intro_dialog")
@@ -319,6 +390,19 @@ func _run() -> void:
 	await tap("laser")
 	await wait(0.3)
 	await shot("45_jason_wave")
+	main.player.res = 99.0
+	await tap("transform")
+	await wait(0.5)
+	await shot("45b_jason_ego")
+	await tap("attack")
+	await wait(0.1)
+	await shot("45c_ego_strike")
+	await tap("switch")
+	await wait(0.4)
+	await shot("45d_max_ego")
+	print("EGO shinobi=", main.player.shinobi, " key=", main.player.rig.key)
+	await tap("transform")
+	await wait(0.3)
 	await wait(0.6)
 	for i in 8:
 		main._drop("xp", main.player.position + Vector2(60, -40), {"xp": 30})

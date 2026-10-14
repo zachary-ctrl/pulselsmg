@@ -68,7 +68,7 @@ func step(dt: float) -> void:
 				if absf(dx) < 90.0 and cd <= 0.0:
 					state = "attack"
 					tm = 0.5
-					Sound.play("lunge", 0.1, -4.0)
+					Sound.play("u_bat", 0.1, -6.0)
 				elif cd <= 0.0:
 					state = "shoot"
 					tm = 0.55
@@ -86,7 +86,7 @@ func step(dt: float) -> void:
 				var from: Vector2 = position + Vector2(face * 18, -30)
 				var to: Vector2 = p.position + Vector2(0, -30)
 				main.fx.shoot(from, (to - from).normalized() * 250.0, 7.0, "orb", Color("#ff5a4a"))
-				Sound.play("zap", 0.1, -4.0)
+				Sound.play("u_spit", 0.1, -4.0)
 			if tm <= 0.0:
 				state = "idle"
 				cd = 2.2 + randf() * 0.8

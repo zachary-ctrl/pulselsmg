@@ -14,8 +14,11 @@ func _text(font: Font, pos: Vector2, s: String, size: int, col: Color, center :=
 	draw_string(font, pos - Vector2(w / 2.0 if center else 0.0, 0), s, HORIZONTAL_ALIGNMENT_LEFT, -1, size, col)
 
 
+var _plate: Texture2D
+
+
 func _draw() -> void:
-	if main == null or main.mode == "title" or main.mode == "boot":
+	if main == null or main.mode in ["title", "boot", "splash", "arcade"]:
 		return
 	var W = 960.0
 	var H = 540.0
@@ -29,6 +32,11 @@ func _draw() -> void:
 		return
 	var p: Node = main.player
 	var t: float = main.t
+	# cyberpunk GUI plate behind the orb, health and party
+	if _plate == null:
+		_plate = load("res://assets/gui/plate2.png")
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	draw_texture_rect(_plate, Rect2(4, 2, 349, 115), false, Color(1, 1, 1, 0.92))
 	# resonance orb
 	var c = Vector2(56, 56)
 	var r = 34.0
@@ -62,7 +70,7 @@ func _draw() -> void:
 	if p.max_hp > 20:
 		_text(Game.font_display, Vector2(112, 50), "%d / %d" % [p.hp, p.max_hp], 18, Color("#efe7da"))
 	for i in (p.max_hp if p.max_hp <= 20 else 0):
-		var sp = clampf(330.0 / p.max_hp, 15.0, 30.0)
+		var sp = clampf(225.0 / p.max_hp, 14.0, 26.0)
 		var kq = clampf(sp / 26.0, 0.6, 1.0)
 		var sc = Vector2(110 + i * sp, 44)
 		var dia = PackedVector2Array([sc + Vector2(0, -13) * kq, sc + Vector2(9, -2) * kq, sc + Vector2(0, 13) * kq, sc + Vector2(-9, -2) * kq])
@@ -73,11 +81,15 @@ func _draw() -> void:
 			draw_colored_polygon(dia, Color(0.08, 0.08, 0.12, 0.6))
 			dia.append(dia[0])
 			draw_polyline(dia, Color(0.93, 0.9, 0.85, 0.35), 1.2)
-	_text(Game.font_semi, Vector2(96, 78), ("FULL POTENTIAL READY [" + Game.label("fp") + "]") if full else "RESONANCE", 12, Color(0.93, 0.9, 0.85, 0.7))
+	if not p.shinobi:
+		_text(Game.font_semi, Vector2(110, 78), ("FULL POTENTIAL READY [" + Game.label("fp") + "]") if full else ("RESONANCE · %s alter ego" % ("[" + Game.label("transform") + "]") if p.res >= 30.0 else "RESONANCE"), 12, Color(0.93, 0.9, 0.85, 0.7))
 	# hero, level and party
 	for i in 10:
 		draw_rect(Rect2(0, 96 + i * 5.0, 300 - i * 12.0, 5), Color(0, 0, 0, 0.32 - i * 0.02))
 	var hd: Dictionary = Game.HEROES[p.hero]
+	if p.shinobi:
+		var ego = "ALTER EGO · " + p.EGO_NAMES[p.hero]
+		_text(Game.font_display, Vector2(110, 78), ego, 12, Color(hd["col"]).lerp(Color.WHITE, 0.3 + 0.2 * sin(t * 6.0)))
 	var pg: Dictionary = Game.prog
 	_text(Game.font_display, Vector2(22, 112), "%s · LV %d" % [hd["name"], pg["level"]], 13, Color(hd["col"]))
 	draw_rect(Rect2(22, 118, 150, 3), Color(1, 1, 1, 0.12))

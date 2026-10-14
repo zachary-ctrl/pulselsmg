@@ -82,7 +82,7 @@ func step(dt: float) -> void:
 				tm = 0.5
 				velocity.x = 0
 				face = int(signf(dx)) if dx != 0 else 1
-				Sound.play("whisper")
+				Sound.play("u_zombie" if randf() < 0.35 else "whisper", 0.1, -6.0)
 		"notice":
 			velocity.x = 0
 			if dx != 0:

@@ -41,6 +41,13 @@ var flurry_tick = 0.0
 var hero = "max"
 var aura: Node2D
 var swap_t = 0.0
+var shinobi = false
+var air_jumps = 0
+var wall_dir = 0
+var wall_grace = 0.0
+var wall_lock = 0.0
+var down_hold = 0.0
+const EGO_NAMES := {"max": "SHADOW", "lana": "RONIN", "jason": "BRAWLER"}
 var hit_set = {}
 var pogo_done = false
 var recoil_t = 0.0
@@ -87,13 +94,35 @@ func setup(astral: bool) -> void:
 
 func set_hero(h: String) -> void:
 	hero = h
-	rig.key = h
+	rig.key = h + "_sh" if shinobi else h
 	aura.color = Game.HEROES[h]["aura"]
 	swap_t = 0.6
 
 
 func dmg_bonus() -> int:
-	return int(Game.mod("dmg")) + int(Game.attr(hero, "pow") / 2)
+	return int(Game.mod("dmg")) + int(Game.attr(hero, "pow") / 2) + (1 if shinobi else 0)
+
+
+## Alter ego: the hero becomes their shinobi self. Faster, an extra air jump,
+## harder hits, but it burns Resonance while it lasts.
+func set_shinobi(on: bool) -> void:
+	if on == shinobi or is_astral:
+		return
+	shinobi = on
+	rig.key = hero + "_sh" if on else hero
+	swap_t = 0.6
+	if on:
+		Sound.play("u_transform", 0.0, -3.0)
+		main.flash_screen(0.35, Color(Game.HEROES[hero]["col"]))
+		main.fx.sprite("ring", position + Vector2(0, -4), 200.0, 0.4, 0.0, Color(Game.HEROES[hero]["col"]), 4, 2)
+		main.fx.sprite("vfx/burst_pink" if hero == "max" else ("vfx/burst_ice" if hero == "jason" else "vfx/comet_orange"), position + Vector2(0, -40), 140.0, 0.45, -PI / 2.0 if hero == "lana" else 0.0)
+		main.toast("ALTER EGO: " + EGO_NAMES[hero])
+		Game.rumble(0.4, 0.6, 0.35)
+	else:
+		Sound.play("u_portal", 0.0, -8.0)
+	for i in 30:
+		var a = randf() * TAU
+		main.fx.part(position + Vector2(0, -36), Vector2(cos(a), sin(a)) * 260.0, "spark", Color(Game.HEROES[hero]["col"]))
 
 
 func hitbox() -> Rect2:
@@ -111,8 +140,21 @@ func control(dt: float) -> void:
 	if not is_astral:
 		var hd: Dictionary = Game.HEROES[hero]
 		prm = PRM_BODY.duplicate()
-		prm["run"] = hd["run"] * (1.0 + Game.mod("speed"))
-		prm["jump"] = hd["jump"]
+		prm["run"] = hd["run"] * (1.0 + Game.mod("speed")) * (1.25 if shinobi else 1.0)
+		prm["jump"] = hd["jump"] * (1.06 if shinobi else 1.0)
+		if Input.is_action_just_pressed("transform"):
+			if shinobi:
+				set_shinobi(false)
+			elif res >= 30.0:
+				set_shinobi(true)
+			else:
+				main.toast("Alter ego needs 30 Resonance")
+				Sound.play("glitch", 0.05, -6.0)
+		if shinobi:
+			res = maxf(0.0, res - 4.5 * dt)
+			if res <= 0.0:
+				set_shinobi(false)
+				main.toast("Your alter ego fades")
 	swap_t = maxf(0.0, swap_t - dt)
 	var was_floor = is_on_floor()
 	var vy_before = velocity.y
@@ -155,8 +197,10 @@ func control(dt: float) -> void:
 			velocity.x = move_toward(velocity.x, 0.0, 3000.0 * dt)
 		elif kick_t > 0.0 and is_on_floor():
 			velocity.x = face * 520.0 * maxf(0.0, (kick_t - 0.12) / 0.2)
+		elif wall_lock > 0.0:
+			wall_lock -= dt
 		else:
-			velocity.x = move_toward(velocity.x, dir * prm["run"], (4200.0 if is_on_floor() else 2800.0) * dt)
+			velocity.x = move_toward(velocity.x, dir * prm["run"], (4600.0 if is_on_floor() else 3800.0) * dt)
 		if dir != 0 and atk_t <= 0.0 and kick_t <= 0.0 and laser_t <= 0.0 and not dive:
 			face = dir
 		if dive:
@@ -165,11 +209,33 @@ func control(dt: float) -> void:
 			velocity.y = minf(velocity.y + prm["grav"] * 0.25 * dt, 90.0)
 		else:
 			velocity.y = minf(velocity.y + prm["grav"] * dt, prm["max_fall"])
+	# Wall slide: hold toward a wall while falling.
+	wall_grace -= dt
+	if not is_astral and not is_on_floor() and is_on_wall() and dash_t <= 0.0:
+		var n = get_wall_normal().x
+		if n != 0.0 and dir == -int(signf(n)):
+			wall_dir = -int(signf(n))
+			wall_grace = 0.12
+			if velocity.y > 120.0:
+				velocity.y = 120.0
+				if randf() < 0.3:
+					main.fx.part(position + Vector2(wall_dir * w / 2.0, -50), Vector2(0, -20), "dust", Color("#c8c0b0"))
 	if Input.is_action_just_pressed("jump"):
-		jump_buf = 0.13
+		jump_buf = 0.16
 	else:
 		jump_buf -= dt
-	coyote = 0.1 if is_on_floor() else coyote - dt
+	coyote = 0.14 if is_on_floor() else coyote - dt
+	# Hold down on a desk or ledge to drop through.
+	if is_on_floor() and ground_oneway and Input.is_action_pressed("down") and dir == 0 and not healing:
+		down_hold += dt
+		if down_hold > 0.22:
+			down_hold = 0.0
+			drop_t = 0.25
+			_set_drop(true)
+			position.y += 2
+	else:
+		down_hold = 0.0
+	var max_air = (1 if Game.ability.get("double", false) else 0) + (1 if shinobi else 0)
 	if jump_buf > 0.0 and not healing:
 		if Input.is_action_pressed("down") and is_on_floor() and ground_oneway:
 			drop_t = 0.25
@@ -184,8 +250,21 @@ func control(dt: float) -> void:
 			Sound.play("jump", 0.06)
 			for i in 6:
 				main.fx.part(position, Vector2(randf_range(-60, 60), -randf() * 40), "dust", Color("#c8c0b0"))
-		elif not is_astral and Game.ability.get("double", false) and not used_double and dash_t <= 0.0:
+		elif not is_astral and wall_grace > 0.0:
+			velocity.y = -prm["jump"] * 0.92
+			velocity.x = -wall_dir * prm["run"] * 1.15
+			face = -wall_dir
+			wall_lock = 0.14
+			wall_grace = 0.0
+			jump_buf = 0.0
+			jump_cut = false
+			air_dash = true
+			Sound.play("jump", 0.06)
+			for i in 8:
+				main.fx.part(position + Vector2(wall_dir * w / 2.0, -30), Vector2(-wall_dir * randf() * 120, randf_range(-60, 60)), "dust", Color("#c8c0b0"))
+		elif not is_astral and air_jumps < max_air and dash_t <= 0.0:
 			velocity.y = -prm["jump"] * 0.88
+			air_jumps += 1
 			used_double = true
 			jump_buf = 0.0
 			jump_cut = false
@@ -225,7 +304,7 @@ func control(dt: float) -> void:
 		var base_dmg: int = 1 if is_astral else int(Game.HEROES[hero]["dmg"])
 		atk_dmg = (base_dmg + 1 + int(Game.mod("heavy")) if combo == 2 else base_dmg) + dmg_bonus()
 		atk_t = 0.24
-		var cdb: float = 0.26 if is_astral else float(Game.HEROES[hero]["cd"])
+		var cdb: float = 0.26 if is_astral else float(Game.HEROES[hero]["cd"]) * (0.8 if shinobi else 1.0)
 		atk_cd = cdb + 0.16 if combo == 2 else cdb
 		hit_set = {}
 		Sound.play("slash", 0.08)
@@ -238,7 +317,9 @@ func control(dt: float) -> void:
 		drop_t -= dt
 		if drop_t <= 0.0:
 			_set_drop(false)
+	var vy_pre = velocity.y
 	move_and_slide()
+	_assists(dir, vy_pre)
 	position.x = clampf(position.x, w / 2.0, main.room.room_size.x - w / 2.0)
 	ground_oneway = false
 	if is_on_floor():
@@ -247,6 +328,7 @@ func control(dt: float) -> void:
 			if col is StaticBody2D and (col.collision_layer & (2 | 4)) != 0:
 				ground_oneway = true
 		used_double = false
+		air_jumps = 0
 		air_dash = true
 		if dive:
 			_end_dive(true)
@@ -301,6 +383,26 @@ func _end_dive(landed: bool) -> void:
 		main.fx.sprite("dust", position + Vector2(0, -14), 90.0, 0.4, 0.0, Color.WHITE, 6)
 		for i in 12:
 			main.fx.part(position, Vector2(randf_range(-260, 260), -randf() * 90), "dust", Color("#e8d8c0"))
+
+
+## Movement assists: climb onto a ledge you just barely missed, and slip
+## around ceiling corners instead of bonking.
+func _assists(dir: int, vy_pre: float) -> void:
+	if is_astral:
+		return
+	if dir != 0 and not is_on_floor() and is_on_wall() and vy_pre > -260.0:
+		for k in range(6, 34, 2):
+			var tr = global_transform.translated(Vector2(0, -k))
+			if not test_move(tr, Vector2(dir * 8, 0)) and test_move(tr.translated(Vector2(dir * 8, 0)), Vector2(0, k + 4)):
+				position += Vector2(dir * 8, -k)
+				velocity.y = minf(velocity.y, 0.0)
+				break
+	if is_on_ceiling() and vy_pre < -100.0:
+		for off in [4, -4, 8, -8, 12, -12]:
+			if not test_move(global_transform.translated(Vector2(off, 0)), Vector2(0, -8)):
+				position.x += off
+				velocity.y = vy_pre
+				break
 
 
 func dive_bounce() -> void:
@@ -416,6 +518,9 @@ func update_pose(t: float, slumped: bool) -> void:
 	elif not is_astral:
 		rig.tint = Color(0.65, 0.55, 1.0, 0.18) if Game.overdraw > 0 else Color(0, 0, 0, 0)
 	rig.flash = 0.5 if (not is_astral and inv > 1.0) else 0.0
+	if not is_astral and not is_on_floor() and wall_grace > 0.08 and velocity.y > 0.0 and atk_t <= 0.0:
+		rig.seek("jump", 0.95)
+		rig.face = -wall_dir
 	var blink = inv > 0.0 and not is_astral and not slumped and int(inv * 14.0) % 2 == 1
 	rig.visible = not blink
 	if is_astral:
@@ -423,5 +528,5 @@ func update_pose(t: float, slumped: bool) -> void:
 		aura.target = 0.35
 	else:
 		var hot = laser_t > 0.0 or flurry_t > 0.0 or swap_t > 0.0 or heal_t > 0.0
-		aura.target = 1.0 if hot else (0.6 if res >= Game.fp_need() else 0.0)
+		aura.target = 1.0 if hot else (0.6 if res >= Game.fp_need() or shinobi else 0.0)
 	aura.face = face

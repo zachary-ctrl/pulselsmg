@@ -18,6 +18,8 @@ const Imp = preload("res://scripts/enemies/imp.gd")
 const Rider = preload("res://scripts/enemies/rider.gd")
 const Collective = preload("res://scripts/enemies/collective.gd")
 const AllyScript = preload("res://scripts/ally.gd")
+const SplashScript = preload("res://scripts/splash.gd")
+const ArcadeScript = preload("res://scripts/arcade.gd")
 const Exhibit = preload("res://scripts/enemies/exhibit.gd")
 const FxScript = preload("res://scripts/fx.gd")
 const HudScript = preload("res://scripts/hud.gd")
@@ -148,9 +150,35 @@ func _ready() -> void:
 	player = PlayerScript.new()
 	player.main = self
 	player.setup(false)
-	show_title()
 	if "--autotest" in OS.get_cmdline_user_args():
+		show_title()
 		add_child(load("res://tools/autotest.gd").new())
+	else:
+		mode = "splash"
+		var sp = SplashScript.new()
+		sp.main = self
+		ui_layer.add_child(sp)
+
+
+func splash_done() -> void:
+	show_title()
+
+
+var arcade: Control = null
+
+
+func open_arcade() -> void:
+	mode = "arcade"
+	ui.hide_title()
+	ui._touch.visible = Game.touch_mode
+	arcade = ArcadeScript.new()
+	arcade.main = self
+	ui_layer.add_child(arcade)
+
+
+func close_arcade() -> void:
+	arcade = null
+	show_title()
 
 
 # ---------- modes ----------
@@ -209,6 +237,8 @@ func _reset_player() -> void:
 		h = "max"
 	player.set_hero(h)
 	player.swap_t = 0.0
+	player.shinobi = false
+	player.set_hero(h)
 	player.max_hp = Game.hero_max_hp(h)
 	player.hp = player.max_hp
 	player.res = 0.0
@@ -459,6 +489,8 @@ func say(lines: Array, on_end := Callable()) -> void:
 func _physics_process(dt: float) -> void:
 	t += dt
 	match mode:
+		"splash", "arcade":
+			return
 		"title", "boot", "pause", "choice", "end", "menu":
 			if mode == "menu" and (Input.is_action_just_pressed("menu") or Input.is_action_just_pressed("pause")):
 				close_menu()
@@ -839,6 +871,9 @@ func attack_hits(e: CharacterBody2D) -> void:
 	if hit:
 		hitstop = 0.09 if e.atk_dmg > 1 else 0.055
 		Sound.play("hit", 0.08)
+		if not e.is_astral and e.hero != "max":
+			Sound.play("u_punch1" if randf() < 0.5 else "u_punch2", 0.1, -6.0)
+		Game.rumble(0.25 if e.atk_dmg > 1 else 0.12, 0.3 if e.atk_dmg > 1 else 0.0, 0.12)
 		shake = maxf(shake, 0.16 if e.atk_dmg > 1 else 0.08)
 	if kind == "dive" and hit:
 		e.dive_bounce()
@@ -873,6 +908,7 @@ func fire_special(p: CharacterBody2D, kind: String) -> void:
 		"laser":
 			fire_laser(p)
 		"orb":
+			Sound.play("u_spell", 0.05, -6.0)
 			fx.projectiles.append({"p": p.position + Vector2(p.face * 26, -44), "v": Vector2(p.face * 260, -40), "r": 13.0, "k": "mind", "c": Color("#c9b8ff"),
 				"life": 3.2, "grav": 0.0, "rot": 0.0, "friendly": true, "home": true, "dmg": special_dmg(p, 2), "hits": {}})
 			Sound.play("zap")
@@ -940,6 +976,7 @@ func start_elite(e: Node) -> void:
 		return
 	fight = {"id": "elite", "name": "STATIC RIDER", "sub": "Something that rode out of a nightmare", "e": e}
 	Sound.play("gate")
+	Sound.play("u_roar", 0.0, -2.0)
 	shake = 0.3
 
 
@@ -964,6 +1001,8 @@ func fire_laser(p: CharacterBody2D) -> void:
 	beam = beam.grow_individual(0, thick / 2.0, 0, thick / 2.0) if dir.y == 0.0 else beam.grow_individual(thick / 2.0, 0, thick / 2.0, 0)
 	fx.lasers.append({"a": from, "b": to, "life": 0.3, "max": 0.3, "c": Color(0.72, 0.5, 1.0), "k": "laser"})
 	Sound.play("beam", 0.05)
+	Sound.play("u_shot", 0.05, -8.0)
+	Game.rumble(0.3, 0.5, 0.2)
 	shake = maxf(shake, 0.18)
 	fx.burst(to, 16, 360, Color("#ffd6a0"))
 	var hit = false
@@ -1000,6 +1039,7 @@ func hurt_player(d: int, from_x: float) -> void:
 	shake = 0.3
 	flash_screen(0.25, Color.WHITE)
 	Sound.play("hurt")
+	Game.rumble(0.5, 0.8, 0.25)
 	fx.burst(player.position + Vector2(0, -30), 14, 300, Color.WHITE)
 	if astral_active():
 		end_projection(true)
@@ -1405,6 +1445,7 @@ func switch_hero(h: String) -> void:
 	player.flurry_t = 0.0
 	player.laser_t = 0.0
 	Sound.play("swap")
+	Sound.play("u_swap", 0.05, -8.0)
 	fx.burst(player.position + Vector2(0, -34), 26, 320, Color(Game.HEROES[h]["col"]))
 	fx.sprite("ring", player.position + Vector2(0, -4), 150.0, 0.35, 0.0, Color(Game.HEROES[h]["col"]), 4, 2)
 	toast("Playing as " + Game.HEROES[h]["name"].capitalize())
@@ -1573,6 +1614,7 @@ func _collect(pk: Dictionary) -> void:
 			var it: String = pk["item"]
 			Game.give_item(it)
 			Sound.play("unlock")
+			Sound.play("u_item", 0.0, -4.0)
 			flash_screen(0.3, Color("#ffd68a"))
 			card = {"name": Game.ITEMS[it]["name"], "sub": Game.ITEMS[it]["d"] + "   [" + Game.label("menu") + "] to equip", "t": 0.0}
 			var m: int = Game.hero_max_hp(player.hero)

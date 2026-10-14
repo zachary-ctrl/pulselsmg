@@ -39,6 +39,7 @@ func step(dt: float) -> void:
 
 func _phase2_extra() -> void:
 	main.toast("COLLECTIVE COGNITION: 100% SYNCHRONIZED")
+	Sound.play("u_laugh", 0.0, -2.0)
 
 
 func _on_defeat() -> void:

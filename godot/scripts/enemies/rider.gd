@@ -84,7 +84,7 @@ func step(dt: float) -> void:
 				else:
 					state = "sneer"
 					tm = 0.55
-					Sound.play("whisper", 0.1)
+					Sound.play("u_boar", 0.1, -4.0)
 					if elite:
 						main.start_elite(self)
 		"sneer":

@@ -13,7 +13,8 @@ var _amb: AudioStreamPlayer
 var _amb_name = ""
 var _focus: AudioStreamPlayer
 
-const SFX := ["slash", "kick", "hit", "pickup", "levelup", "swap", "splash", "step_wood", "step_tile", "step_lino", "step_metal", "step_astral", "land", "jump", "djump", "dash", "hurt",
+const SFX := ["lsmg_jingle", "ar_blip", "ar_charge", "ar_shoot", "ar_swish", "ar_rim", "ar_buzzer", "ar_bounce", "ar_three", "u_punch1", "u_punch2", "u_throw", "u_shot", "u_transform", "u_portal", "u_swap", "u_item", "u_boar", "u_roar", "u_bat", "u_spit", "u_raven", "u_zombie", "u_laugh", "u_spell", "u_reload", "u_shot2",
+	"slash", "kick", "hit", "pickup", "levelup", "swap", "splash", "step_wood", "step_tile", "step_lino", "step_metal", "step_astral", "land", "jump", "djump", "dash", "hurt",
 	"focus", "heal", "phone", "project", "return", "tick", "fp", "ehit", "lunge", "stabilize", "whisper", "zap", "pop", "rewind", "shards",
 	"glitch", "charge", "beam", "chain", "throw", "glass", "lock", "boom", "stagger", "phase2", "defeat", "unlock", "gate", "rest", "whoosh",
 	"gong", "death", "heartbeat", "select", "choice", "pause", "endsting", "door", "voice_max", "voice_lana", "voice_jason", "voice_ciencia",

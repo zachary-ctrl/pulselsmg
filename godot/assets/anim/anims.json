@@ -1744,6 +1744,986 @@
      }
     ]
    }
+  },
+  "max_sh": {
+   "pixel": true,
+   "idle": {
+    "fps": 8,
+    "loop": true,
+    "frames": [
+     {
+      "f": "max_sh/idle_0.png",
+      "ax": 30.0,
+      "ay": 158
+     },
+     {
+      "f": "max_sh/idle_1.png",
+      "ax": 30.0,
+      "ay": 158
+     },
+     {
+      "f": "max_sh/idle_2.png",
+      "ax": 32.0,
+      "ay": 158
+     },
+     {
+      "f": "max_sh/idle_3.png",
+      "ax": 30.0,
+      "ay": 158
+     },
+     {
+      "f": "max_sh/idle_4.png",
+      "ax": 30.0,
+      "ay": 158
+     },
+     {
+      "f": "max_sh/idle_5.png",
+      "ax": 30.0,
+      "ay": 158
+     }
+    ]
+   },
+   "run": {
+    "fps": 12,
+    "loop": true,
+    "frames": [
+     {
+      "f": "max_sh/run_0.png",
+      "ax": 102.0,
+      "ay": 148
+     },
+     {
+      "f": "max_sh/run_1.png",
+      "ax": 102.0,
+      "ay": 146
+     },
+     {
+      "f": "max_sh/run_2.png",
+      "ax": 102.0,
+      "ay": 144
+     },
+     {
+      "f": "max_sh/run_3.png",
+      "ax": 102.0,
+      "ay": 146
+     },
+     {
+      "f": "max_sh/run_4.png",
+      "ax": 102.0,
+      "ay": 148
+     },
+     {
+      "f": "max_sh/run_5.png",
+      "ax": 102.0,
+      "ay": 150
+     },
+     {
+      "f": "max_sh/run_6.png",
+      "ax": 102.0,
+      "ay": 148
+     },
+     {
+      "f": "max_sh/run_7.png",
+      "ax": 102.0,
+      "ay": 150
+     }
+    ]
+   },
+   "walk": {
+    "fps": 10,
+    "loop": true,
+    "frames": [
+     {
+      "f": "max_sh/walk_0.png",
+      "ax": 46.0,
+      "ay": 160
+     },
+     {
+      "f": "max_sh/walk_1.png",
+      "ax": 46.0,
+      "ay": 158
+     },
+     {
+      "f": "max_sh/walk_2.png",
+      "ax": 46.0,
+      "ay": 160
+     },
+     {
+      "f": "max_sh/walk_3.png",
+      "ax": 46.0,
+      "ay": 162
+     },
+     {
+      "f": "max_sh/walk_4.png",
+      "ax": 46.0,
+      "ay": 160
+     },
+     {
+      "f": "max_sh/walk_5.png",
+      "ax": 46.0,
+      "ay": 158
+     },
+     {
+      "f": "max_sh/walk_6.png",
+      "ax": 46.0,
+      "ay": 160
+     },
+     {
+      "f": "max_sh/walk_7.png",
+      "ax": 46.0,
+      "ay": 162
+     }
+    ]
+   },
+   "jump": {
+    "fps": 8,
+    "loop": false,
+    "frames": [
+     {
+      "f": "max_sh/jump_0.png",
+      "ax": 40.0,
+      "ay": 146
+     },
+     {
+      "f": "max_sh/jump_1.png",
+      "ax": 26.0,
+      "ay": 166
+     },
+     {
+      "f": "max_sh/jump_2.png",
+      "ax": 32.0,
+      "ay": 156
+     }
+    ]
+   },
+   "land": {
+    "fps": 14,
+    "loop": false,
+    "frames": [
+     {
+      "f": "max_sh/land_0.png",
+      "ax": 70.0,
+      "ay": 136
+     },
+     {
+      "f": "max_sh/land_1.png",
+      "ax": 76.0,
+      "ay": 128
+     }
+    ]
+   },
+   "dash": {
+    "fps": 18,
+    "loop": false,
+    "frames": [
+     {
+      "f": "max_sh/dash_0.png",
+      "ax": 102.0,
+      "ay": 144
+     },
+     {
+      "f": "max_sh/dash_1.png",
+      "ax": 102.0,
+      "ay": 146
+     },
+     {
+      "f": "max_sh/dash_2.png",
+      "ax": 102.0,
+      "ay": 148
+     }
+    ]
+   },
+   "strike": {
+    "fps": 20,
+    "loop": false,
+    "frames": [
+     {
+      "f": "max_sh/strike_0.png",
+      "ax": 38.0,
+      "ay": 158
+     },
+     {
+      "f": "max_sh/strike_1.png",
+      "ax": 60.0,
+      "ay": 156
+     },
+     {
+      "f": "max_sh/strike_2.png",
+      "ax": 72.0,
+      "ay": 156
+     },
+     {
+      "f": "max_sh/strike_3.png",
+      "ax": 42.0,
+      "ay": 148
+     },
+     {
+      "f": "max_sh/strike_4.png",
+      "ax": 42.0,
+      "ay": 148
+     }
+    ]
+   },
+   "strike_up": {
+    "fps": 20,
+    "loop": false,
+    "frames": [
+     {
+      "f": "max_sh/strike_up_0.png",
+      "ax": 40.0,
+      "ay": 144
+     },
+     {
+      "f": "max_sh/strike_up_1.png",
+      "ax": 84.0,
+      "ay": 152
+     },
+     {
+      "f": "max_sh/strike_up_2.png",
+      "ax": 92.0,
+      "ay": 152
+     }
+    ]
+   },
+   "strike_down": {
+    "fps": 20,
+    "loop": false,
+    "frames": [
+     {
+      "f": "max_sh/strike_down_0.png",
+      "ax": 86.0,
+      "ay": 156
+     },
+     {
+      "f": "max_sh/strike_down_1.png",
+      "ax": 68.0,
+      "ay": 154
+     },
+     {
+      "f": "max_sh/strike_down_2.png",
+      "ax": 50.0,
+      "ay": 154
+     },
+     {
+      "f": "max_sh/strike_down_3.png",
+      "ax": 50.0,
+      "ay": 154
+     }
+    ]
+   },
+   "hurt": {
+    "fps": 12,
+    "loop": false,
+    "frames": [
+     {
+      "f": "max_sh/hurt_0.png",
+      "ax": 40.0,
+      "ay": 150
+     },
+     {
+      "f": "max_sh/hurt_1.png",
+      "ax": 40.0,
+      "ay": 150
+     }
+    ]
+   },
+   "dead": {
+    "fps": 10,
+    "loop": false,
+    "frames": [
+     {
+      "f": "max_sh/dead_0.png",
+      "ax": 52.0,
+      "ay": 140
+     },
+     {
+      "f": "max_sh/dead_1.png",
+      "ax": 54.0,
+      "ay": 126
+     },
+     {
+      "f": "max_sh/dead_2.png",
+      "ax": 52.0,
+      "ay": 120
+     },
+     {
+      "f": "max_sh/dead_3.png",
+      "ax": 54.0,
+      "ay": 30
+     }
+    ]
+   },
+   "shield": {
+    "fps": 10,
+    "loop": false,
+    "frames": [
+     {
+      "f": "max_sh/shield_0.png",
+      "ax": 54.0,
+      "ay": 156
+     },
+     {
+      "f": "max_sh/shield_1.png",
+      "ax": 54.0,
+      "ay": 156
+     },
+     {
+      "f": "max_sh/shield_2.png",
+      "ax": 54.0,
+      "ay": 156
+     },
+     {
+      "f": "max_sh/shield_3.png",
+      "ax": 54.0,
+      "ay": 156
+     }
+    ]
+   }
+  },
+  "lana_sh": {
+   "pixel": true,
+   "idle": {
+    "fps": 8,
+    "loop": true,
+    "frames": [
+     {
+      "f": "lana_sh/idle_0.png",
+      "ax": 49.0,
+      "ay": 162
+     },
+     {
+      "f": "lana_sh/idle_1.png",
+      "ax": 49.0,
+      "ay": 164
+     },
+     {
+      "f": "lana_sh/idle_2.png",
+      "ax": 49.0,
+      "ay": 166
+     },
+     {
+      "f": "lana_sh/idle_3.png",
+      "ax": 49.0,
+      "ay": 166
+     },
+     {
+      "f": "lana_sh/idle_4.png",
+      "ax": 49.0,
+      "ay": 166
+     },
+     {
+      "f": "lana_sh/idle_5.png",
+      "ax": 49.0,
+      "ay": 164
+     }
+    ]
+   },
+   "run": {
+    "fps": 12,
+    "loop": true,
+    "frames": [
+     {
+      "f": "lana_sh/run_0.png",
+      "ax": 101.0,
+      "ay": 158
+     },
+     {
+      "f": "lana_sh/run_1.png",
+      "ax": 101.0,
+      "ay": 156
+     },
+     {
+      "f": "lana_sh/run_2.png",
+      "ax": 101.0,
+      "ay": 154
+     },
+     {
+      "f": "lana_sh/run_3.png",
+      "ax": 101.0,
+      "ay": 156
+     },
+     {
+      "f": "lana_sh/run_4.png",
+      "ax": 101.0,
+      "ay": 158
+     },
+     {
+      "f": "lana_sh/run_5.png",
+      "ax": 101.0,
+      "ay": 156
+     },
+     {
+      "f": "lana_sh/run_6.png",
+      "ax": 101.0,
+      "ay": 154
+     },
+     {
+      "f": "lana_sh/run_7.png",
+      "ax": 101.0,
+      "ay": 156
+     }
+    ]
+   },
+   "walk": {
+    "fps": 10,
+    "loop": true,
+    "frames": [
+     {
+      "f": "lana_sh/walk_0.png",
+      "ax": 79.0,
+      "ay": 166
+     },
+     {
+      "f": "lana_sh/walk_1.png",
+      "ax": 79.0,
+      "ay": 168
+     },
+     {
+      "f": "lana_sh/walk_2.png",
+      "ax": 79.0,
+      "ay": 166
+     },
+     {
+      "f": "lana_sh/walk_3.png",
+      "ax": 79.0,
+      "ay": 164
+     },
+     {
+      "f": "lana_sh/walk_4.png",
+      "ax": 79.0,
+      "ay": 166
+     },
+     {
+      "f": "lana_sh/walk_5.png",
+      "ax": 79.0,
+      "ay": 168
+     },
+     {
+      "f": "lana_sh/walk_6.png",
+      "ax": 79.0,
+      "ay": 166
+     },
+     {
+      "f": "lana_sh/walk_7.png",
+      "ax": 79.0,
+      "ay": 164
+     }
+    ]
+   },
+   "jump": {
+    "fps": 8,
+    "loop": false,
+    "frames": [
+     {
+      "f": "lana_sh/jump_0.png",
+      "ax": 81.0,
+      "ay": 154
+     },
+     {
+      "f": "lana_sh/jump_1.png",
+      "ax": 65.0,
+      "ay": 164
+     },
+     {
+      "f": "lana_sh/jump_2.png",
+      "ax": 63.0,
+      "ay": 156
+     }
+    ]
+   },
+   "land": {
+    "fps": 14,
+    "loop": false,
+    "frames": [
+     {
+      "f": "lana_sh/land_0.png",
+      "ax": 63.0,
+      "ay": 140
+     },
+     {
+      "f": "lana_sh/land_1.png",
+      "ax": 61.0,
+      "ay": 126
+     }
+    ]
+   },
+   "dash": {
+    "fps": 18,
+    "loop": false,
+    "frames": [
+     {
+      "f": "lana_sh/dash_0.png",
+      "ax": 101.0,
+      "ay": 154
+     },
+     {
+      "f": "lana_sh/dash_1.png",
+      "ax": 101.0,
+      "ay": 156
+     },
+     {
+      "f": "lana_sh/dash_2.png",
+      "ax": 101.0,
+      "ay": 158
+     }
+    ]
+   },
+   "strike": {
+    "fps": 20,
+    "loop": false,
+    "frames": [
+     {
+      "f": "lana_sh/strike_0.png",
+      "ax": 85.0,
+      "ay": 148
+     },
+     {
+      "f": "lana_sh/strike_1.png",
+      "ax": 83.0,
+      "ay": 146
+     },
+     {
+      "f": "lana_sh/strike_2.png",
+      "ax": 83.0,
+      "ay": 146
+     },
+     {
+      "f": "lana_sh/strike_3.png",
+      "ax": 83.0,
+      "ay": 148
+     },
+     {
+      "f": "lana_sh/strike_4.png",
+      "ax": 83.0,
+      "ay": 148
+     },
+     {
+      "f": "lana_sh/strike_5.png",
+      "ax": 83.0,
+      "ay": 148
+     }
+    ]
+   },
+   "strike_up": {
+    "fps": 20,
+    "loop": false,
+    "frames": [
+     {
+      "f": "lana_sh/strike_up_0.png",
+      "ax": 71.0,
+      "ay": 148
+     },
+     {
+      "f": "lana_sh/strike_up_1.png",
+      "ax": 77.0,
+      "ay": 148
+     },
+     {
+      "f": "lana_sh/strike_up_2.png",
+      "ax": 71.0,
+      "ay": 146
+     },
+     {
+      "f": "lana_sh/strike_up_3.png",
+      "ax": 71.0,
+      "ay": 146
+     }
+    ]
+   },
+   "strike_down": {
+    "fps": 20,
+    "loop": false,
+    "frames": [
+     {
+      "f": "lana_sh/strike_down_0.png",
+      "ax": 87.0,
+      "ay": 150
+     },
+     {
+      "f": "lana_sh/strike_down_1.png",
+      "ax": 83.0,
+      "ay": 150
+     },
+     {
+      "f": "lana_sh/strike_down_2.png",
+      "ax": 83.0,
+      "ay": 150
+     }
+    ]
+   },
+   "hurt": {
+    "fps": 12,
+    "loop": false,
+    "frames": [
+     {
+      "f": "lana_sh/hurt_0.png",
+      "ax": 51.0,
+      "ay": 158
+     },
+     {
+      "f": "lana_sh/hurt_1.png",
+      "ax": 51.0,
+      "ay": 154
+     }
+    ]
+   },
+   "dead": {
+    "fps": 10,
+    "loop": false,
+    "frames": [
+     {
+      "f": "lana_sh/dead_0.png",
+      "ax": 81.0,
+      "ay": 148
+     },
+     {
+      "f": "lana_sh/dead_1.png",
+      "ax": 83.0,
+      "ay": 116
+     },
+     {
+      "f": "lana_sh/dead_2.png",
+      "ax": 73.0,
+      "ay": 20
+     }
+    ]
+   },
+   "shield": {
+    "fps": 10,
+    "loop": false,
+    "frames": [
+     {
+      "f": "lana_sh/shield_0.png",
+      "ax": 59.0,
+      "ay": 154
+     },
+     {
+      "f": "lana_sh/shield_1.png",
+      "ax": 59.0,
+      "ay": 154
+     }
+    ]
+   }
+  },
+  "jason_sh": {
+   "pixel": true,
+   "idle": {
+    "fps": 8,
+    "loop": true,
+    "frames": [
+     {
+      "f": "jason_sh/idle_0.png",
+      "ax": 30.0,
+      "ay": 162
+     },
+     {
+      "f": "jason_sh/idle_1.png",
+      "ax": 30.0,
+      "ay": 164
+     },
+     {
+      "f": "jason_sh/idle_2.png",
+      "ax": 32.0,
+      "ay": 164
+     },
+     {
+      "f": "jason_sh/idle_3.png",
+      "ax": 34.0,
+      "ay": 164
+     },
+     {
+      "f": "jason_sh/idle_4.png",
+      "ax": 32.0,
+      "ay": 162
+     },
+     {
+      "f": "jason_sh/idle_5.png",
+      "ax": 30.0,
+      "ay": 162
+     }
+    ]
+   },
+   "run": {
+    "fps": 12,
+    "loop": true,
+    "frames": [
+     {
+      "f": "jason_sh/run_0.png",
+      "ax": 38.0,
+      "ay": 152
+     },
+     {
+      "f": "jason_sh/run_1.png",
+      "ax": 46.0,
+      "ay": 150
+     },
+     {
+      "f": "jason_sh/run_2.png",
+      "ax": 54.0,
+      "ay": 148
+     },
+     {
+      "f": "jason_sh/run_3.png",
+      "ax": 26.0,
+      "ay": 150
+     },
+     {
+      "f": "jason_sh/run_4.png",
+      "ax": 30.0,
+      "ay": 152
+     },
+     {
+      "f": "jason_sh/run_5.png",
+      "ax": 46.0,
+      "ay": 150
+     },
+     {
+      "f": "jason_sh/run_6.png",
+      "ax": 58.0,
+      "ay": 148
+     },
+     {
+      "f": "jason_sh/run_7.png",
+      "ax": 26.0,
+      "ay": 150
+     }
+    ]
+   },
+   "walk": {
+    "fps": 10,
+    "loop": true,
+    "frames": [
+     {
+      "f": "jason_sh/walk_0.png",
+      "ax": 32.0,
+      "ay": 166
+     },
+     {
+      "f": "jason_sh/walk_1.png",
+      "ax": 32.0,
+      "ay": 166
+     },
+     {
+      "f": "jason_sh/walk_2.png",
+      "ax": 42.0,
+      "ay": 164
+     },
+     {
+      "f": "jason_sh/walk_3.png",
+      "ax": 38.0,
+      "ay": 164
+     },
+     {
+      "f": "jason_sh/walk_4.png",
+      "ax": 32.0,
+      "ay": 166
+     },
+     {
+      "f": "jason_sh/walk_5.png",
+      "ax": 32.0,
+      "ay": 166
+     },
+     {
+      "f": "jason_sh/walk_6.png",
+      "ax": 40.0,
+      "ay": 164
+     },
+     {
+      "f": "jason_sh/walk_7.png",
+      "ax": 36.0,
+      "ay": 164
+     }
+    ]
+   },
+   "jump": {
+    "fps": 8,
+    "loop": false,
+    "frames": [
+     {
+      "f": "jason_sh/jump_0.png",
+      "ax": 44.0,
+      "ay": 134
+     },
+     {
+      "f": "jason_sh/jump_1.png",
+      "ax": 38.0,
+      "ay": 168
+     },
+     {
+      "f": "jason_sh/jump_2.png",
+      "ax": 26.0,
+      "ay": 168
+     }
+    ]
+   },
+   "land": {
+    "fps": 14,
+    "loop": false,
+    "frames": [
+     {
+      "f": "jason_sh/land_0.png",
+      "ax": 14.0,
+      "ay": 148
+     },
+     {
+      "f": "jason_sh/land_1.png",
+      "ax": 14.0,
+      "ay": 144
+     }
+    ]
+   },
+   "dash": {
+    "fps": 18,
+    "loop": false,
+    "frames": [
+     {
+      "f": "jason_sh/dash_0.png",
+      "ax": 54.0,
+      "ay": 148
+     },
+     {
+      "f": "jason_sh/dash_1.png",
+      "ax": 26.0,
+      "ay": 150
+     },
+     {
+      "f": "jason_sh/dash_2.png",
+      "ax": 30.0,
+      "ay": 152
+     }
+    ]
+   },
+   "strike": {
+    "fps": 20,
+    "loop": false,
+    "frames": [
+     {
+      "f": "jason_sh/strike_0.png",
+      "ax": 46.0,
+      "ay": 162
+     },
+     {
+      "f": "jason_sh/strike_1.png",
+      "ax": 46.0,
+      "ay": 162
+     },
+     {
+      "f": "jason_sh/strike_2.png",
+      "ax": 44.0,
+      "ay": 164
+     },
+     {
+      "f": "jason_sh/strike_3.png",
+      "ax": 44.0,
+      "ay": 166
+     }
+    ]
+   },
+   "strike_up": {
+    "fps": 20,
+    "loop": false,
+    "frames": [
+     {
+      "f": "jason_sh/strike_up_0.png",
+      "ax": 50.0,
+      "ay": 164
+     },
+     {
+      "f": "jason_sh/strike_up_1.png",
+      "ax": 50.0,
+      "ay": 162
+     },
+     {
+      "f": "jason_sh/strike_up_2.png",
+      "ax": 50.0,
+      "ay": 162
+     }
+    ]
+   },
+   "strike_down": {
+    "fps": 20,
+    "loop": false,
+    "frames": [
+     {
+      "f": "jason_sh/strike_down_0.png",
+      "ax": 52.0,
+      "ay": 160
+     },
+     {
+      "f": "jason_sh/strike_down_1.png",
+      "ax": 22.0,
+      "ay": 160
+     },
+     {
+      "f": "jason_sh/strike_down_2.png",
+      "ax": 32.0,
+      "ay": 140
+     },
+     {
+      "f": "jason_sh/strike_down_3.png",
+      "ax": 44.0,
+      "ay": 138
+     }
+    ]
+   },
+   "hurt": {
+    "fps": 12,
+    "loop": false,
+    "frames": [
+     {
+      "f": "jason_sh/hurt_0.png",
+      "ax": 46.0,
+      "ay": 140
+     },
+     {
+      "f": "jason_sh/hurt_1.png",
+      "ax": 46.0,
+      "ay": 140
+     },
+     {
+      "f": "jason_sh/hurt_2.png",
+      "ax": 44.0,
+      "ay": 138
+     }
+    ]
+   },
+   "dead": {
+    "fps": 10,
+    "loop": false,
+    "frames": [
+     {
+      "f": "jason_sh/dead_0.png",
+      "ax": 52.0,
+      "ay": 124
+     },
+     {
+      "f": "jason_sh/dead_1.png",
+      "ax": 52.0,
+      "ay": 118
+     },
+     {
+      "f": "jason_sh/dead_2.png",
+      "ax": 54.0,
+      "ay": 30
+     }
+    ]
+   },
+   "shield": {
+    "fps": 10,
+    "loop": false,
+    "frames": [
+     {
+      "f": "jason_sh/shield_0.png",
+      "ax": 40.0,
+      "ay": 152
+     },
+     {
+      "f": "jason_sh/shield_1.png",
+      "ax": 40.0,
+      "ay": 150
+     }
+    ]
+   }
   }
  }
 }

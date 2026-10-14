@@ -344,49 +344,201 @@ func set_flag(name: String, value = true) -> void:
 	flags[name] = value
 
 
+## ---------- controls ----------
+## Bindings are remappable from Settings → Controls and saved to
+## user://sakawa_settings.json. Keys are physical keycodes; pad codes are
+## "b<button>" or "a<axis>+/-". PlayStation (DualSense / DualShock), Xbox and
+## other SDL-mapped controllers all use the same standard layout.
+
+const SETTINGS_PATH := "user://sakawa_settings.json"
+const REBINDABLE := [["left", "Move left"], ["right", "Move right"], ["up", "Up · talk · rest"], ["down", "Down · drop"],
+	["jump", "Jump"], ["attack", "Strike"], ["kick", "Kick"], ["laser", "Special"], ["dash", "Dash"], ["heal", "Focus heal"],
+	["project", "Astral projection"], ["fp", "Full Potential"], ["transform", "Alter ego (transform)"], ["switch", "Swap hero"],
+	["menu", "Character menu"], ["pause", "Pause"]]
+const DEFAULT_KEYS := {
+	"left": [KEY_A, KEY_LEFT], "right": [KEY_D, KEY_RIGHT], "up": [KEY_W, KEY_UP], "down": [KEY_S, KEY_DOWN],
+	"jump": [KEY_SPACE, KEY_Z], "attack": [KEY_X, KEY_J], "kick": [KEY_V, KEY_L], "laser": [KEY_B, KEY_I], "dash": [KEY_C, KEY_K, KEY_SHIFT],
+	"heal": [KEY_Q, KEY_F], "project": [KEY_E, KEY_P], "fp": [KEY_R], "transform": [KEY_T, KEY_G], "switch": [KEY_TAB], "menu": [KEY_M, KEY_N],
+	"pause": [KEY_ESCAPE],
+}
+const DEFAULT_PAD := {
+	"left": ["b13"], "right": ["b14"], "up": ["b11"], "down": ["b12"], "jump": ["b0"], "attack": ["b2"], "kick": ["b1"], "laser": ["a5+"],
+	"dash": ["b10"], "heal": ["b9"], "project": ["b3"], "fp": ["a4+"], "transform": ["b7"], "switch": ["b8"], "menu": ["b4", "b20"], "pause": ["b6"],
+}
+const PAD_NAMES := {
+	"ps": {"b0": "Cross", "b1": "Circle", "b2": "Square", "b3": "Triangle", "b4": "Create", "b5": "PS", "b6": "Options", "b7": "L3", "b8": "R3",
+		"b9": "L1", "b10": "R1", "b11": "D-pad Up", "b12": "D-pad Down", "b13": "D-pad Left", "b14": "D-pad Right", "b20": "Touchpad", "a4+": "L2", "a5+": "R2"},
+	"xbox": {"b0": "A", "b1": "B", "b2": "X", "b3": "Y", "b4": "View", "b5": "Guide", "b6": "Menu", "b7": "LS", "b8": "RS",
+		"b9": "LB", "b10": "RB", "b11": "D-pad Up", "b12": "D-pad Down", "b13": "D-pad Left", "b14": "D-pad Right", "b20": "Touchpad", "a4+": "LT", "a5+": "RT"},
+}
+const AXIS_NAMES := {"a0-": "Left stick ←", "a0+": "Left stick →", "a1-": "Left stick ↑", "a1+": "Left stick ↓", "a2-": "Right stick ←", "a2+": "Right stick →",
+	"a3-": "Right stick ↑", "a3+": "Right stick ↓"}
+
+var settings = {}
+var using_pad = false
+
+
+func default_bindings() -> Dictionary:
+	var b = {}
+	for r in REBINDABLE:
+		b[r[0]] = {"k": DEFAULT_KEYS.get(r[0], []).duplicate(), "p": DEFAULT_PAD.get(r[0], []).duplicate()}
+	return b
+
+
+func load_settings() -> void:
+	settings = {"bind": default_bindings(), "pad_style": "auto", "high": 0, "rumble": true}
+	if FileAccess.file_exists(SETTINGS_PATH):
+		var d = JSON.parse_string(FileAccess.get_file_as_string(SETTINGS_PATH))
+		if d is Dictionary:
+			for k in d:
+				if k == "bind" and d[k] is Dictionary:
+					for a in d[k]:
+						if settings["bind"].has(a) and d[k][a] is Dictionary:
+							var kk = []
+							for v in d[k][a].get("k", []):
+								kk.append(int(v))
+							settings["bind"][a] = {"k": kk, "p": d[k][a].get("p", [])}
+				else:
+					settings[k] = d[k]
+	apply_bindings()
+
+
+func save_settings() -> void:
+	var f = FileAccess.open(SETTINGS_PATH, FileAccess.WRITE)
+	if f:
+		f.store_string(JSON.stringify(settings))
+
+
+func _pad_event(code: String) -> InputEvent:
+	if code.begins_with("b"):
+		var jb = InputEventJoypadButton.new()
+		jb.button_index = int(code.substr(1))
+		return jb
+	var m = InputEventJoypadMotion.new()
+	m.axis = int(code.substr(1, code.length() - 2))
+	m.axis_value = 1.0 if code.ends_with("+") else -1.0
+	return m
+
+
+func apply_bindings() -> void:
+	var fixed = {"confirm": [KEY_ENTER, KEY_KP_ENTER], "hero1": [KEY_1], "hero2": [KEY_2], "hero3": [KEY_3]}
+	for action in fixed:
+		if not InputMap.has_action(action):
+			InputMap.add_action(action, 0.35)
+		InputMap.action_erase_events(action)
+		for k in fixed[action]:
+			var ev = InputEventKey.new()
+			ev.physical_keycode = k
+			InputMap.action_add_event(action, ev)
+	InputMap.action_add_event("confirm", _pad_event("b0"))
+	for r in REBINDABLE:
+		var action: String = r[0]
+		if not InputMap.has_action(action):
+			InputMap.add_action(action, 0.35)
+		InputMap.action_erase_events(action)
+		var b: Dictionary = settings["bind"][action]
+		for k in b["k"]:
+			var ev = InputEventKey.new()
+			ev.physical_keycode = int(k)
+			InputMap.action_add_event(action, ev)
+		for c in b["p"]:
+			InputMap.action_add_event(action, _pad_event(c))
+	# The left stick always moves, whatever the d-pad is bound to.
+	for pair in [["left", "a0-"], ["right", "a0+"], ["up", "a1-"], ["down", "a1+"]]:
+		InputMap.action_add_event(pair[0], _pad_event(pair[1]))
+
+
+func rebind(action: String, ev: InputEvent) -> void:
+	var b: Dictionary = settings["bind"][action]
+	if ev is InputEventKey:
+		var code = ev.physical_keycode if ev.physical_keycode != 0 else ev.keycode
+		for r in REBINDABLE:
+			settings["bind"][r[0]]["k"].erase(code)
+		b["k"] = [code]
+	elif ev is InputEventJoypadButton:
+		var c = "b%d" % ev.button_index
+		for r in REBINDABLE:
+			settings["bind"][r[0]]["p"].erase(c)
+		b["p"] = [c]
+	elif ev is InputEventJoypadMotion:
+		var c2 = "a%d%s" % [ev.axis, "+" if ev.axis_value > 0 else "-"]
+		for r in REBINDABLE:
+			settings["bind"][r[0]]["p"].erase(c2)
+		b["p"] = [c2]
+	apply_bindings()
+	save_settings()
+
+
+func reset_bindings() -> void:
+	settings["bind"] = default_bindings()
+	apply_bindings()
+	save_settings()
+
+
+func pad_style() -> String:
+	var st: String = settings.get("pad_style", "auto")
+	if st != "auto":
+		return st
+	for j in Input.get_connected_joypads():
+		var n = Input.get_joy_name(j).to_lower()
+		for tag in ["ps5", "ps4", "ps3", "dualsense", "dualshock", "sony", "playstation", "wireless controller"]:
+			if tag in n:
+				return "ps"
+	return "xbox"
+
+
+func pad_label(code: String) -> String:
+	if AXIS_NAMES.has(code):
+		return AXIS_NAMES[code]
+	return PAD_NAMES[pad_style()].get(code, code.to_upper())
+
+
+func key_label(k: int) -> String:
+	var s = OS.get_keycode_string(DisplayServer.keyboard_get_keycode_from_physical(k) if k > 0 else k)
+	return s if s != "" else "?"
+
+
+func bind_label(action: String, pad: bool) -> String:
+	if not settings.has("bind") or not settings["bind"].has(action):
+		return action
+	var b: Dictionary = settings["bind"][action]
+	if pad:
+		return pad_label(b["p"][0]) if not b["p"].is_empty() else "—"
+	return key_label(int(b["k"][0])) if not b["k"].is_empty() else "—"
+
+
 func label(action: String) -> String:
-	if touch_mode:
-		return {"jump": "JUMP", "attack": "STRIKE", "kick": "KICK", "laser": "SPECIAL", "switch": "SWAP", "menu": "MENU", "dash": "DASH", "heal": "FOCUS", "project": "PROJECT", "fp": "FULL", "up": "▲", "move": "◀ ▶"}.get(action, action)
-	if Input.get_connected_joypads().size() > 0:
-		return {"jump": "A", "attack": "X", "kick": "B", "laser": "RT", "switch": "R3", "menu": "Back", "dash": "RB", "heal": "LB", "project": "Y", "fp": "LT", "up": "Up", "move": "the left stick"}.get(action, action)
-	return {"jump": "Space", "attack": "X", "kick": "V", "laser": "B", "switch": "Tab", "menu": "I", "dash": "C", "heal": "Q", "project": "E", "fp": "R", "up": "W", "move": "A / D"}.get(action, action)
+	if touch_mode and not using_pad:
+		return {"jump": "JUMP", "attack": "STRIKE", "kick": "KICK", "laser": "SPECIAL", "switch": "SWAP", "menu": "MENU", "dash": "DASH", "heal": "FOCUS",
+			"project": "PROJECT", "fp": "FULL", "transform": "EGO", "up": "▲", "move": "◀ ▶"}.get(action, action)
+	var pad = using_pad or (Input.get_connected_joypads().size() > 0 and settings.get("prefer_pad", false))
+	if action == "move":
+		return "the left stick" if pad else bind_label("left", false) + " / " + bind_label("right", false)
+	return bind_label(action, pad)
 
 
 func fill(text: String) -> String:
-	for a in ["move", "jump", "dash", "attack", "kick", "laser", "switch", "menu", "heal", "project", "fp", "up"]:
+	for a in ["move", "jump", "dash", "attack", "kick", "laser", "switch", "menu", "heal", "project", "fp", "up", "transform"]:
 		text = text.replace("{%s}" % a, "[" + label(a) + "]")
 	return text
 
 
+func _input(event: InputEvent) -> void:
+	if event is InputEventJoypadButton or (event is InputEventJoypadMotion and absf(event.axis_value) > 0.5):
+		using_pad = true
+	elif event is InputEventKey or event is InputEventMouseButton:
+		using_pad = false
+
+
+func rumble(weak: float, strong: float, dur: float) -> void:
+	if not settings.get("rumble", true):
+		return
+	for j in Input.get_connected_joypads():
+		Input.start_joy_vibration(j, weak, strong, dur)
+
+
 func _setup_input() -> void:
-	var keys = {
-		"left": [KEY_A, KEY_LEFT], "right": [KEY_D, KEY_RIGHT], "up": [KEY_W, KEY_UP], "down": [KEY_S, KEY_DOWN],
-		"jump": [KEY_SPACE, KEY_Z], "attack": [KEY_X, KEY_J], "kick": [KEY_V, KEY_L], "laser": [KEY_B, KEY_I], "dash": [KEY_C, KEY_K, KEY_SHIFT], "heal": [KEY_Q, KEY_F],
-		"project": [KEY_E, KEY_P], "fp": [KEY_R], "confirm": [KEY_ENTER, KEY_KP_ENTER], "pause": [KEY_ESCAPE],
-		"switch": [KEY_TAB], "hero1": [KEY_1], "hero2": [KEY_2], "hero3": [KEY_3], "menu": [KEY_I, KEY_M],
-	}
-	var pads = {
-		"left": [JOY_BUTTON_DPAD_LEFT], "right": [JOY_BUTTON_DPAD_RIGHT], "up": [JOY_BUTTON_DPAD_UP], "down": [JOY_BUTTON_DPAD_DOWN],
-		"jump": [JOY_BUTTON_A], "attack": [JOY_BUTTON_X], "dash": [JOY_BUTTON_RIGHT_SHOULDER], "heal": [JOY_BUTTON_LEFT_SHOULDER],
-		"kick": [JOY_BUTTON_B], "project": [JOY_BUTTON_Y], "confirm": [JOY_BUTTON_A], "pause": [JOY_BUTTON_START],
-		"switch": [JOY_BUTTON_RIGHT_STICK], "menu": [JOY_BUTTON_BACK],
-	}
-	for action in keys:
-		if not InputMap.has_action(action):
-			InputMap.add_action(action, 0.35)
-		for k in keys[action]:
-			var ev = InputEventKey.new()
-			ev.physical_keycode = k
-			InputMap.action_add_event(action, ev)
-		for b in pads.get(action, []):
-			var jb = InputEventJoypadButton.new()
-			jb.button_index = b
-			InputMap.action_add_event(action, jb)
-	for pair in [["laser", JOY_AXIS_TRIGGER_RIGHT, 1.0], ["fp", JOY_AXIS_TRIGGER_LEFT, 1.0], ["left", JOY_AXIS_LEFT_X, -1.0], ["right", JOY_AXIS_LEFT_X, 1.0], ["up", JOY_AXIS_LEFT_Y, -1.0], ["down", JOY_AXIS_LEFT_Y, 1.0]]:
-		var m = InputEventJoypadMotion.new()
-		m.axis = pair[1]
-		m.axis_value = pair[2]
-		InputMap.action_add_event(pair[0], m)
+	load_settings()
 
 
 # ---------- saves ----------

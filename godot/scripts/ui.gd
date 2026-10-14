@@ -33,25 +33,33 @@ func _ready() -> void:
 	position = Vector2.ZERO
 	size = Vector2(960, 540)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_theme = Theme.new()
-	var sb = StyleBoxFlat.new()
-	sb.bg_color = Color(0.02, 0.03, 0.05, 0.92)
-	sb.border_color = Color(0.93, 0.9, 0.85, 0.35)
-	sb.set_border_width_all(1)
-	sb.set_content_margin_all(18)
+	# Cyberpunk pixel GUI (craftpix): 9-sliced metal panel and buttons.
+	var sb = _tex_box("panel", 12, 20, Color(1, 1, 1, 0.96))
 	_theme.set_stylebox("panel", "PanelContainer", sb)
-	var bn = StyleBoxFlat.new()
-	bn.bg_color = Color(1, 1, 1, 0.03)
-	bn.border_color = Color(0.93, 0.9, 0.85, 0.4)
-	bn.set_border_width_all(1)
-	bn.set_content_margin_all(10)
-	var bh = bn.duplicate()
-	bh.bg_color = Color(0.65, 0.55, 1, 0.14)
-	bh.border_color = Color("#a58bff")
+	var bn = _tex_box("button", 10, 10)
+	var bh = _tex_box("button_hot", 10, 10)
+	var bd = _tex_box("button_off", 10, 10, Color(1, 1, 1, 0.6))
 	_theme.set_stylebox("normal", "Button", bn)
 	_theme.set_stylebox("hover", "Button", bh)
 	_theme.set_stylebox("focus", "Button", bh)
 	_theme.set_stylebox("pressed", "Button", bh)
+	_theme.set_stylebox("disabled", "Button", bd)
+	_theme.set_color("font_disabled_color", "Button", Color(0.75, 0.72, 0.8, 0.5))
+	_theme.set_color("font_hover_color", "Button", Color.WHITE)
+	_theme.set_color("font_focus_color", "Button", Color.WHITE)
+	var bar_bg = StyleBoxFlat.new()
+	bar_bg.bg_color = Color(0.1, 0.1, 0.2, 0.9)
+	var bar_fg = StyleBoxFlat.new()
+	bar_fg.bg_color = Color("#ff5a7a")
+	_theme.set_stylebox("background", "ProgressBar", bar_bg)
+	_theme.set_stylebox("fill", "ProgressBar", bar_fg)
+	var cur = load("res://assets/gui/cursor.png")
+	if cur:
+		var img: Image = cur.get_image()
+		img.resize(img.get_width() * 2, img.get_height() * 2, Image.INTERPOLATE_NEAREST)
+		Input.set_custom_mouse_cursor(ImageTexture.create_from_image(img), Input.CURSOR_ARROW, Vector2(2, 2))
 	_theme.set_font("font", "Button", Game.font_display)
 	_theme.set_font_size("font_size", "Button", 15)
 	_theme.set_color("font_color", "Button", Color("#ece6d8"))
@@ -64,6 +72,15 @@ func _ready() -> void:
 	_build_end()
 	_build_menu()
 	_build_touch()
+
+
+func _tex_box(name: String, margin: int, content: int, mod := Color.WHITE) -> StyleBoxTexture:
+	var b = StyleBoxTexture.new()
+	b.texture = load("res://assets/gui/%s.png" % name)
+	b.set_texture_margin_all(margin)
+	b.set_content_margin_all(content)
+	b.modulate_color = mod
+	return b
 
 
 func _center_panel(min_w: float) -> PanelContainer:
@@ -98,73 +115,221 @@ func _para(text: String, italic := false) -> Label:
 
 # ---------- title ----------
 
+var _title_main: GridContainer
+var _sub: PanelContainer
+var _sub_kind = ""
+var _sub_from_pause = false
+var _capture = null
+
+
 func _build_title() -> void:
 	_title = Control.new()
 	_title.size = Vector2(960, 540)
 	_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_title)
-	var box = HBoxContainer.new()
-	box.alignment = BoxContainer.ALIGNMENT_CENTER
-	box.position = Vector2(170, 420)
-	box.size = Vector2(620, 48)
-	box.add_theme_constant_override("separation", 12)
-	_title.add_child(box)
-	var b1 = Button.new()
-	b1.text = "BEGIN"
-	b1.custom_minimum_size = Vector2(160, 44)
-	b1.pressed.connect(func(): Sound.play("select"); main.new_game())
-	box.add_child(b1)
-	_btn_continue = Button.new()
-	_btn_continue.text = "CONTINUE"
-	_btn_continue.custom_minimum_size = Vector2(160, 44)
-	_btn_continue.pressed.connect(func(): Sound.play("select"); main.continue_game())
-	box.add_child(_btn_continue)
-	_btn_diff = Button.new()
-	_btn_diff.custom_minimum_size = Vector2(230, 44)
-	_btn_diff.pressed.connect(func(): Sound.play("select"); Game.cycle_difficulty(); _refresh_diff())
-	box.add_child(_btn_diff)
+	_title_main = GridContainer.new()
+	_title_main.columns = 2
+	_title_main.position = Vector2(96, 330)
+	_title_main.add_theme_constant_override("h_separation", 10)
+	_title_main.add_theme_constant_override("v_separation", 8)
+	_title.add_child(_title_main)
+	_btn_continue = _menu_button("CONTINUE", func(): main.continue_game())
+	_title_main.add_child(_btn_continue)
+	_title_main.add_child(_menu_button("NEW GAME", func(): main.new_game()))
+	var cb = _menu_button("CHAPTERS", func(): show_sub("chapters"))
+	cb.name = "Chapters"
+	_title_main.add_child(cb)
+	_title_main.add_child(_menu_button("LSMG ARCADE", func(): main.open_arcade()))
+	_title_main.add_child(_menu_button("SETTINGS", func(): show_sub("settings")))
+	if not OS.has_feature("web"):
+		_title_main.add_child(_menu_button("QUIT", func(): get_tree().quit()))
 	var hint = Label.new()
 	hint.name = "Hint"
-	hint.position = Vector2(60, 488)
+	hint.position = Vector2(60, 506)
 	hint.size = Vector2(840, 20)
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint.add_theme_font_size_override("font_size", 13)
+	hint.add_theme_font_size_override("font_size", 12)
 	hint.add_theme_color_override("font_color", Color("#9c97a8"))
 	_title.add_child(hint)
-	var chap = HBoxContainer.new()
-	chap.name = "Chapters"
-	chap.alignment = BoxContainer.ALIGNMENT_CENTER
-	chap.position = Vector2(180, 372)
-	chap.size = Vector2(600, 40)
-	chap.add_theme_constant_override("separation", 10)
-	_title.add_child(chap)
-	for n in [1, 2, 3, 4]:
-		var cb = Button.new()
-		cb.name = "Ch%d" % n
-		cb.text = "CHAPTER %d" % n
-		cb.custom_minimum_size = Vector2(130, 34)
-		cb.add_theme_font_size_override("font_size", 12)
-		var nn = n
-		cb.pressed.connect(func(): Sound.play("select"); main.start_chapter(nn, true))
-		chap.add_child(cb)
+	_sub = _center_panel(520)
+
+
+func _menu_button(text: String, cb: Callable) -> Button:
+	var b = Button.new()
+	b.text = text
+	b.custom_minimum_size = Vector2(250, 40)
+	b.pressed.connect(func(): Sound.play("select"); cb.call())
+	return b
+
+
+func _refresh_diff() -> void:
+	pass
 
 
 func show_title(has_save: bool, unlocked := 1) -> void:
 	_title.visible = true
-	var chap = _title.get_node("Chapters")
-	chap.visible = unlocked > 1
-	for n in [1, 2, 3, 4]:
-		chap.get_node("Ch%d" % n).visible = n <= unlocked
+	_title_main.visible = true
+	_sub.visible = false
+	_title_main.get_node("Chapters").visible = unlocked > 1
 	_btn_continue.visible = has_save
-	_refresh_diff()
-	_title.get_node("Hint").text = "Touch controls appear in play." if Game.touch_mode else "A/D move · Space jump · X strike · V kick · B special · Tab swap hero · I gear & skills · C dash · Q focus · E project · Esc pause"
-	(_btn_continue if has_save else _title.get_child(0).get_child(0)).call_deferred("grab_focus")
+	_title.get_node("Hint").text = "Touch controls appear in play." if Game.touch_mode else "%s move · %s jump · %s strike · %s kick · %s special · %s alter ego · %s swap hero · %s menu" % [
+		Game.label("move"), Game.label("jump"), Game.label("attack"), Game.label("kick"), Game.label("laser"), Game.label("transform"), Game.label("switch"), Game.label("menu")]
+	(_btn_continue if has_save else _title_main.get_child(1)).call_deferred("grab_focus")
 	_touch.visible = false
 
 
 func hide_title() -> void:
 	_title.visible = false
+	_sub.visible = false
 	_touch.visible = Game.touch_mode
+
+
+# ---------- sub menus: chapters, settings, controls ----------
+
+func show_sub(kind: String, from_pause := false) -> void:
+	_sub_kind = kind
+	_sub_from_pause = from_pause or _sub_from_pause and kind == "controls"
+	_title_main.visible = false
+	_pause.visible = false
+	_capture = null
+	for c in _sub.get_children():
+		_sub.remove_child(c)
+		c.queue_free()
+	var v = VBoxContainer.new()
+	v.add_theme_constant_override("separation", 6)
+	_sub.add_child(v)
+	var first: Control = null
+	match kind:
+		"chapters":
+			v.add_child(_heading("CHAPTER SELECT", 22))
+			for n in Game.CHAPTERS:
+				if n > Game.unlocked():
+					continue
+				var nn = n
+				var b = _menu_button("%d · %s" % [n, Game.CHAPTERS[n]["title"]], func(): sub_back(); main.start_chapter(nn, true))
+				v.add_child(b)
+				if first == null:
+					first = b
+		"settings":
+			v.add_child(_heading("SETTINGS", 22))
+			var rows = [["DIFFICULTY: " + Game.diff()["name"], func(): Game.cycle_difficulty(); main.apply_difficulty(); show_sub("settings")],
+				["SOUND: " + ("ON" if Sound.sound_on else "OFF"), func(): Sound.set_sound(not Sound.sound_on); show_sub("settings")],
+				["MUSIC: " + ("ON" if Sound.music_on else "OFF"), func(): Sound.set_music(not Sound.music_on); show_sub("settings")],
+				["CONTROLLER RUMBLE: " + ("ON" if Game.settings.get("rumble", true) else "OFF"), func(): Game.settings["rumble"] = not Game.settings.get("rumble", true); Game.save_settings(); Game.rumble(0.5, 0.5, 0.2); show_sub("settings")],
+				["BUTTON ICONS: " + {"auto": "AUTO", "ps": "PLAYSTATION", "xbox": "XBOX"}[Game.settings.get("pad_style", "auto")], func(): _cycle_style(); show_sub("settings")],
+				["CONTROLS...", func(): show_sub("controls")]]
+			for r in rows:
+				var b = _menu_button(r[0], r[1])
+				b.custom_minimum_size = Vector2(400, 38)
+				v.add_child(b)
+				if first == null:
+					first = b
+			var pads = Input.get_connected_joypads()
+			var pn = "No controller detected. PS5 DualSense, PS4 and Xbox controllers work over USB or Bluetooth." if pads.is_empty() else "Controller: " + Input.get_joy_name(pads[0])
+			var pl = _small(pn, 12, Color("#a8a0b0"))
+			pl.custom_minimum_size = Vector2(400, 0)
+			v.add_child(pl)
+		"controls":
+			v.add_child(_heading("CONTROLS", 22))
+			var info = _small("Pick a binding, then press the new key or controller button. Esc cancels. Icons: " + {"ps": "PlayStation", "xbox": "Xbox"}[Game.pad_style()], 12, Color("#a8a0b0"))
+			info.custom_minimum_size = Vector2(860, 0)
+			v.add_child(info)
+			var g = GridContainer.new()
+			g.columns = 6
+			g.add_theme_constant_override("h_separation", 6)
+			g.add_theme_constant_override("v_separation", 4)
+			v.add_child(g)
+			for col in 2:
+				for htxt in ["ACTION", "KEYBOARD", "CONTROLLER"]:
+					var hl = _small(htxt, 11, Color("#ff8aa0"))
+					hl.autowrap_mode = TextServer.AUTOWRAP_OFF
+					g.add_child(hl)
+			var half = (Game.REBINDABLE.size() + 1) / 2
+			for i in half:
+				for col in 2:
+					var idx = i + col * half
+					if idx >= Game.REBINDABLE.size():
+						for k in 3:
+							g.add_child(Control.new())
+						continue
+					var r: Array = Game.REBINDABLE[idx]
+					var l = _small(r[1], 12)
+					l.custom_minimum_size = Vector2(150, 26)
+					l.autowrap_mode = TextServer.AUTOWRAP_OFF
+					l.custom_minimum_size = Vector2(150, 0)
+					g.add_child(l)
+					for pad in [false, true]:
+						var act: String = r[0]
+						var pp: bool = pad
+						var b = Button.new()
+						b.custom_minimum_size = Vector2(120, 26)
+						b.add_theme_font_size_override("font_size", 11)
+						b.text = Game.bind_label(act, pad)
+						b.pressed.connect(func(): _begin_capture(act, pp, b))
+						g.add_child(b)
+						if first == null:
+							first = b
+			var rb = _menu_button("RESET DEFAULTS", func(): Game.reset_bindings(); show_sub("controls"))
+			v.add_child(rb)
+	var back = _menu_button("BACK", func(): sub_back())
+	v.add_child(back)
+	_sub.visible = true
+	var f2 = first if first != null else back
+	var ff = func(): if is_instance_valid(f2) and f2.is_inside_tree(): f2.grab_focus()
+	ff.call_deferred()
+
+
+func _cycle_style() -> void:
+	var order = ["auto", "ps", "xbox"]
+	Game.settings["pad_style"] = order[(order.find(Game.settings.get("pad_style", "auto")) + 1) % 3]
+	Game.save_settings()
+
+
+func sub_back() -> void:
+	_capture = null
+	if _sub_kind == "controls":
+		show_sub("settings", _sub_from_pause)
+		return
+	_sub.visible = false
+	if _sub_from_pause:
+		_sub_from_pause = false
+		show_pause()
+	elif main.mode == "title":
+		_title_main.visible = true
+		_title_main.get_child(1).call_deferred("grab_focus")
+
+
+func _begin_capture(action: String, pad: bool, b: Button) -> void:
+	_capture = {"action": action, "pad": pad, "btn": b, "t": Time.get_ticks_msec()}
+	b.text = "press a button..." if pad else "press a key..."
+
+
+func _input(event: InputEvent) -> void:
+	if _capture != null:
+		if Time.get_ticks_msec() - _capture["t"] < 150:
+			return
+		if event is InputEventKey and event.pressed and not event.echo:
+			get_viewport().set_input_as_handled()
+			if event.physical_keycode == KEY_ESCAPE or event.keycode == KEY_ESCAPE:
+				_capture = null
+				show_sub("controls")
+				return
+			if not _capture["pad"]:
+				Game.rebind(_capture["action"], event)
+				Sound.play("pickup")
+				_capture = null
+				show_sub("controls")
+			return
+		if _capture["pad"] and ((event is InputEventJoypadButton and event.pressed) or (event is InputEventJoypadMotion and absf(event.axis_value) > 0.7)):
+			get_viewport().set_input_as_handled()
+			Game.rebind(_capture["action"], event)
+			Sound.play("pickup")
+			_capture = null
+			show_sub("controls")
+		return
+	if _sub != null and _sub.visible and event.is_action_pressed("ui_cancel"):
+		get_viewport().set_input_as_handled()
+		sub_back()
 
 
 func draw_title(ci: CanvasItem, t: float) -> void:
@@ -220,7 +385,7 @@ func update_dialog(dt: float, advance: bool) -> void:
 
 
 func _process(_d: float) -> void:
-	for p in [_choice_panel, _pause, _end, _menu]:
+	for p in [_choice_panel, _pause, _end, _menu, _sub]:
 		if p and p.visible:
 			var ms: Vector2 = p.get_combined_minimum_size()
 			p.size = ms
@@ -375,12 +540,6 @@ func show_choice(title: String, sub: String, opts: Array) -> void:
 	_choice_panel.visible = true
 	if first:
 		get_tree().create_timer(0.62).timeout.connect(func(): if is_instance_valid(first): first.grab_focus())
-
-
-func _refresh_diff() -> void:
-	var d: Dictionary = Game.diff()
-	_btn_diff.text = "DIFFICULTY: %s" % d["name"]
-	_btn_diff.tooltip_text = "%d health" % d["hp"]
 
 
 # ---------- character menu ----------
@@ -632,10 +791,9 @@ func _build_pause() -> void:
 	keys.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	keys.add_theme_font_size_override("font_size", 14)
 	v.add_child(keys)
-	for spec in [["RESUME", func(): main.close_pause()], ["SOUND: ON", func(): Sound.set_sound(not Sound.sound_on); _refresh_pause()],
-			["MUSIC: ON", func(): Sound.set_music(not Sound.music_on); _refresh_pause()],
-			["DIFFICULTY: NORMAL", func(): Game.cycle_difficulty(); main.apply_difficulty(); _refresh_pause()],
-			["CHARACTER", func(): _pause.visible = false; main.open_menu()], ["TITLE", func(): _pause.visible = false; main.show_title()]]:
+	for spec in [["RESUME", func(): main.close_pause()], ["CHARACTER", func(): _pause.visible = false; main.open_menu()],
+			["SETTINGS", func(): show_sub("settings", true)], ["CONTROLS", func(): _sub_from_pause = true; show_sub("controls", true)],
+			["TITLE", func(): _pause.visible = false; main.show_title()]]:
 		var b = Button.new()
 		b.text = spec[0]
 		b.name = spec[0].split(":")[0].capitalize()
@@ -666,10 +824,7 @@ func hide_pause() -> void:
 
 func _refresh_pause() -> void:
 	var v = _pause.get_child(0)
-	v.get_node("Grid/Sound").text = "SOUND: " + ("ON" if Sound.sound_on else "OFF")
-	v.get_node("Grid/Music").text = "MUSIC: " + ("ON" if Sound.music_on else "OFF")
-	v.get_node("Grid/Difficulty").text = "DIFFICULTY: " + Game.diff()["name"]
-	var rows = [["move", "Move"], ["jump", "Jump · again midair to levitate"], ["attack", "Psychic strike · up/down to aim · 3-hit combo"],
+	var rows = [["move", "Move"], ["jump", "Jump · wall jump · again midair"], ["attack", "Strike · up/down to aim · 3-hit combo"], ["transform", "Alter ego (shinobi form)"],
 		["kick", "Kick · in midair, a diving kick"], ["laser", "Special move · costs Resonance"], ["switch", "Swap hero (1 / 2 / 3)"], ["menu", "Gear · skills · stats"], ["dash", "Dash"],
 		["heal", "Hold to focus Resonance into healing"], ["project", "Leave or return to your body"], ["fp", "Full Potential (permanent cost)"], ["up", "Talk · rest at benches"]]
 	var s = ""
@@ -754,7 +909,7 @@ func _build_touch() -> void:
 	var tex = _circle_tex(30, Color(0.04, 0.05, 0.09, 0.45), Color(0.93, 0.9, 0.85, 0.35))
 	var texp = _circle_tex(30, Color(0.65, 0.55, 1, 0.4), Color(0.93, 0.9, 0.85, 0.8))
 	var specs = [["left", "◀", Vector2(20, 470)], ["right", "▶", Vector2(150, 470)], ["up", "▲", Vector2(85, 405)], ["down", "▼", Vector2(85, 470)],
-		["kick", "KICK", Vector2(810, 340)], ["laser", "SPECIAL", Vector2(875, 340)], ["switch", "SWAP", Vector2(745, 340)], ["menu", "MENU", Vector2(875, 20)],
+		["kick", "KICK", Vector2(810, 340)], ["laser", "SPECIAL", Vector2(875, 340)], ["switch", "SWAP", Vector2(745, 340)], ["menu", "MENU", Vector2(875, 20)], ["transform", "EGO", Vector2(680, 405)],
 		["project", "PROJECT", Vector2(745, 405)], ["heal", "FOCUS", Vector2(810, 405)], ["fp", "FULL", Vector2(875, 405)],
 		["dash", "DASH", Vector2(745, 470)], ["attack", "STRIKE", Vector2(810, 470)], ["jump", "JUMP", Vector2(875, 470)]]
 	for s in specs:
