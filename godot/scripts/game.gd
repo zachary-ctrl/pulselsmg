@@ -39,6 +39,24 @@ const CHAPTER_WORD := {1: "ONE", 2: "TWO", 3: "THREE"}
 const PROGRESS_PATH := "user://sakawa_progress.json"
 var chapter = 1
 
+## Difficulty: hp = Max's health, ehp = enemy health scale, espd = enemy speed,
+## res = Resonance gain scale.
+const DIFF := [
+	{"name": "STORY", "hp": 10, "ehp": 0.6, "espd": 0.85, "res": 1.5},
+	{"name": "NORMAL", "hp": 7, "ehp": 1.0, "espd": 1.0, "res": 1.0},
+	{"name": "HARD", "hp": 5, "ehp": 1.4, "espd": 1.15, "res": 0.85},
+]
+var difficulty = 1
+
+
+func diff() -> Dictionary:
+	return DIFF[clampi(difficulty, 0, DIFF.size() - 1)]
+
+
+func cycle_difficulty() -> void:
+	difficulty = (difficulty + 1) % DIFF.size()
+	_write_progress(unlocked())
+
 const ANCH := {
 	"momText": {"title": "Text · Mom · 3:12 PM", "body": "School called. They said lunch was \"weird\"? Eat something. Love you. Dad says bring back his charger."},
 	"unknownText": {"title": "Text · Unknown · arrived 3:58 PM, sent 4:01 PM", "body": "Look at the sun, Max."},
@@ -68,7 +86,8 @@ const DLG := {
 		["lana", "neutral", "The zombies — sorry, \"infected,\" my mom says be sensitive — they flip when you get in their face. Hit them with something real and they drop."],
 		["max", "worried", "I can kind of... push things. With my brain. Since today."], ["lana", "shocked", "Since TODAY? And you are telling me in a HALLWAY?"],
 		["lana", "smirk", "Fine. Push them gently. They are still Brayden and them. Even Brayden."],
-		[N, "", "Strike with {attack}. Hold UP or DOWN while striking to aim. Each hit builds RESONANCE."],
+		[N, "", "Strike with {attack}. Hold UP or DOWN while striking to aim. Three quick strikes chain into a heavy finisher. Each hit builds RESONANCE."],
+		[N, "", "Kick with {kick}. In midair it becomes a diving kick that bounces off whatever it hits. Fire a psychic laser with {laser}. It burns Resonance."],
 		[N, "", "Hold {heal} while standing still to focus Resonance into healing. Rest at benches to save."],
 		["lana", "neutral", "I will hold the hallway. You find whatever is making this school forget how to eat."]],
 	"lana2": [["lana", "smirk", "Still here. Still the only person in this building with snacks. Go."]],
@@ -93,7 +112,7 @@ const DLG := {
 		["lana", "smirk", "So we are just not talking about how you threw a science teacher through reality."], ["max", "worried", "I am talking about it. Inside. A lot."],
 		["lana", "neutral", "Kai Brooks walked out of Mercy General an hour ago. Nine days missing, then he shows up at the reservoir in dry clothes."],
 		["max", "worried", "And the three voices?"], ["lana", "angry", "One of them told his mom she looked tired. In HER mom's voice. Her mom has been dead six years."],
-		["lana", "neutral", "Everybody he passes stops talking. Then they start listening. Follow the quiet."], [N, "", "Reach Mercy General at the end of the avenue."]],
+		["lana", "neutral", "Everybody he passes stops talking. Then they start listening. Follow the quiet."], [N, "", "Reach Mercy General at the end of the avenue."], [N, "", "Strike {attack} · Kick {kick} · Laser {laser}"]],
 	"c2_lana2": [["lana", "smirk", "Hospital is that way. The quiet way."]],
 	"c2_jason": [["jason", "smirk", "Inoki. Lana. I already called it in. Channel 6 is on the way."], ["max", "shocked", "You called the NEWS?"],
 		["jason", "neutral", "Somebody has to be the face of this. You two can be the hands."], ["lana", "angry", "I am about to be a hand."],
@@ -135,6 +154,7 @@ var _portraits = {}
 
 func _ready() -> void:
 	_setup_input()
+	difficulty = int(_progress().get("difficulty", 1))
 	touch_mode = DisplayServer.is_touchscreen_available()
 	var cinzel: FontFile = load("res://assets/fonts/Cinzel.ttf")
 	var display = FontVariation.new()
@@ -168,14 +188,14 @@ func set_flag(name: String, value = true) -> void:
 
 func label(action: String) -> String:
 	if touch_mode:
-		return {"jump": "JUMP", "attack": "STRIKE", "dash": "DASH", "heal": "FOCUS", "project": "PROJECT", "fp": "FULL", "up": "▲", "move": "◀ ▶"}.get(action, action)
+		return {"jump": "JUMP", "attack": "STRIKE", "kick": "KICK", "laser": "LASER", "dash": "DASH", "heal": "FOCUS", "project": "PROJECT", "fp": "FULL", "up": "▲", "move": "◀ ▶"}.get(action, action)
 	if Input.get_connected_joypads().size() > 0:
-		return {"jump": "A", "attack": "X", "dash": "RB", "heal": "LB", "project": "Y", "fp": "B", "up": "Up", "move": "the left stick"}.get(action, action)
-	return {"jump": "Space", "attack": "X", "dash": "C", "heal": "Q", "project": "E", "fp": "R", "up": "W", "move": "A / D"}.get(action, action)
+		return {"jump": "A", "attack": "X", "kick": "B", "laser": "RT", "dash": "RB", "heal": "LB", "project": "Y", "fp": "LT", "up": "Up", "move": "the left stick"}.get(action, action)
+	return {"jump": "Space", "attack": "X", "kick": "V", "laser": "B", "dash": "C", "heal": "Q", "project": "E", "fp": "R", "up": "W", "move": "A / D"}.get(action, action)
 
 
 func fill(text: String) -> String:
-	for a in ["move", "jump", "dash", "attack", "heal", "project", "fp", "up"]:
+	for a in ["move", "jump", "dash", "attack", "kick", "laser", "heal", "project", "fp", "up"]:
 		text = text.replace("{%s}" % a, "[" + label(a) + "]")
 	return text
 
@@ -183,13 +203,13 @@ func fill(text: String) -> String:
 func _setup_input() -> void:
 	var keys = {
 		"left": [KEY_A, KEY_LEFT], "right": [KEY_D, KEY_RIGHT], "up": [KEY_W, KEY_UP], "down": [KEY_S, KEY_DOWN],
-		"jump": [KEY_SPACE, KEY_Z], "attack": [KEY_X, KEY_J], "dash": [KEY_C, KEY_K, KEY_SHIFT], "heal": [KEY_Q, KEY_F],
+		"jump": [KEY_SPACE, KEY_Z], "attack": [KEY_X, KEY_J], "kick": [KEY_V, KEY_L], "laser": [KEY_B, KEY_I], "dash": [KEY_C, KEY_K, KEY_SHIFT], "heal": [KEY_Q, KEY_F],
 		"project": [KEY_E, KEY_P], "fp": [KEY_R], "confirm": [KEY_ENTER, KEY_KP_ENTER], "pause": [KEY_ESCAPE],
 	}
 	var pads = {
 		"left": [JOY_BUTTON_DPAD_LEFT], "right": [JOY_BUTTON_DPAD_RIGHT], "up": [JOY_BUTTON_DPAD_UP], "down": [JOY_BUTTON_DPAD_DOWN],
 		"jump": [JOY_BUTTON_A], "attack": [JOY_BUTTON_X], "dash": [JOY_BUTTON_RIGHT_SHOULDER], "heal": [JOY_BUTTON_LEFT_SHOULDER],
-		"project": [JOY_BUTTON_Y], "fp": [JOY_BUTTON_B], "confirm": [JOY_BUTTON_A], "pause": [JOY_BUTTON_START],
+		"kick": [JOY_BUTTON_B], "project": [JOY_BUTTON_Y], "confirm": [JOY_BUTTON_A], "pause": [JOY_BUTTON_START],
 	}
 	for action in keys:
 		if not InputMap.has_action(action):
@@ -202,7 +222,7 @@ func _setup_input() -> void:
 			var jb = InputEventJoypadButton.new()
 			jb.button_index = b
 			InputMap.action_add_event(action, jb)
-	for pair in [["left", JOY_AXIS_LEFT_X, -1.0], ["right", JOY_AXIS_LEFT_X, 1.0], ["up", JOY_AXIS_LEFT_Y, -1.0], ["down", JOY_AXIS_LEFT_Y, 1.0]]:
+	for pair in [["laser", JOY_AXIS_TRIGGER_RIGHT, 1.0], ["fp", JOY_AXIS_TRIGGER_LEFT, 1.0], ["left", JOY_AXIS_LEFT_X, -1.0], ["right", JOY_AXIS_LEFT_X, 1.0], ["up", JOY_AXIS_LEFT_Y, -1.0], ["down", JOY_AXIS_LEFT_Y, 1.0]]:
 		var m = InputEventJoypadMotion.new()
 		m.axis = pair[1]
 		m.axis_value = pair[2]
@@ -211,19 +231,27 @@ func _setup_input() -> void:
 
 # ---------- saves ----------
 
-func unlocked() -> int:
+func _progress() -> Dictionary:
 	if not FileAccess.file_exists(PROGRESS_PATH):
-		return 1
+		return {}
 	var d = JSON.parse_string(FileAccess.get_file_as_string(PROGRESS_PATH))
-	return int(d.get("unlocked", 1)) if d is Dictionary else 1
+	return d if d is Dictionary else {}
+
+
+func unlocked() -> int:
+	return int(_progress().get("unlocked", 1))
+
+
+func _write_progress(n: int) -> void:
+	var f = FileAccess.open(PROGRESS_PATH, FileAccess.WRITE)
+	if f:
+		f.store_string(JSON.stringify({"unlocked": n, "difficulty": difficulty}))
 
 
 func unlock(n: int) -> void:
 	if n <= unlocked():
 		return
-	var f = FileAccess.open(PROGRESS_PATH, FileAccess.WRITE)
-	if f:
-		f.store_string(JSON.stringify({"unlocked": n}))
+	_write_progress(n)
 
 
 func new_game(ch := 1) -> void:

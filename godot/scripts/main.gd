@@ -197,9 +197,12 @@ func continue_game() -> void:
 
 
 func _reset_player() -> void:
-	player.hp = 5
-	player.max_hp = 5
+	player.max_hp = Game.diff()["hp"]
+	player.hp = player.max_hp
 	player.res = 0.0
+	player.dive = false
+	player.kick_t = 0.0
+	player.laser_t = 0.0
 	player.inv = 0.0
 	player.velocity = Vector2.ZERO
 
@@ -352,8 +355,15 @@ func _spawn(s: Node) -> void:
 			e.setup(s.position)
 		_:
 			return
+	scale_enemy(e)
 	ents_root.add_child(e)
 	ents.append(e)
+
+
+func scale_enemy(e: Node) -> void:
+	e.hp = maxi(1, roundi(e.hp * Game.diff()["ehp"]))
+	if "max_hp" in e:
+		e.max_hp = e.hp
 
 
 func spawn_add() -> void:
@@ -362,6 +372,7 @@ func spawn_add() -> void:
 	e.setup("sx", Vector2(1000 if player.position.x < 560 else 120, 470), 150, false)
 	e.state = "notice"
 	e.tm = 0.8
+	scale_enemy(e)
 	ents_root.add_child(e)
 	ents.append(e)
 	toast("A listener stumbles in from the stairwell")
@@ -493,7 +504,7 @@ func _physics_process(dt: float) -> void:
 			hurt_player(1, player.position.x)
 	for e in ents:
 		if is_instance_valid(e) and not e.dead:
-			e.step(dt)
+			e.step(dt * Game.diff()["espd"])
 	for e in ents:
 		if is_instance_valid(e) and e.dead and e.kind != "sleeper":
 			e.queue_free()
@@ -733,6 +744,8 @@ func _end_astral_now() -> void:
 
 func attack_hits(e: CharacterBody2D) -> void:
 	var b: Rect2 = e.attack_box()
+	var kind: String = e.atk_kind
+	var striking = kind == "strike" or kind == "finisher"
 	var hit = false
 	var pogo = false
 	for en in ents:
@@ -742,24 +755,28 @@ func attack_hits(e: CharacterBody2D) -> void:
 			continue
 		var box: Rect2 = en.hurt_rect()
 		if b.intersects(box):
-			var dir: int = e.face if e.atk_dir == "side" else (int(signf(en.position.x - e.position.x)) if en.position.x != e.position.x else 1)
-			if en.hit(1, dir):
+			var dir: int = e.face if e.atk_dir == "side" or kind == "dive" else (int(signf(en.position.x - e.position.x)) if en.position.x != e.position.x else 1)
+			if en.hit(e.atk_dmg, dir):
 				e.hit_set[en] = true
 				hit = true
-				if e.atk_dir == "down":
+				if striking and e.atk_dir == "down":
 					pogo = true
-				player.res = minf(99.0, player.res + 11.0)
-				fx.burst(box.get_center(), 10, 300, Color("#ffd6a0"))
+				if (kind == "kick" or kind == "finisher") and en.kind == "sleeper":
+					en.velocity.x = dir * 520.0
+				_gain_res(11.0)
+				fx.burst(box.get_center(), 18 if e.atk_dmg > 1 else 10, 420 if e.atk_dmg > 1 else 300, Color("#ffd6a0"))
 				for i in 3:
 					fx.part(en.position + Vector2(0, -20), Vector2.ZERO, "res", Color("#ffb06a"), player)
-	if not e.is_astral and e.atk_dir == "down" and not pogo:
+	if not e.is_astral and striking and e.atk_dir == "down" and not pogo:
 		if room.hazard_at(Rect2(b.position, b.size + Vector2(0, 6))) != null:
 			pogo = true
 	if hit:
-		hitstop = 0.055
+		hitstop = 0.09 if e.atk_dmg > 1 else 0.055
 		Sound.play("hit", 0.08)
-		shake = maxf(shake, 0.08)
-	if pogo and not e.pogo_done:
+		shake = maxf(shake, 0.16 if e.atk_dmg > 1 else 0.08)
+	if kind == "dive" and hit:
+		e.dive_bounce()
+	elif pogo and not e.pogo_done:
 		e.velocity.y = -640.0
 		e.jump_cut = true
 		e.used_double = false
@@ -767,7 +784,48 @@ func attack_hits(e: CharacterBody2D) -> void:
 		e.pogo_done = true
 	elif hit and e.atk_dir == "side":
 		e.recoil_t = 0.07
-		e.recoil_v = -e.face * 230.0
+		e.recoil_v = -e.face * (300.0 if kind == "kick" else 230.0)
+
+
+func apply_difficulty() -> void:
+	var m: int = Game.diff()["hp"]
+	player.hp = clampi(player.hp + (m - player.max_hp), 1, m)
+	player.max_hp = m
+
+
+func _gain_res(n: float) -> void:
+	player.res = minf(99.0, player.res + n * Game.diff()["res"])
+
+
+## Max's psychic laser: a beam from his hands to the first wall, hitting every
+## enemy along it for 3.
+func fire_laser(p: CharacterBody2D) -> void:
+	var dir: Vector2 = p.laser_dir
+	var from: Vector2 = p.position + (Vector2(0, -96) if dir.y < 0.0 else Vector2(p.face * 26, -40))
+	var to: Vector2 = from + dir * 900.0
+	var q = PhysicsRayQueryParameters2D.create(from, to, 1 | 8)
+	var r = p.get_world_2d().direct_space_state.intersect_ray(q)
+	if not r.is_empty():
+		to = r["position"]
+	var thick = 34.0
+	var beam = Rect2(from, Vector2.ZERO).expand(to)
+	beam = beam.grow_individual(0, thick / 2.0, 0, thick / 2.0) if dir.y == 0.0 else beam.grow_individual(thick / 2.0, 0, thick / 2.0, 0)
+	fx.lasers.append({"a": from, "b": to, "life": 0.26, "max": 0.26})
+	Sound.play("beam", 0.05)
+	shake = maxf(shake, 0.18)
+	fx.burst(to, 16, 360, Color("#ffd6a0"))
+	var hit = false
+	for en in ents:
+		if not is_instance_valid(en) or en.dead:
+			continue
+		var box: Rect2 = en.hurt_rect()
+		if beam.intersects(box):
+			if en.hit(3, int(signf(dir.x)) if dir.x != 0.0 else 1):
+				hit = true
+				fx.burst(box.get_center(), 22, 460, Color("#fff2c8"))
+	if hit:
+		hitstop = 0.08
+		Sound.play("hit", 0.08)
 
 
 func hurt_player(d: int, from_x: float) -> void:
@@ -777,6 +835,9 @@ func hurt_player(d: int, from_x: float) -> void:
 	player.inv = 1.3
 	player.heal_t = 0.0
 	player.dash_t = 0.0
+	player.dive = false
+	player.kick_t = 0.0
+	player.laser_t = 0.0
 	var dir = signf(player.position.x - from_x)
 	if dir == 0:
 		dir = -player.face
@@ -867,6 +928,7 @@ func _fire_event(ev: String) -> void:
 				var e = Echo.new()
 				e.main = self
 				e.setup(Vector2(2950, 470))
+				scale_enemy(e)
 				ents_root.add_child(e)
 				ents.append(e)
 				hist.clear()
@@ -919,7 +981,7 @@ func _fire_event(ev: String) -> void:
 			Game.set_flag("allSaved", all_saved)
 			if all_saved:
 				boss.hp = 30
-				boss.max_hp = 30
+				scale_enemy(boss)
 			var extra: Array = (Game.DLG["cienciaAllSaved"] if all_saved else Game.DLG["cienciaSomeSaved"]) + Game.DLG["cienciaGo"]
 			var begin = func():
 				boss.state = "idle"
@@ -1037,7 +1099,7 @@ func tide_awaken(_e: Node) -> void:
 	start_dialog("tideAwaken", after)
 
 
-var _bc := {}
+var _bc = {}
 
 
 func _boss_choice(title: String, sub: String, opts: Array, read_lines: Array, results: Dictionary, done_flag: String, end_dialog: String, chapter: int) -> void:

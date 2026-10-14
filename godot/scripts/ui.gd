@@ -14,6 +14,7 @@ var _choice_armed_at = 0.0
 var _title: Control
 var _btn_continue: Button
 var _pause: PanelContainer
+var _btn_diff: Button
 var _end: PanelContainer
 var _end_body: VBoxContainer
 var _touch: Control
@@ -99,8 +100,8 @@ func _build_title() -> void:
 	add_child(_title)
 	var box = HBoxContainer.new()
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
-	box.position = Vector2(280, 420)
-	box.size = Vector2(400, 48)
+	box.position = Vector2(170, 420)
+	box.size = Vector2(620, 48)
 	box.add_theme_constant_override("separation", 12)
 	_title.add_child(box)
 	var b1 = Button.new()
@@ -113,6 +114,10 @@ func _build_title() -> void:
 	_btn_continue.custom_minimum_size = Vector2(160, 44)
 	_btn_continue.pressed.connect(func(): Sound.play("select"); main.continue_game())
 	box.add_child(_btn_continue)
+	_btn_diff = Button.new()
+	_btn_diff.custom_minimum_size = Vector2(230, 44)
+	_btn_diff.pressed.connect(func(): Sound.play("select"); Game.cycle_difficulty(); _refresh_diff())
+	box.add_child(_btn_diff)
 	var hint = Label.new()
 	hint.name = "Hint"
 	hint.position = Vector2(60, 488)
@@ -146,7 +151,8 @@ func show_title(has_save: bool, unlocked := 1) -> void:
 	for n in [1, 2, 3]:
 		chap.get_node("Ch%d" % n).visible = n <= unlocked
 	_btn_continue.visible = has_save
-	_title.get_node("Hint").text = "Touch controls appear in play." if Game.touch_mode else "A/D move · Space jump · X strike · C dash · Q focus · E project · R full potential · W talk · Esc pause · gamepad supported"
+	_refresh_diff()
+	_title.get_node("Hint").text = "Touch controls appear in play." if Game.touch_mode else "A/D move · Space jump · X strike · V kick · B laser · C dash · Q focus · E project · R full potential · W talk · Esc pause · gamepad"
 	(_btn_continue if has_save else _title.get_child(0).get_child(0)).call_deferred("grab_focus")
 	_touch.visible = false
 
@@ -366,6 +372,12 @@ func show_choice(title: String, sub: String, opts: Array) -> void:
 		get_tree().create_timer(0.62).timeout.connect(func(): if is_instance_valid(first): first.grab_focus())
 
 
+func _refresh_diff() -> void:
+	var d: Dictionary = Game.diff()
+	_btn_diff.text = "DIFFICULTY: %s" % d["name"]
+	_btn_diff.tooltip_text = "%d health" % d["hp"]
+
+
 # ---------- pause ----------
 
 func _build_pause() -> void:
@@ -380,12 +392,24 @@ func _build_pause() -> void:
 	keys.add_theme_font_size_override("font_size", 14)
 	v.add_child(keys)
 	for spec in [["RESUME", func(): main.close_pause()], ["SOUND: ON", func(): Sound.set_sound(not Sound.sound_on); _refresh_pause()],
-			["MUSIC: ON", func(): Sound.set_music(not Sound.music_on); _refresh_pause()], ["TITLE", func(): _pause.visible = false; main.show_title()]]:
+			["MUSIC: ON", func(): Sound.set_music(not Sound.music_on); _refresh_pause()],
+			["DIFFICULTY: NORMAL", func(): Game.cycle_difficulty(); main.apply_difficulty(); _refresh_pause()], ["TITLE", func(): _pause.visible = false; main.show_title()]]:
 		var b = Button.new()
 		b.text = spec[0]
 		b.name = spec[0].split(":")[0].capitalize()
 		b.pressed.connect(spec[1])
-		v.add_child(b)
+		if b.name == "Resume":
+			v.add_child(b)
+		else:
+			if not v.has_node("Grid"):
+				var g = GridContainer.new()
+				g.name = "Grid"
+				g.columns = 2
+				g.add_theme_constant_override("h_separation", 8)
+				g.add_theme_constant_override("v_separation", 8)
+				v.add_child(g)
+			b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			v.get_node("Grid").add_child(b)
 
 
 func show_pause() -> void:
@@ -400,9 +424,11 @@ func hide_pause() -> void:
 
 func _refresh_pause() -> void:
 	var v = _pause.get_child(0)
-	v.get_node("Sound").text = "SOUND: " + ("ON" if Sound.sound_on else "OFF")
-	v.get_node("Music").text = "MUSIC: " + ("ON" if Sound.music_on else "OFF")
-	var rows = [["move", "Move"], ["jump", "Jump · again midair to levitate"], ["attack", "Psychic strike · hold up/down to aim"], ["dash", "Dash"],
+	v.get_node("Grid/Sound").text = "SOUND: " + ("ON" if Sound.sound_on else "OFF")
+	v.get_node("Grid/Music").text = "MUSIC: " + ("ON" if Sound.music_on else "OFF")
+	v.get_node("Grid/Difficulty").text = "DIFFICULTY: " + Game.diff()["name"]
+	var rows = [["move", "Move"], ["jump", "Jump · again midair to levitate"], ["attack", "Psychic strike · up/down to aim · 3-hit combo"],
+		["kick", "Kick · in midair, a diving kick"], ["laser", "Psychic laser · costs Resonance · hold up to aim"], ["dash", "Dash"],
 		["heal", "Hold to focus Resonance into healing"], ["project", "Leave or return to your body"], ["fp", "Full Potential (permanent cost)"], ["up", "Talk · rest at benches"]]
 	var s = ""
 	for r in rows:
@@ -486,6 +512,7 @@ func _build_touch() -> void:
 	var tex = _circle_tex(30, Color(0.04, 0.05, 0.09, 0.45), Color(0.93, 0.9, 0.85, 0.35))
 	var texp = _circle_tex(30, Color(0.65, 0.55, 1, 0.4), Color(0.93, 0.9, 0.85, 0.8))
 	var specs = [["left", "◀", Vector2(20, 470)], ["right", "▶", Vector2(150, 470)], ["up", "▲", Vector2(85, 405)], ["down", "▼", Vector2(85, 470)],
+		["kick", "KICK", Vector2(810, 340)], ["laser", "LASER", Vector2(875, 340)],
 		["project", "PROJECT", Vector2(745, 405)], ["heal", "FOCUS", Vector2(810, 405)], ["fp", "FULL", Vector2(875, 405)],
 		["dash", "DASH", Vector2(745, 470)], ["attack", "STRIKE", Vector2(810, 470)], ["jump", "JUMP", Vector2(875, 470)]]
 	for s in specs:

@@ -16,17 +16,21 @@ Every boss ends in a READ / REACH / BIND / STRIKE choice, and choices carry acro
 2. In the Project Manager choose **Import** and pick `godot/project.godot`.
 3. Press **F5**.
 
+Difficulty (title screen or pause menu, saved between sessions): **Story** gives Max 10 health with weaker, slower enemies and faster Resonance; **Normal** gives 7 health; **Hard** gives 5 health with tougher, faster enemies.
+
 Keyboard, gamepad and touch are supported:
 
 | Action | Keyboard | Gamepad |
 | --- | --- | --- |
 | Move | A / D, arrows | D-pad, left stick |
 | Jump (again midair to levitate) | Space, Z | A |
-| Strike (hold up/down to aim) | X, J | X |
+| Strike (hold up/down to aim; three in a row = heavy finisher) | X, J | X |
+| Kick (in midair: diving kick that bounces off enemies) | V, L | B |
+| Psychic laser (costs Resonance; hold up to fire upward) | B, I | RT |
 | Dash | C, K, Shift | RB |
 | Focus to heal (hold) | Q, F | LB |
 | Leave / return to body | E, P | Y |
-| Full Potential | R | B |
+| Full Potential | R | LT |
 | Talk, rest at benches | W, Up | D-pad up |
 | Pause | Esc | Start |
 

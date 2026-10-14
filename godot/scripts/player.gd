@@ -4,6 +4,7 @@ extends CharacterBody2D
 
 const Anim = preload("res://scripts/anim_sprite.gd")
 const PRM_BODY := {"run": 300.0, "grav": 2400.0, "max_fall": 880.0, "jump": 760.0, "dash": 760.0}
+const LASER_COST := 22.0
 const PRM_ASTRAL := {"run": 280.0, "grav": 1300.0, "max_fall": 520.0, "jump": 620.0, "dash": 700.0}
 
 var main: Node
@@ -22,6 +23,17 @@ var dash_cd = 0.0
 var atk_t = 0.0
 var atk_cd = 0.0
 var atk_dir = "side"
+var atk_kind = "strike"  # strike, finisher, kick, dive
+var atk_dmg = 1
+var combo = 0
+var combo_t = 0.0
+var kick_t = 0.0
+var kick_cd = 0.0
+var dive = false
+var laser_t = 0.0
+var laser_cd = 0.0
+var laser_dir = Vector2.RIGHT
+var laser_fired = false
 var hit_set = {}
 var pogo_done = false
 var recoil_t = 0.0
@@ -32,8 +44,8 @@ var run_ph = 0.0
 var step_acc = 0.0
 var inv = 0.0
 var ground_oneway = false
-var hp = 5
-var max_hp = 5
+var hp = 7
+var max_hp = 7
 var res = 0.0
 var safe = Vector2.ZERO
 var timer = 60.0
@@ -109,11 +121,22 @@ func control(dt: float) -> void:
 		if recoil_t > 0.0:
 			recoil_t -= dt
 			velocity.x = recoil_v
+		elif dive:
+			velocity.x = face * 520.0
+		elif laser_t > 0.0:
+			velocity.x = move_toward(velocity.x, 0.0, 3000.0 * dt)
+		elif kick_t > 0.0 and is_on_floor():
+			velocity.x = face * 520.0 * maxf(0.0, (kick_t - 0.12) / 0.2)
 		else:
 			velocity.x = move_toward(velocity.x, dir * prm["run"], (4200.0 if is_on_floor() else 2800.0) * dt)
-		if dir != 0 and atk_t <= 0.0:
+		if dir != 0 and atk_t <= 0.0 and kick_t <= 0.0 and laser_t <= 0.0 and not dive:
 			face = dir
-		velocity.y = minf(velocity.y + prm["grav"] * dt, prm["max_fall"])
+		if dive:
+			velocity.y = 820.0
+		elif laser_t > 0.0 and not is_on_floor():
+			velocity.y = minf(velocity.y + prm["grav"] * 0.25 * dt, 90.0)
+		else:
+			velocity.y = minf(velocity.y + prm["grav"] * dt, prm["max_fall"])
 	if Input.is_action_just_pressed("jump"):
 		jump_buf = 0.13
 	else:
@@ -146,30 +169,41 @@ func control(dt: float) -> void:
 		velocity.y *= 0.45
 		jump_cut = true
 	dash_cd -= dt
-	if Input.is_action_just_pressed("dash") and dash_cd <= 0.0 and (is_on_floor() or air_dash) and not healing:
+	if Input.is_action_just_pressed("dash") and dash_cd <= 0.0 and (is_on_floor() or air_dash) and not healing and not dive and laser_t <= 0.0:
 		dash_t = 0.17
 		dash_cd = 0.48
 		if not is_on_floor():
 			air_dash = false
 		Sound.play("dash", 0.05)
 	atk_cd -= dt
+	combo_t -= dt
 	if atk_t > 0.0:
 		atk_t -= dt
 		if atk_t > 0.12:
 			main.attack_hits(self)
 		if atk_t <= 0.13:
 			pogo_done = false
-	if Input.is_action_just_pressed("attack") and atk_cd <= 0.0 and not healing:
+	var busy = kick_t > 0.0 or dive or laser_t > 0.0
+	if Input.is_action_just_pressed("attack") and atk_cd <= 0.0 and not healing and not busy:
 		if Input.is_action_pressed("up"):
 			atk_dir = "up"
 		elif Input.is_action_pressed("down") and not is_on_floor():
 			atk_dir = "down"
 		else:
 			atk_dir = "side"
+		combo = (combo + 1) % 3 if (combo_t > 0.0 and atk_dir == "side") else 0
+		combo_t = 0.5
+		atk_kind = "finisher" if combo == 2 else "strike"
+		atk_dmg = 2 if combo == 2 else 1
 		atk_t = 0.24
-		atk_cd = 0.34
+		atk_cd = 0.42 if combo == 2 else 0.26
 		hit_set = {}
 		Sound.play("slash", 0.08)
+		if combo == 2:
+			Sound.play("kick", 0.05, -4.0)
+	_kick(dt, healing)
+	if not is_astral:
+		_laser(dt, healing)
 	if drop_t > 0.0:
 		drop_t -= dt
 		if drop_t <= 0.0:
@@ -184,6 +218,8 @@ func control(dt: float) -> void:
 				ground_oneway = true
 		used_double = false
 		air_dash = true
+		if dive:
+			_end_dive(true)
 		if not was_floor and vy_before > 320.0:
 			land_t = 0.12
 			Sound.play("land", 0.05, linear_to_db(clampf(vy_before / 900.0, 0.3, 1.0)))
@@ -196,7 +232,87 @@ func control(dt: float) -> void:
 		run_ph += dt * 11.5
 
 
+func _kick(dt: float, healing: bool) -> void:
+	kick_cd -= dt
+	if kick_t > 0.0:
+		kick_t -= dt
+		if kick_t < 0.24 and kick_t > 0.06:
+			main.attack_hits(self)
+	if dive:
+		kick_t = 0.2
+		main.attack_hits(self)
+		if randf() < 0.8:
+			main.fx.part(position + Vector2(-face * 8, -20), Vector2(-face * 80, -120), "trail", Color("#a58bff") if is_astral else Color("#ffd6a0"))
+	if not Input.is_action_just_pressed("kick") or kick_cd > 0.0 or healing or atk_t > 0.0 or laser_t > 0.0 or dive or dash_t > 0.0:
+		return
+	hit_set = {}
+	atk_dmg = 2
+	if is_on_floor():
+		atk_kind = "kick"
+		atk_dir = "side"
+		kick_t = 0.32
+		kick_cd = 0.5
+	else:
+		atk_kind = "dive"
+		atk_dir = "down"
+		dive = true
+		kick_t = 0.2
+		kick_cd = 0.45
+	Sound.play("kick", 0.08)
+
+
+func _end_dive(landed: bool) -> void:
+	dive = false
+	kick_t = 0.0
+	if landed:
+		Sound.play("land", 0.05)
+		main.shake = maxf(main.shake, 0.12)
+		for i in 12:
+			main.fx.part(position, Vector2(randf_range(-260, 260), -randf() * 90), "dust", Color("#e8d8c0"))
+
+
+func dive_bounce() -> void:
+	_end_dive(false)
+	velocity.y = -620.0
+	jump_cut = true
+	used_double = false
+	air_dash = true
+
+
+func _laser(dt: float, healing: bool) -> void:
+	laser_cd -= dt
+	if laser_t > 0.0:
+		laser_t -= dt
+		if not laser_fired and laser_t <= 0.26:
+			laser_fired = true
+			main.fire_laser(self)
+		return
+	if not Input.is_action_just_pressed("laser") or laser_cd > 0.0 or healing or atk_t > 0.0 or kick_t > 0.0 or dash_t > 0.0:
+		return
+	if res < LASER_COST:
+		Sound.play("glitch", 0.05, -6.0)
+		main.toast("The laser needs Resonance. Land strikes to build it.")
+		laser_cd = 0.6
+		return
+	res -= LASER_COST
+	laser_dir = Vector2.UP if Input.is_action_pressed("up") else Vector2(face, 0)
+	laser_t = 0.4
+	laser_cd = 0.55
+	laser_fired = false
+	Sound.play("charge", 0.05, -4.0)
+
+
 func attack_box() -> Rect2:
+	if atk_kind == "kick":
+		if face > 0:
+			return Rect2(position.x + w / 2.0 - 6, position.y - 44, 74, 40)
+		return Rect2(position.x - w / 2.0 - 68, position.y - 44, 74, 40)
+	if atk_kind == "dive":
+		return Rect2(position.x - 26 + face * 10, position.y - 30, 52, 44)
+	if atk_kind == "finisher" and atk_dir == "side":
+		if face > 0:
+			return Rect2(position.x + w / 2.0 - 4, position.y - 78, 104, 80)
+		return Rect2(position.x - w / 2.0 - 100, position.y - 78, 104, 80)
 	if atk_dir == "up":
 		return Rect2(position.x - 38, position.y - 138, 76, 86)
 	if atk_dir == "down":
@@ -210,7 +326,16 @@ func update_pose(t: float, slumped: bool) -> void:
 	land_t = maxf(0.0, land_t - get_physics_process_delta_time())
 	rig.face = face
 	rig.tilt = 0.0
-	if atk_t > 0.0:
+	if dive:
+		rig.seek("strike_down", 0.6)
+		rig.tilt = 0.35 * face
+	elif kick_t > 0.0:
+		rig.seek("dash", clampf(1.0 - (kick_t - 0.08) / 0.24, 0.0, 1.0))
+		rig.tilt = -0.12 * face
+	elif laser_t > 0.0:
+		var up = laser_dir.y < 0.0
+		rig.seek("strike_up" if up else "strike", 0.3 if not laser_fired else 0.75)
+	elif atk_t > 0.0:
 		var name: String = {"side": "strike", "up": "strike_up", "down": "strike_down"}[atk_dir]
 		rig.seek(name, 1.0 - atk_t / 0.24)
 	elif dash_t > 0.0:

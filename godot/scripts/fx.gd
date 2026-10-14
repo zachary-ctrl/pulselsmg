@@ -8,6 +8,7 @@ var projectiles: Array = []
 var parts: Array = []
 var texts: Array = []
 var beams: Array = []
+var lasers: Array = []
 var predict = null
 var _cid = 0
 
@@ -43,10 +44,14 @@ func clear_all() -> void:
 	parts.clear()
 	texts.clear()
 	beams.clear()
+	lasers.clear()
 	predict = null
 
 
 func step(dt: float) -> void:
+	for l in lasers:
+		l["life"] -= dt
+	lasers = lasers.filter(func(l): return l["life"] > 0.0)
 	var solids: Array = main.room.solid_rects(false)
 	var floors: Array = main.room.solid_rects(true)
 	for p in projectiles:
@@ -200,8 +205,26 @@ func _draw() -> void:
 		draw_line(predict - Vector2(0, 80), predict + Vector2(0, 80), c, 2.0)
 		draw_string(Game.font_semi, predict + Vector2(10, -72), "▸ " + main.predict_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#ff9ad8"))
 	for who in [main.player, main.astral]:
-		if who != null and is_instance_valid(who) and who.atk_t > 0.0:
-			_slash(who, Color("#c9b8ff") if who.is_astral else Color("#ffb06a"))
+		if who == null or not is_instance_valid(who):
+			continue
+		var wc = Color("#c9b8ff") if who.is_astral else Color("#ffb06a")
+		if who.atk_t > 0.0:
+			_slash(who, wc)
+		if who.kick_t > 0.0:
+			_kick(who, wc)
+		if not who.is_astral and who.laser_t > 0.0 and not who.laser_fired:
+			var hand: Vector2 = who.position + (Vector2(0, -96) if who.laser_dir.y < 0.0 else Vector2(who.face * 26, -40))
+			var k = 1.0 - (who.laser_t - 0.26) / 0.14
+			draw_circle(hand, 4.0 + 14.0 * k, Color(1, 0.84, 0.6, 0.25 * k))
+			draw_circle(hand, 2.0 + 6.0 * k, Color(1, 0.97, 0.9, 0.9))
+	for l in lasers:
+		var a: float = l["life"] / l["max"]
+		var wv = 1.0 + 0.15 * sin(t * 60.0)
+		draw_line(l["a"], l["b"], Color(1, 0.55, 0.25, 0.25 * a), 46.0 * a * wv)
+		draw_line(l["a"], l["b"], Color(1, 0.8, 0.45, 0.6 * a), 22.0 * a * wv)
+		draw_line(l["a"], l["b"], Color(1, 0.98, 0.92, a), 8.0 * a)
+		draw_circle(l["a"], 18.0 * a, Color(1, 0.95, 0.85, 0.8 * a))
+		draw_circle(l["b"], 26.0 * a, Color(1, 0.75, 0.4, 0.5 * a))
 	for p in parts:
 		var a: float = clampf(p["life"] / p["max"], 0.0, 1.0)
 		var k: String = p["k"]
@@ -245,9 +268,31 @@ func _slash(e: Node, col: Color) -> void:
 		c = Vector2(0, 40)
 		a0 = 0.4
 		a1 = PI - 0.4
+	var big = 1.4 if e.atk_kind == "finisher" else 1.0
 	var sweep = lerpf(a0, a1, minf(1.0, k * 1.8))
 	var alpha = 1.0 - k
 	for i in 4:
 		var ccol = Color("#fff7e8") if i == 0 else col
-		draw_arc(origin + c, 54.0 - i * 7, minf(a0, sweep), maxf(a0, sweep), 24, Color(ccol, alpha * (1.0 - i * 0.2)), (9.0 - i * 2) * (1.0 - k * 0.5))
+		draw_arc(origin + c * big, (54.0 - i * 7) * big, minf(a0, sweep), maxf(a0, sweep), 24, Color(ccol, alpha * (1.0 - i * 0.2)), (9.0 - i * 2) * (1.0 - k * 0.5) * big)
 	_glow(origin + c, 60, Color(col, 0.3 * alpha))
+
+
+func _kick(e: Node, col: Color) -> void:
+	if e.dive:
+		var c: Vector2 = e.position + Vector2(e.face * 12, -6)
+		draw_circle(c, 22, Color(col, 0.25))
+		draw_arc(c, 26, 0, TAU, 24, Color("#fff7e8", 0.8), 3.0)
+		for i in 3:
+			var off = Vector2(-e.face * (14 + i * 12), -(18 + i * 16))
+			draw_line(c + off, c + off * 1.8, Color(col, 0.6 - i * 0.15), 4.0 - i)
+		return
+	var k: float = clampf(1.0 - (e.kick_t - 0.06) / 0.26, 0.0, 1.0)
+	if k <= 0.0 or k >= 1.0:
+		return
+	var c2: Vector2 = e.position + Vector2(e.face * (30 + 34 * k), -26)
+	var alpha = 1.0 - k
+	var a0 = -0.9 if e.face > 0 else PI + 0.9
+	var a1 = 0.9 if e.face > 0 else PI - 0.9
+	for i in 3:
+		draw_arc(c2 - Vector2(e.face * i * 8, 0), 30.0 - i * 6, minf(a0, a1), maxf(a0, a1), 18, Color(Color("#fff7e8") if i == 0 else col, alpha * (1.0 - i * 0.25)), 7.0 - i * 2)
+	_glow(c2, 40, Color(col, 0.3 * alpha))

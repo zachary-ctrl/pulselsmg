@@ -56,7 +56,7 @@ func _draw() -> void:
 		var a = -1.2 + i * 0.6
 		draw_line(c + Vector2(cos(a), sin(a)) * r, c + Vector2(cos(a), sin(a + 0.15)) * (r - 12), Color(0.78, 0.67, 1, 0.9), 1.2)
 	for i in p.max_hp:
-		var sc = Vector2(110 + i * 30, 44)
+		var sc = Vector2(110 + i * (30 if p.max_hp <= 7 else 24), 44)
 		var dia = PackedVector2Array([sc + Vector2(0, -13), sc + Vector2(9, -2), sc + Vector2(0, 13), sc + Vector2(-9, -2)])
 		if i < p.hp:
 			draw_colored_polygon(dia, Color("#efe7da"))

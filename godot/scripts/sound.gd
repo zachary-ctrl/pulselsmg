@@ -13,7 +13,7 @@ var _amb: AudioStreamPlayer
 var _amb_name = ""
 var _focus: AudioStreamPlayer
 
-const SFX := ["slash", "hit", "step_wood", "step_tile", "step_lino", "step_metal", "step_astral", "land", "jump", "djump", "dash", "hurt",
+const SFX := ["slash", "kick", "hit", "step_wood", "step_tile", "step_lino", "step_metal", "step_astral", "land", "jump", "djump", "dash", "hurt",
 	"focus", "heal", "phone", "project", "return", "tick", "fp", "ehit", "lunge", "stabilize", "whisper", "zap", "pop", "rewind", "shards",
 	"glitch", "charge", "beam", "chain", "throw", "glass", "lock", "boom", "stagger", "phase2", "defeat", "unlock", "gate", "rest", "whoosh",
 	"gong", "death", "heartbeat", "select", "choice", "pause", "endsting", "door", "voice_max", "voice_lana", "voice_jason", "voice_ciencia",
