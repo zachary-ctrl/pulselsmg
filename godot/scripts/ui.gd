@@ -140,7 +140,7 @@ func _build_title() -> void:
 	var cb = _menu_button("CHAPTERS", func(): show_sub("chapters"))
 	cb.name = "Chapters"
 	_title_main.add_child(cb)
-	_title_main.add_child(_menu_button("LSMG ARCADE", func(): main.open_arcade()))
+	_title_main.add_child(_menu_button("LSMG ARCADE", func(): show_sub("arcade")))
 	_title_main.add_child(_menu_button("SETTINGS", func(): show_sub("settings")))
 	_title_main.add_child(_menu_button("CREDITS", func(): show_sub("credits")))
 	if not OS.has_feature("web"):
@@ -211,6 +211,17 @@ func show_sub(kind: String, from_pause := false) -> void:
 				var nn = n
 				var b = _menu_button("%d · %s" % [n, Game.CHAPTERS[n]["title"]], func(): sub_back(); main.start_chapter(nn, true))
 				v.add_child(b)
+				if first == null:
+					first = b
+		"arcade":
+			v.add_child(_heading("LSMG ARCADE", 22))
+			for cab in [["shot", "LAST SHOT", "high", "8-bit buzzer-beater basketball"], ["knight", "MIGHTY KNIGHT", "high_knight", "Run, jump and slash through the night"],
+					["duck", "STEAMER DUCK", "high_duck", "Hop, glide and QUACK across three worlds"]]:
+				var cid: String = cab[0]
+				var b = _menu_button("%s   ·   HI %d" % [cab[1], int(Game.settings.get(cab[2], 0))], func(): sub_back(); main.open_arcade(cid))
+				b.custom_minimum_size = Vector2(440, 38)
+				v.add_child(b)
+				v.add_child(_small(cab[3], 11, Color("#a8a0b0")))
 				if first == null:
 					first = b
 		"credits":

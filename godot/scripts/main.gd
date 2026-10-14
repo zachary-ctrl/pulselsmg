@@ -20,6 +20,8 @@ const Collective = preload("res://scripts/enemies/collective.gd")
 const AllyScript = preload("res://scripts/ally.gd")
 const SplashScript = preload("res://scripts/splash.gd")
 const ArcadeScript = preload("res://scripts/arcade.gd")
+const ArcadeKnight = preload("res://scripts/arcade_knight.gd")
+const ArcadeDuck = preload("res://scripts/arcade_duck.gd")
 const Exhibit = preload("res://scripts/enemies/exhibit.gd")
 const FxScript = preload("res://scripts/fx.gd")
 const HudScript = preload("res://scripts/hud.gd")
@@ -167,17 +169,20 @@ func splash_done() -> void:
 var arcade: Control = null
 
 
-func open_arcade() -> void:
+## LSMG ARCADE cabinets: "shot" (Last Shot), "knight" (Mighty Knight, MIT,
+## KOBUGE Project Incubator) and "duck" (Steamer Duck assets, CC0).
+func open_arcade(id := "shot") -> void:
 	mode = "arcade"
 	ui.hide_title()
 	ui._touch.visible = Game.touch_mode
-	arcade = ArcadeScript.new()
+	arcade = {"knight": ArcadeKnight, "duck": ArcadeDuck}.get(id, ArcadeScript).new()
 	arcade.main = self
 	ui_layer.add_child(arcade)
 
 
 func close_arcade() -> void:
 	arcade = null
+	Sound._music_name = "_"
 	show_title()
 
 

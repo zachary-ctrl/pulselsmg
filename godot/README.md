@@ -68,7 +68,7 @@ Each hero can transform into a shinobi alter ego (craftpix *Shinobi* sprites): M
 
 ### Menus and the LSMG arcade
 
-The game boots with an 8-bit **Last Shot Media Group** splash (the LSMG wordmark pixelated, with a chiptune jingle). The title menu (Continue, New Game, Chapters, LSMG Arcade, Settings, Quit) and all panels use the craftpix *Cyberpunk GUI* pixel frames and buttons; the HUD sits on one of its plates. **LSMG ARCADE · LAST SHOT** is an 8-bit buzzer-beater basketball minigame: hold and release Jump to shoot, 45 seconds, 3-pointers from behind the line, the last five seconds count double, and three makes in a row put you on fire. The high score is saved.
+The game boots with an 8-bit **Last Shot Media Group** splash (the LSMG wordmark pixelated, with a chiptune jingle). The title menu (Continue, New Game, Chapters, LSMG Arcade, Settings, Quit) and all panels use the craftpix *Cyberpunk GUI* pixel frames and buttons; the HUD sits on one of its plates. **LSMG ARCADE · LAST SHOT** is an 8-bit buzzer-beater basketball minigame: hold and release Jump to shoot, 45 seconds, 3-pointers from behind the line, the last five seconds count double, and three makes in a row put you on fire. The high score is saved. Two more cabinets: **MIGHTY KNIGHT**, a Godot 4 port of KOBUGE's MIT-licensed auto-runner (jump the gaps, slash zombies, catch falling swords), and **STEAMER DUCK**, an endless runner built from Steamer Duck's CC0 art, sounds and music (hop, hold Jump to glide, Strike to QUACK and freeze robots). Each keeps its own high score.
 
 ## How it's organized
 
@@ -88,6 +88,8 @@ scripts/fx.gd             projectiles, beams, particles, slash arcs, glowing VFX
 scripts/hud.gd, ui.gd     HUD, dialogue with portraits, choices, title menu, settings, control remapping, pause, end, touch buttons
 scripts/splash.gd         8-bit LSMG boot splash
 scripts/arcade.gd         LSMG ARCADE · LAST SHOT minigame
+scripts/arcade_knight.gd  LSMG ARCADE · MIGHTY KNIGHT (port, MIT)
+scripts/arcade_duck.gd    LSMG ARCADE · STEAMER DUCK (CC0 assets)
 scripts/vinput.gd         samples the player's buttons once per physics frame
 scripts/pixelfont.gd      3x5 pixel font for the 8-bit screens
 scripts/room.gd           room root: collects platforms and markers, draws animated pieces
