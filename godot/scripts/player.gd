@@ -45,11 +45,15 @@ var hero = "max"
 var aura: Node2D
 var swap_t = 0.0
 var shinobi = false
+var rage = false
+var rage_i = 0
+const RAGE_SPECIALS := ["laser", "orb", "shout", "flurry", "wave", "geyser"]
 var air_jumps = 0
 var wall_dir = 0
 var wall_grace = 0.0
 var wall_lock = 0.0
 var down_hold = 0.0
+var atk_buf = 0.0
 var dash_vec = Vector2.RIGHT
 var stamina = 1.0
 var climbing = false
@@ -106,7 +110,7 @@ func set_hero(h: String) -> void:
 
 
 func dmg_bonus() -> int:
-	return int(Game.mod("dmg")) + int(Game.attr(hero, "pow") / 2) + (1 if shinobi else 0)
+	return int(Game.mod("dmg")) + int(Game.attr(hero, "pow") / 2) + (1 if shinobi else 0) + (2 if rage else 0)
 
 
 ## Alter ego: the hero becomes their shinobi self. Faster, an extra air jump,
@@ -147,7 +151,7 @@ func control(dt: float) -> void:
 	if not is_astral:
 		var hd: Dictionary = Game.HEROES[hero]
 		prm = PRM_BODY.duplicate()
-		prm["run"] = hd["run"] * (1.0 + Game.mod("speed")) * (1.25 if shinobi else 1.0)
+		prm["run"] = hd["run"] * (1.0 + Game.mod("speed") + Game.attr(hero, "agi") * 0.03) * (1.25 if shinobi else 1.0) * (1.2 if rage else 1.0)
 		prm["jump"] = hd["jump"] * (1.06 if shinobi else 1.0)
 		if inp.just("transform"):
 			if shinobi:
@@ -157,7 +161,9 @@ func control(dt: float) -> void:
 			else:
 				main.toast("Alter ego needs 30 Resonance")
 				Sound.play("glitch", 0.05, -6.0)
-		if shinobi:
+		if rage:
+			res = minf(99.0, res + 70.0 * dt)
+		if shinobi and not rage and not Game.story_mode():
 			res = maxf(0.0, res - 4.5 * dt)
 			if res <= 0.0:
 				set_shinobi(false)
@@ -174,6 +180,8 @@ func control(dt: float) -> void:
 		heal_t += dt
 		if randf() < dt * 30.0:
 			main.fx.part(position + Vector2(randf_range(-30, 30), -10 - randf() * 50), Vector2.ZERO, "heal", Color("#8affb0"), self)
+		if heal_t > 0.0 and heal_t < dt * 1.5:
+			main.fx.sprite("magic/heal_glyph_ground", position + Vector2(0, -60), 150.0, 0.9, 0.0, Color.WHITE, 8)
 		if heal_t >= 0.9 / (1.0 + Game.mod("focus")):
 			heal_t = 0.0
 			hp += 1
@@ -214,7 +222,10 @@ func control(dt: float) -> void:
 		elif (laser_t > 0.0 or flurry_t > 0.0) and not is_on_floor():
 			velocity.y = minf(velocity.y + prm["grav"] * 0.25 * dt, 90.0)
 		else:
-			velocity.y = minf(velocity.y + prm["grav"] * dt, prm["max_fall"])
+			var g: float = prm["grav"]
+			if inp.pressed("jump") and absf(velocity.y) < 110.0 and not is_on_floor():
+				g *= 0.5
+			velocity.y = minf(velocity.y + g * dt, prm["max_fall"])
 	# Wall slide: hold toward a wall while falling.
 	wall_grace -= dt
 	climbing = false
@@ -227,7 +238,8 @@ func control(dt: float) -> void:
 			if climbing:
 				# Wall climb (after Kandria): hold up on a wall, limited by stamina.
 				velocity.y = -150.0
-				stamina = maxf(0.0, stamina - dt * 0.9)
+				if not rage:
+					stamina = maxf(0.0, stamina - dt * 0.9)
 			elif velocity.y > 120.0:
 				velocity.y = 120.0
 				if randf() < 0.3:
@@ -247,7 +259,7 @@ func control(dt: float) -> void:
 			position.y += 2
 	else:
 		down_hold = 0.0
-	var max_air = (1 if Game.ability.get("double", false) else 0) + (1 if shinobi else 0)
+	var max_air = (1 if Game.ability.get("double", false) else 0) + (1 if shinobi else 0) + (2 if rage else 0)
 	if jump_buf > 0.0 and not healing:
 		if inp.pressed("down") and is_on_floor() and ground_oneway:
 			drop_t = 0.25
@@ -290,7 +302,7 @@ func control(dt: float) -> void:
 	dash_cd -= dt
 	if inp.just("dash") and dash_cd <= 0.0 and (is_on_floor() or air_dash) and not healing and not dive and laser_t <= 0.0:
 		dash_t = 0.17
-		dash_cd = maxf(0.12, 0.48 + Game.mod("dashcd"))
+		dash_cd = maxf(0.12, 0.48 + Game.mod("dashcd") - Game.attr(hero, "agi") * 0.02)
 		# 8-way air dash (after Kandria): hold a direction while airborne.
 		var dy = int(inp.pressed("down")) - int(inp.pressed("up"))
 		var dx = int(inp.pressed("right")) - int(inp.pressed("left"))
@@ -315,7 +327,12 @@ func control(dt: float) -> void:
 		if atk_t <= 0.13:
 			pogo_done = false
 	var busy = kick_t > 0.0 or dive or laser_t > 0.0 or flurry_t > 0.0
-	if inp.just("attack") and atk_cd <= 0.0 and not healing and not busy:
+	if inp.just("attack"):
+		atk_buf = 0.14
+	else:
+		atk_buf -= dt
+	if atk_buf > 0.0 and atk_cd <= 0.0 and not healing and not busy:
+		atk_buf = 0.0
 		if inp.pressed("up"):
 			atk_dir = "up"
 		elif inp.pressed("down") and not is_on_floor():
@@ -461,6 +478,12 @@ func _laser(dt: float, healing: bool) -> void:
 		return
 	special = Game.prog["special"].get(hero, Game.HEROES[hero]["specials"][0])
 	var cost = Game.special_cost(hero)
+	if rage:
+		# Rage: every power, free, cycling through all six specials.
+		special = RAGE_SPECIALS[rage_i % RAGE_SPECIALS.size()]
+		rage_i += 1
+		cost = 0.0
+		main.fx.text_float(position + Vector2(0, -96), Game.SPECIALS[special]["name"].to_upper(), Color("#ff9ad8"), 0.8)
 	if res < cost:
 		Sound.play("glitch", 0.05, -6.0)
 		main.toast("%s needs %d Resonance. Land hits to build it." % [Game.SPECIALS[special]["name"], int(cost)])
@@ -468,8 +491,8 @@ func _laser(dt: float, healing: bool) -> void:
 		return
 	res -= cost
 	laser_dir = Vector2.UP if inp.pressed("up") and special == "laser" else Vector2(face, 0)
-	laser_t = 0.4
-	laser_cd = 0.55
+	laser_t = 0.4 if not rage else 0.3
+	laser_cd = 0.55 if not rage else 0.2
 	laser_fired = false
 	Sound.play("charge", 0.05, -4.0)
 	if special == "laser":
@@ -551,7 +574,13 @@ func update_pose(t: float, slumped: bool) -> void:
 		rig.face = -wall_dir
 	var blink = inv > 0.0 and not is_astral and not slumped and int(inv * 14.0) % 2 == 1
 	rig.visible = not blink
-	if is_astral:
+	aura.scale = Vector2(2, 2) if rage else Vector2.ONE
+	if rage:
+		aura.color = "magenta"
+		aura.target = 1.0
+		if not slumped and inv <= 1.0:
+			rig.tint = Color(1.0, 0.25, 0.45, 0.22 + 0.1 * sin(t * 9.0))
+	elif is_astral:
 		aura.color = "violet"
 		aura.target = 0.35
 	else:

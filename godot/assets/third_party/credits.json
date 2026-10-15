@@ -67,5 +67,13 @@
    "Design reference: Kandria (zlib, Shirakumo)",
    "Map design reference: YKnytt (MIT code; no assets used)"
   ]
+ },
+ {
+  "section": "Backgrounds, magic and fonts",
+  "lines": [
+   "City backgrounds and magic sprite effects: craftpix.net free assets (craftpix.net/file-licenses)",
+   "Body font: Atkinson Hyperlegible Next, Braille Institute (SIL OFL 1.1)",
+   "Game-feel techniques after Maddy Thorson's 'Celeste & Forgiveness'"
+  ]
  }
 ]

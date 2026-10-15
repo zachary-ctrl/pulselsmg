@@ -62,6 +62,19 @@ func _quick(ch: int) -> void:
 	await shot("q_drops")
 	print("drop-end")
 	await wait(2.0)
+	var d0 = Game.difficulty
+	Game.difficulty = 0
+	Game.apply_story()
+	print("STORY party=", Game.party(), " items=", Game.prog["items"].size(), " cost=", Game.special_cost("max"))
+	main.open_menu()
+	main.ui._menu_go(4)
+	await wait(0.3)
+	await shot("q_lore")
+	main.ui._menu_go(0)
+	await wait(0.3)
+	await shot("q_party")
+	main.close_menu()
+	Game.difficulty = d0
 	get_tree().quit()
 
 
@@ -502,5 +515,75 @@ func _run() -> void:
 	await advance(14)
 	await wait(1.0)
 	await shot("55_ch4_end")
+	# ---- chapter 5 + side areas + rage ----
+	main.start_chapter(5, false)
+	await wait(1.0)
+	await shot("60_ch5_intro")
+	await advance(12)
+	await wait(0.6)
+	await shot("61_nightcity")
+	main.toggle_rage()
+	await wait(0.5)
+	await shot("62_rage")
+	await tap("attack")
+	await wait(0.1)
+	await tap("laser")
+	await wait(0.35)
+	await tap("laser")
+	await wait(0.2)
+	await shot("63_rage_powers")
+	var hp0 = main.player.hp
+	main.hurt_player(3, main.player.position.x + 10)
+	print("RAGE immortal hp_before=", hp0, " after=", main.player.hp, " rage=", main.player.rage)
+	main.toggle_rage()
+	main.load_room("rooftop", Vector2(1800, 470))
+	await wait(0.4)
+	await advance(4)
+	await wait(1.2)
+	await shot("64_underboss")
+	print("UNDERBOSS fight=", main.fight_id(), " name=", main.fight["name"] if main.fight != null else "")
+	for e in main.ents:
+		if e.kind == "underboss":
+			e.state = "idle"
+			e.hit(999, 1)
+	await wait(1.5)
+	await advance(6)
+	print("UNDERBOSS down=", Game.flag("down_monitor"))
+	main.load_room("skyline", Vector2(300, 470))
+	await wait(0.6)
+	await advance(4)
+	await shot("65_skyline")
+	main.player.hp = 99
+	main.player.max_hp = 99
+	main.load_room("archive", Vector2(160, 470))
+	await wait(0.4)
+	await hold("right", 0.5)
+	await wait(0.4)
+	await advance(10)
+	await wait(1.5)
+	await shot("66_auditor")
+	for e in main.ents:
+		if e.kind == "underboss":
+			e.hp = 40
+	await wait(1.5)
+	await shot("67_auditor_phase2")
+	for e in main.ents:
+		if e.kind == "underboss":
+			e.alpha = 1.0
+			e.state = "idle"
+			e.hit(999, 1)
+	await wait(2.6)
+	await shot("68_auditor_choice")
+	main._on_choice("BIND")
+	await wait(0.3)
+	await advance(14)
+	await wait(1.0)
+	await shot("69_ch5_end")
+	main.open_menu()
+	main.ui._menu_go(4)
+	await wait(0.3)
+	await shot("70_lore")
+	main.close_menu()
+	print("CH5 auditor=", Game.flags.get("auditorDone_choice", ""))
 	print("AUTOTEST DONE mode=", main.mode, " tide=", Game.flags.get("tideDone_choice", ""), " collective=", Game.flags.get("collectiveDone_choice", ""), " unlocked=", Game.unlocked(), " level=", Game.prog["level"])
 	get_tree().quit()

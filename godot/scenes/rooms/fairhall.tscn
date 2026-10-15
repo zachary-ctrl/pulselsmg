@@ -168,13 +168,20 @@ dialog = "c4_lana"
 dialog_repeat = "c4_lana2"
 face = 1
 
-[node name="Anchor_flyer_4" type="Node2D" parent="Markers"]
+[node name="Portal_neon_4" type="Node2D" parent="Markers"]
+position = Vector2(1600, 470)
+script = ExtResource("marker")
+kind = "portal"
+target_room = "neon"
+spawn_point = Vector2(120, 470)
+
+[node name="Anchor_flyer_5" type="Node2D" parent="Markers"]
 position = Vector2(780, 360)
 script = ExtResource("marker")
 kind = "anchor"
 id = "flyer"
 
-[node name="Spawn_f1_5" type="Node2D" parent="Markers"]
+[node name="Spawn_f1_6" type="Node2D" parent="Markers"]
 position = Vector2(1000, 470)
 script = ExtResource("marker")
 kind = "spawn"
@@ -182,7 +189,7 @@ id = "f1"
 enemy = "sleeper"
 patrol_range = 120
 
-[node name="Spawn_f2_6" type="Node2D" parent="Markers"]
+[node name="Spawn_f2_7" type="Node2D" parent="Markers"]
 position = Vector2(1700, 470)
 script = ExtResource("marker")
 kind = "spawn"
@@ -190,7 +197,7 @@ id = "f2"
 enemy = "imp"
 patrol_range = 80
 
-[node name="Spawn_f3_7" type="Node2D" parent="Markers"]
+[node name="Spawn_f3_8" type="Node2D" parent="Markers"]
 position = Vector2(1880, 400)
 script = ExtResource("marker")
 kind = "spawn"
@@ -198,7 +205,7 @@ id = "f3"
 enemy = "imp"
 patrol_range = 40
 
-[node name="Spawn_tf4_8" type="Node2D" parent="Markers"]
+[node name="Spawn_tf4_9" type="Node2D" parent="Markers"]
 position = Vector2(2250, 470)
 script = ExtResource("marker")
 kind = "spawn"
@@ -206,7 +213,7 @@ id = "tf4"
 enemy = "sleeper"
 patrol_range = 100
 
-[node name="Spawn_elite_r4_9" type="Node2D" parent="Markers"]
+[node name="Spawn_elite_r4_10" type="Node2D" parent="Markers"]
 position = Vector2(2550, 470)
 script = ExtResource("marker")
 kind = "spawn"
@@ -214,21 +221,21 @@ id = "elite_r4"
 enemy = "rider"
 patrol_range = 120
 
-[node name="Trigger_eliteIntro_10" type="Node2D" parent="Markers"]
+[node name="Trigger_eliteIntro_11" type="Node2D" parent="Markers"]
 position = Vector2(2420, 0)
 script = ExtResource("marker")
 kind = "trigger"
 size = Vector2(40, 540)
 event = "eliteIntro"
 
-[node name="Loot_h_fair_11" type="Node2D" parent="Markers"]
+[node name="Loot_h_fair_12" type="Node2D" parent="Markers"]
 position = Vector2(2180, 330)
 script = ExtResource("marker")
 kind = "loot"
 id = "h_fair"
 item = "heart"
 
-[node name="Loot_l_badge_12" type="Node2D" parent="Markers"]
+[node name="Loot_l_badge_13" type="Node2D" parent="Markers"]
 position = Vector2(1400, 390)
 script = ExtResource("marker")
 kind = "loot"

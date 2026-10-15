@@ -1,0 +1,203 @@
+[gd_scene load_steps=15 format=3]
+
+[ext_resource type="Script" path="res://scripts/room.gd" id="room"]
+[ext_resource type="Script" path="res://scripts/marker.gd" id="marker"]
+[ext_resource type="Script" path="res://scripts/blocker.gd" id="blocker"]
+
+[sub_resource type="RectangleShape2D" id="shape_p0"]
+size = Vector2(500, 70)
+
+[sub_resource type="RectangleShape2D" id="shape_p1"]
+size = Vector2(300, 110)
+
+[sub_resource type="RectangleShape2D" id="shape_p2"]
+size = Vector2(260, 150)
+
+[sub_resource type="RectangleShape2D" id="shape_p3"]
+size = Vector2(320, 100)
+
+[sub_resource type="RectangleShape2D" id="shape_p4"]
+size = Vector2(300, 140)
+
+[sub_resource type="RectangleShape2D" id="shape_p5"]
+size = Vector2(420, 70)
+
+[sub_resource type="RectangleShape2D" id="shape_p6"]
+size = Vector2(80, 12)
+
+[sub_resource type="RectangleShape2D" id="shape_p7"]
+size = Vector2(80, 12)
+
+[sub_resource type="RectangleShape2D" id="shape_p8"]
+size = Vector2(70, 12)
+
+[sub_resource type="RectangleShape2D" id="shape_p9"]
+size = Vector2(80, 12)
+
+[sub_resource type="RectangleShape2D" id="shape_p10"]
+size = Vector2(80, 12)
+
+[node name="Skyline" type="Node2D"]
+script = ExtResource("room")
+room_id = "skyline"
+display_name = "The Smog Line"
+subtitle = "Rooftops above the bank"
+room_size = Vector2(2800, 540)
+floor_sound = "metal"
+tint = Color(1.0000, 0.6902, 0.8471, 1)
+draw_platforms = true
+
+[node name="Platforms" type="Node2D" parent="."]
+
+[node name="Solid0" type="StaticBody2D" parent="Platforms"]
+position = Vector2(250, 505)
+collision_layer = 1
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/Solid0"]
+shape = SubResource("shape_p0")
+
+[node name="Solid1" type="StaticBody2D" parent="Platforms"]
+position = Vector2(790, 485)
+collision_layer = 1
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/Solid1"]
+shape = SubResource("shape_p1")
+
+[node name="Solid2" type="StaticBody2D" parent="Platforms"]
+position = Vector2(1210, 465)
+collision_layer = 1
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/Solid2"]
+shape = SubResource("shape_p2")
+
+[node name="Solid3" type="StaticBody2D" parent="Platforms"]
+position = Vector2(1640, 490)
+collision_layer = 1
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/Solid3"]
+shape = SubResource("shape_p3")
+
+[node name="Solid4" type="StaticBody2D" parent="Platforms"]
+position = Vector2(2090, 470)
+collision_layer = 1
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/Solid4"]
+shape = SubResource("shape_p4")
+
+[node name="Solid5" type="StaticBody2D" parent="Platforms"]
+position = Vector2(2590, 505)
+collision_layer = 1
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/Solid5"]
+shape = SubResource("shape_p5")
+
+[node name="OneWay6" type="StaticBody2D" parent="Platforms"]
+position = Vector2(580, 366)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay6"]
+shape = SubResource("shape_p6")
+one_way_collision = true
+
+[node name="OneWay7" type="StaticBody2D" parent="Platforms"]
+position = Vector2(1020, 326)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay7"]
+shape = SubResource("shape_p7")
+one_way_collision = true
+
+[node name="OneWay8" type="StaticBody2D" parent="Platforms"]
+position = Vector2(1425, 336)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay8"]
+shape = SubResource("shape_p8")
+one_way_collision = true
+
+[node name="OneWay9" type="StaticBody2D" parent="Platforms"]
+position = Vector2(1870, 346)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay9"]
+shape = SubResource("shape_p9")
+one_way_collision = true
+
+[node name="OneWay10" type="StaticBody2D" parent="Platforms"]
+position = Vector2(2310, 356)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay10"]
+shape = SubResource("shape_p10")
+one_way_collision = true
+
+[node name="Blockers" type="Node2D" parent="."]
+
+[node name="Markers" type="Node2D" parent="."]
+
+[node name="Trigger_dlg_skylineIntro_0" type="Node2D" parent="Markers"]
+position = Vector2(160, 0)
+script = ExtResource("marker")
+kind = "trigger"
+size = Vector2(40, 540)
+event = "dlg_skylineIntro"
+
+[node name="Exit_archive_1" type="Node2D" parent="Markers"]
+position = Vector2(2778, 290)
+script = ExtResource("marker")
+kind = "exit"
+size = Vector2(22, 180)
+target_room = "archive"
+spawn_point = Vector2(60, 470)
+
+[node name="Spawn_sk_i1_2" type="Node2D" parent="Markers"]
+position = Vector2(800, 430)
+script = ExtResource("marker")
+kind = "spawn"
+id = "sk_i1"
+enemy = "imp"
+patrol_range = 60
+
+[node name="Spawn_sk_m1_3" type="Node2D" parent="Markers"]
+position = Vector2(1200, 250)
+script = ExtResource("marker")
+kind = "spawn"
+id = "sk_m1"
+enemy = "mote"
+
+[node name="Spawn_sk_i2_4" type="Node2D" parent="Markers"]
+position = Vector2(1620, 440)
+script = ExtResource("marker")
+kind = "spawn"
+id = "sk_i2"
+enemy = "imp"
+patrol_range = 60
+
+[node name="Spawn_sk_m2_5" type="Node2D" parent="Markers"]
+position = Vector2(2080, 280)
+script = ExtResource("marker")
+kind = "spawn"
+id = "sk_m2"
+enemy = "mote"
+
+[node name="Bench_bench_6" type="Node2D" parent="Markers"]
+position = Vector2(2500, 470)
+script = ExtResource("marker")
+kind = "bench"
+
+[node name="Anchor_cienciaFile_7" type="Node2D" parent="Markers"]
+position = Vector2(2600, 470)
+script = ExtResource("marker")
+kind = "anchor"
+id = "cienciaFile"

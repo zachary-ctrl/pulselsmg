@@ -1,0 +1,161 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://scripts/room.gd" id="room"]
+[ext_resource type="Script" path="res://scripts/marker.gd" id="marker"]
+[ext_resource type="Script" path="res://scripts/blocker.gd" id="blocker"]
+
+[sub_resource type="RectangleShape2D" id="shape_p0"]
+size = Vector2(2400, 70)
+
+[sub_resource type="RectangleShape2D" id="shape_p1"]
+size = Vector2(140, 12)
+
+[sub_resource type="RectangleShape2D" id="shape_p2"]
+size = Vector2(140, 12)
+
+[sub_resource type="RectangleShape2D" id="shape_p3"]
+size = Vector2(140, 12)
+
+[sub_resource type="RectangleShape2D" id="shape_p4"]
+size = Vector2(140, 12)
+
+[sub_resource type="RectangleShape2D" id="shape_p5"]
+size = Vector2(160, 12)
+
+[sub_resource type="RectangleShape2D" id="shape_p6"]
+size = Vector2(160, 12)
+
+[node name="Neon" type="Node2D"]
+script = ExtResource("room")
+room_id = "neon"
+display_name = "Neon Billboards"
+subtitle = "Side area · The Third Judge"
+room_size = Vector2(2400, 540)
+floor_sound = "metal"
+tint = Color(1.0000, 0.6039, 0.8471, 1)
+draw_platforms = true
+
+[node name="Platforms" type="Node2D" parent="."]
+
+[node name="Solid0" type="StaticBody2D" parent="Platforms"]
+position = Vector2(1200, 505)
+collision_layer = 1
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/Solid0"]
+shape = SubResource("shape_p0")
+
+[node name="OneWay1" type="StaticBody2D" parent="Platforms"]
+position = Vector2(450, 396)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay1"]
+shape = SubResource("shape_p1")
+one_way_collision = true
+
+[node name="OneWay2" type="StaticBody2D" parent="Platforms"]
+position = Vector2(770, 336)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay2"]
+shape = SubResource("shape_p2")
+one_way_collision = true
+
+[node name="OneWay3" type="StaticBody2D" parent="Platforms"]
+position = Vector2(1070, 396)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay3"]
+shape = SubResource("shape_p3")
+one_way_collision = true
+
+[node name="OneWay4" type="StaticBody2D" parent="Platforms"]
+position = Vector2(1370, 326)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay4"]
+shape = SubResource("shape_p4")
+one_way_collision = true
+
+[node name="OneWay5" type="StaticBody2D" parent="Platforms"]
+position = Vector2(1780, 386)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay5"]
+shape = SubResource("shape_p5")
+one_way_collision = true
+
+[node name="OneWay6" type="StaticBody2D" parent="Platforms"]
+position = Vector2(2130, 386)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay6"]
+shape = SubResource("shape_p6")
+one_way_collision = true
+
+[node name="Blockers" type="Node2D" parent="."]
+
+[node name="Markers" type="Node2D" parent="."]
+
+[node name="Portal_fairhall_0" type="Node2D" parent="Markers"]
+position = Vector2(90, 470)
+script = ExtResource("marker")
+kind = "portal"
+target_room = "fairhall"
+spawn_point = Vector2(1600, 470)
+
+[node name="Trigger_dlg_neonIntro_1" type="Node2D" parent="Markers"]
+position = Vector2(220, 0)
+script = ExtResource("marker")
+kind = "trigger"
+size = Vector2(40, 540)
+event = "dlg_neonIntro"
+
+[node name="Spawn_ne_i1_2" type="Node2D" parent="Markers"]
+position = Vector2(800, 470)
+script = ExtResource("marker")
+kind = "spawn"
+id = "ne_i1"
+enemy = "imp"
+patrol_range = 80
+
+[node name="Spawn_ne_m1_3" type="Node2D" parent="Markers"]
+position = Vector2(1300, 250)
+script = ExtResource("marker")
+kind = "spawn"
+id = "ne_m1"
+enemy = "mote"
+
+[node name="Spawn_ne_r1_4" type="Node2D" parent="Markers"]
+position = Vector2(1150, 470)
+script = ExtResource("marker")
+kind = "spawn"
+id = "ne_r1"
+enemy = "rider"
+patrol_range = 120
+
+[node name="Anchor_neonBill_5" type="Node2D" parent="Markers"]
+position = Vector2(760, 330)
+script = ExtResource("marker")
+kind = "anchor"
+id = "neonBill"
+
+[node name="Loot_h_neon_6" type="Node2D" parent="Markers"]
+position = Vector2(1360, 320)
+script = ExtResource("marker")
+kind = "loot"
+id = "h_neon"
+item = "heart"
+
+[node name="Spawn_judge_7" type="Node2D" parent="Markers"]
+position = Vector2(1950, 400)
+script = ExtResource("marker")
+kind = "spawn"
+id = "judge"
+enemy = "underboss"

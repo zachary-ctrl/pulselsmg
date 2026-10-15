@@ -19,7 +19,7 @@ var t = 0.0
 
 
 func _ready() -> void:
-	for k in ["exit", "trigger", "bench", "npc", "anchor", "sigil", "spawn", "hazard", "worker", "loot"]:
+	for k in ["exit", "trigger", "bench", "npc", "anchor", "sigil", "spawn", "hazard", "worker", "loot", "portal"]:
 		markers[k] = []
 	for c in $Platforms.get_children():
 		var sh: CollisionShape2D = c.get_node("Shape")
@@ -156,6 +156,18 @@ func _draw() -> void:
 		draw_rect(Rect2(pos.x - 4, pos.y - 7, 8, 2), Color("#3a6ac9"))
 	for b in markers["bench"]:
 		_glow(b.position + Vector2(0, -30), 60, Color(1, 0.82, 0.54, 0.12 + 0.04 * sin(t * 2)))
+	for pt in markers["portal"]:
+		# A glowing doorway into a side area; press Up to enter.
+		var c = pt.position
+		_glow(c + Vector2(0, -50), 70, Color(0.65, 0.55, 1, 0.35 + 0.1 * sin(t * 3)))
+		draw_rect(Rect2(c + Vector2(-26, -100), Vector2(52, 100)), Color(0.05, 0.03, 0.12, 0.85))
+		draw_rect(Rect2(c + Vector2(-26, -100), Vector2(52, 100)), Color(0.8, 0.7, 1, 0.9), false, 3.0)
+		_rings(c + Vector2(0, -50), 30, t, Color(0.85, 0.79, 1, 0.8), 1.5)
+		if main and absf(main.player.position.x - c.x) < 40.0 and absf(main.player.position.y - c.y) < 40.0:
+			var lbl = "[%s] %s" % [Game.label("up"), Game.ROOM_TITLES.get(pt.target_room, "Enter")]
+			var fw = Game.font_semi.get_string_size(lbl, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x
+			draw_rect(Rect2(c + Vector2(-fw / 2 - 6, -130), Vector2(fw + 12, 22)), Color(0, 0, 0, 0.7))
+			draw_string(Game.font_semi, c + Vector2(-fw / 2, -114), lbl, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color.WHITE)
 	if room_id == "lab":
 		var x = 560.0
 		var y = 470.0
@@ -175,6 +187,13 @@ const STYLE := {
 	"fairhall": {"body": Color("#14121a"), "top": Color("#6a6070"), "plate": Color("#8a5a3a"), "edge": Color("#e0b080")},
 	"gym": {"body": Color("#1a1210"), "top": Color("#b07a40"), "plate": Color("#3a3f4a"), "edge": Color("#c8ccd4")},
 	"stage": {"body": Color("#120c10"), "top": Color("#5a2a30"), "plate": Color("#3a2a20"), "edge": Color("#d0a070")},
+	"rooftop": {"body": Color("#10141e"), "top": Color("#4a5468"), "plate": Color("#2e3648"), "edge": Color("#9fb6e0")},
+	"downtown": {"body": Color("#1a1218"), "top": Color("#6a4a52"), "plate": Color("#3a2a30"), "edge": Color("#ffb0a0")},
+	"underpass": {"body": Color("#0c1418"), "top": Color("#3c5058"), "plate": Color("#283a42"), "edge": Color("#9fe2ff")},
+	"neon": {"body": Color("#140c1c"), "top": Color("#5a2a6a"), "plate": Color("#3a1a4a"), "edge": Color("#ff9ad8")},
+	"nightcity": {"body": Color("#0e1412"), "top": Color("#3a4a44"), "plate": Color("#26322e"), "edge": Color("#a8ffcf")},
+	"skyline": {"body": Color("#1a1014"), "top": Color("#6a3a4a"), "plate": Color("#3a2430"), "edge": Color("#ffb0d8")},
+	"archive": {"body": Color("#141008"), "top": Color("#6a5a30"), "plate": Color("#3a3020"), "edge": Color("#ffe08a")},
 }
 
 

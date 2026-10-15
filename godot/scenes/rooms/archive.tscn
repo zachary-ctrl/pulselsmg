@@ -1,0 +1,92 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/room.gd" id="room"]
+[ext_resource type="Script" path="res://scripts/marker.gd" id="marker"]
+[ext_resource type="Script" path="res://scripts/blocker.gd" id="blocker"]
+
+[sub_resource type="RectangleShape2D" id="shape_p0"]
+size = Vector2(1120, 70)
+
+[sub_resource type="RectangleShape2D" id="shape_p1"]
+size = Vector2(170, 12)
+
+[sub_resource type="RectangleShape2D" id="shape_p2"]
+size = Vector2(170, 12)
+
+[sub_resource type="RectangleShape2D" id="shape_b0"]
+size = Vector2(28, 240)
+
+[node name="Archive" type="Node2D"]
+script = ExtResource("room")
+room_id = "archive"
+display_name = "Dharma Records Office"
+subtitle = "Office of Continuity"
+room_size = Vector2(1120, 540)
+floor_sound = "metal"
+tint = Color(1.0000, 0.8784, 0.5412, 1)
+draw_platforms = true
+
+[node name="Platforms" type="Node2D" parent="."]
+
+[node name="Solid0" type="StaticBody2D" parent="Platforms"]
+position = Vector2(560, 505)
+collision_layer = 1
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/Solid0"]
+shape = SubResource("shape_p0")
+
+[node name="OneWay1" type="StaticBody2D" parent="Platforms"]
+position = Vector2(255, 374)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay1"]
+shape = SubResource("shape_p1")
+one_way_collision = true
+
+[node name="OneWay2" type="StaticBody2D" parent="Platforms"]
+position = Vector2(875, 374)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay2"]
+shape = SubResource("shape_p2")
+one_way_collision = true
+
+[node name="Blockers" type="Node2D" parent="."]
+
+[node name="Gate0" type="StaticBody2D" parent="Blockers"]
+position = Vector2(18, 350)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("blocker")
+kind = "gate"
+condition = "elite_alive"
+flag = "auditor"
+size = Vector2(28, 240)
+
+[node name="Shape" type="CollisionShape2D" parent="Blockers/Gate0"]
+shape = SubResource("shape_b0")
+
+[node name="Markers" type="Node2D" parent="."]
+
+[node name="Trigger_auditorArena_0" type="Node2D" parent="Markers"]
+position = Vector2(300, 0)
+script = ExtResource("marker")
+kind = "trigger"
+size = Vector2(40, 540)
+event = "auditorArena"
+
+[node name="Anchor_subject7_1" type="Node2D" parent="Markers"]
+position = Vector2(560, 470)
+script = ExtResource("marker")
+kind = "anchor"
+id = "subject7"
+
+[node name="Spawn_auditor_2" type="Node2D" parent="Markers"]
+position = Vector2(900, 400)
+script = ExtResource("marker")
+kind = "spawn"
+id = "auditor"
+enemy = "underboss"

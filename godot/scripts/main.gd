@@ -23,6 +23,7 @@ const ArcadeScript = preload("res://scripts/arcade.gd")
 const ArcadeKnight = preload("res://scripts/arcade_knight.gd")
 const ArcadeDuck = preload("res://scripts/arcade_duck.gd")
 const Exhibit = preload("res://scripts/enemies/exhibit.gd")
+const Underboss = preload("res://scripts/enemies/underboss.gd")
 const FxScript = preload("res://scripts/fx.gd")
 const HudScript = preload("res://scripts/hud.gd")
 const UiScript = preload("res://scripts/ui.gd")
@@ -243,6 +244,7 @@ func _reset_player() -> void:
 	player.set_hero(h)
 	player.swap_t = 0.0
 	player.shinobi = false
+	player.rage = false
 	player.set_hero(h)
 	player.max_hp = Game.hero_max_hp(h)
 	player.hp = player.max_hp
@@ -311,6 +313,9 @@ func flash_screen(amount: float, col: Color) -> void:
 
 # ---------- rooms ----------
 
+var _city_meta = {}
+
+
 func load_room(id: String, spawn: Vector2) -> void:
 	if room:
 		room.queue_free()
@@ -336,7 +341,15 @@ func load_room(id: String, spawn: Vector2) -> void:
 	world.move_child(room, 1)
 	var m: Dictionary = meta[id]
 	_bg_tex.clear()
-	for L in m["layers"]:
+	var layers: Array = m["layers"]
+	if m.has("city"):
+		# Craftpix city parallax sets; wide rooms use the seamless tiled layers.
+		if _city_meta.is_empty():
+			_city_meta = JSON.parse_string(FileAccess.get_file_as_string("res://assets/rooms/city_meta.json"))
+		layers = []
+		for L in _city_meta[m["city"]]["layers"]:
+			layers.append({"file": L["tiled_file"], "f": L["f"], "w": L["tiled_w"], "h": L["h"]})
+	for L in layers:
 		_bg_tex.append({"tex": load("res://assets/rooms/" + L["file"]), "f": L["f"], "w": L["w"], "h": L["h"]})
 	var wp = "res://assets/rooms/%s_world.png" % id
 	world_art.texture = load(wp) if ResourceLoader.exists(wp) else null
@@ -375,6 +388,7 @@ func load_room(id: String, spawn: Vector2) -> void:
 	var vw = W / zoom
 	var vh = H / zoom
 	cam = Vector2(clampf(spawn.x - vw / 2, 0, room.room_size.x - vw), clampf(spawn.y - vh * 0.62, 0, room.room_size.y - vh))
+	_cam_y = spawn.y - vh * 0.62
 	Sound.ambience(id)
 	if not Game.visited.has(id):
 		Game.visited[id] = true
@@ -383,7 +397,7 @@ func load_room(id: String, spawn: Vector2) -> void:
 	if id == "classroom" and not Game.flag("intro"):
 		Game.set_flag("intro")
 		start_dialog("intro")
-	for pair in [["street", "c2Intro"], ["waterworks", "c3Intro"], ["fairhall", "c4Intro"]]:
+	for pair in [["street", "c2Intro"], ["waterworks", "c3Intro"], ["fairhall", "c4Intro"], ["nightcity", "c5Intro"]]:
 		if id == pair[0] and not Game.flag(pair[1]):
 			Game.set_flag(pair[1])
 			start_dialog(pair[1])
@@ -430,6 +444,13 @@ func _spawn(s: Node) -> void:
 			e = Exhibit.new()
 			e.main = self
 			e.setup(s.id, s.position)
+		"underboss":
+			if Game.flag("down_" + s.id):
+				return
+			e = Underboss.new()
+			e.main = self
+			e.setup(s.id, s.position)
+			e.state = "dormant" if e.cfg.get("boss", false) else "wait"
 		"collective":
 			if Game.flag("collectiveDone"):
 				return
@@ -521,6 +542,8 @@ func _physics_process(dt: float) -> void:
 		open_menu()
 		return
 	_check_switch()
+	if Input.is_action_just_pressed("rage"):
+		toggle_rage()
 	if trans != null:
 		trans["t"] += dt
 		if not trans["done"] and trans["t"] >= 0.28:
@@ -642,8 +665,14 @@ func _update_view(dt: float) -> void:
 	var vw = W / zoom
 	var vh = H / zoom
 	var focus: Vector2 = c.position
-	var target = Vector2(clampf(focus.x - vw / 2 + c.face * 34, 0, maxf(0.0, room.room_size.x - vw)), clampf(focus.y - vh * 0.62, 0, maxf(0.0, room.room_size.y - vh)))
-	cam = cam.lerp(target, minf(1.0, dt * 5.5))
+	# Look ahead in the direction of travel, and only follow vertically
+	# once the hero leaves a small dead zone (steadier jumps).
+	_look = _look.lerp(Vector2(c.face * 70.0 + clampf(c.velocity.x * 0.12, -50.0, 50.0), 0.0), minf(1.0, dt * 2.5))
+	var ty = focus.y - vh * 0.62
+	if absf(ty - _cam_y) > 40.0 or c.is_on_floor():
+		_cam_y = lerpf(_cam_y, ty, minf(1.0, dt * 4.0))
+	var target = Vector2(clampf(focus.x - vw / 2 + _look.x, 0, maxf(0.0, room.room_size.x - vw)), clampf(_cam_y, 0, maxf(0.0, room.room_size.y - vh)))
+	cam = cam.lerp(target, minf(1.0, dt * 6.0))
 	cam.x = clampf(cam.x, 0, maxf(0.0, room.room_size.x - vw))
 	cam.y = clampf(cam.y, 0, maxf(0.0, room.room_size.y - vh))
 	var so = Vector2(randf_range(-1, 1), randf_range(-1, 1)) * shake * 12.0 if shake > 0.0 else Vector2.ZERO
@@ -679,8 +708,8 @@ func _update_view(dt: float) -> void:
 				mus = "carrier"
 			"tide":
 				mus = "tide"
-			"elite":
-				mus = "boss_clash"
+			"elite", "underboss":
+				mus = "boss_clash" if fight["id"] == "elite" or not (is_instance_valid(fight["e"]) and fight["e"].phase2) else "ciencia2"
 			"collective":
 				mus = "ciencia2" if (is_instance_valid(fight["e"]) and fight["e"].phase2) else "boss_clash"
 			_:
@@ -690,6 +719,10 @@ func _update_view(dt: float) -> void:
 	elif Game.chapter == 4 and room_id in ["fairhall", "gym"]:
 		mus = "fair_bustle"
 	Sound.music(mus)
+
+
+var _look = Vector2.ZERO
+var _cam_y = 0.0
 
 
 func _draw_bg() -> void:
@@ -723,6 +756,13 @@ func _draw_fg() -> void:
 
 func _world_interactions() -> void:
 	var pb = player.hitbox()
+	for pt in room.markers["portal"]:
+		if absf(player.position.x - pt.position.x) < 40.0 and absf(player.position.y - pt.position.y) < 40.0 and fight == null:
+			if Input.is_action_just_pressed("up"):
+				Sound.play("u_portal", 0.0, -4.0)
+				fx.burst(pt.position + Vector2(0, -50), 24, 260, Color("#c9b8ff"))
+				go_room(pt)
+				return
 	for ex in room.markers["exit"]:
 		if ex.rect().intersects(pb) and fight == null:
 			go_room(ex)
@@ -859,7 +899,10 @@ func attack_hits(e: CharacterBody2D) -> void:
 		var box: Rect2 = en.hurt_rect()
 		if b.intersects(box):
 			var dir: int = e.face if e.atk_dir == "side" or kind == "dive" else (int(signf(en.position.x - e.position.x)) if en.position.x != e.position.x else 1)
-			if en.hit(e.atk_dmg, dir):
+			var crit = randf() < 0.04 + Game.attr(e.hero, "lck") * 0.03 + (0.15 if e.rage else 0.0)
+			if en.hit(e.atk_dmg * (2 if crit else 1), dir):
+				if crit:
+					fx.text_float(box.get_center() + Vector2(0, -30), "CRIT!", Color("#ffe066"), 0.8)
 				e.hit_set[en] = true
 				hit = true
 				if striking and e.atk_dir == "down":
@@ -868,6 +911,8 @@ func attack_hits(e: CharacterBody2D) -> void:
 					en.velocity.x = dir * 520.0
 				_gain_res(11.0, e)
 				fx.burst(box.get_center(), 18 if e.atk_dmg > 1 else 10, 420 if e.atk_dmg > 1 else 300, Color("#ffd6a0"))
+				if e.rage:
+					fx.sprite("magic/fire_bolt_impact", box.get_center(), 130.0, 0.28, 0.0, Color.WHITE, 4)
 				if e.atk_dmg > 1 or kind == "flurry":
 					var hv = {"max": "vfx/burst_pink", "lana": "vfx/comet_orange", "jason": "vfx/burst_ice"}.get(e.hero, "vfx/burst_pink")
 					fx.sprite(hv, box.get_center(), 90.0 if e.atk_dmg > 1 else 60.0, 0.28, 0.0 if hv != "vfx/comet_orange" else (0.0 if e.face > 0 else PI))
@@ -909,7 +954,7 @@ func _gain_res(n: float, who = null) -> void:
 
 
 func special_dmg(p: CharacterBody2D, base: int) -> int:
-	return base + int(Game.mod("sdmg")) + p.dmg_bonus()
+	return base + int(Game.mod("sdmg")) + p.dmg_bonus() + int(Game.attr(p.hero, "spr") / 2)
 
 
 func fire_special(p: CharacterBody2D, kind: String) -> void:
@@ -925,6 +970,7 @@ func fire_special(p: CharacterBody2D, kind: String) -> void:
 			var c: Vector2 = p.position + Vector2(0, -34)
 			fx.rings.append({"p": c, "r": 10.0, "life": 0.45, "max": 0.45, "c": Color("#ff8a7a")})
 			fx.sprite("vfx/burst_pink", c, 220.0, 0.4)
+			fx.sprite("magic/arcane_splash", c, 200.0, 0.45, 0.0, Color.WHITE, 6)
 			fx.text_float(c + Vector2(0, -50), ["YOU SMELL LIKE GLUE", "SIT DOWN", "BRAYDEN, REALLY?", "GET REAL"][randi() % 4], Color("#ffd0c8"), 1.4)
 			Sound.play("boom")
 			shake = maxf(shake, 0.25)
@@ -954,6 +1000,7 @@ func fire_special(p: CharacterBody2D, kind: String) -> void:
 			shake = maxf(shake, 0.2)
 			for i in 20:
 				fx.part(Vector2(gx, gy), Vector2(randf_range(-160, 160), -randf() * 420), "dust", Color("#9fe2ff"))
+			fx.sprite("magic/stone_spikes", Vector2(gx, gy - 70), 150.0, 0.5, 0.0, Color(0.6, 0.85, 1.0), 8)
 			for en in ents:
 				if is_instance_valid(en) and not en.dead and absf(en.hurt_rect().get_center().x - gx) < 46.0 and absf(en.position.y - gy) < 220.0:
 					en.hit(special_dmg(p, 4), 1)
@@ -977,6 +1024,46 @@ func summon(kind: String, at: Vector2) -> void:
 	ents.append(e)
 	fx.burst(at + Vector2(0, -30), 24, 300, Color("#ff6a8a"))
 	Sound.play("glitch")
+
+
+## Underbosses wake when the hero comes close (bosses wait for their cue).
+func start_underboss(e: Node) -> void:
+	if fight != null or mode != "play":
+		return
+	e.state = "idle"
+	e.tm = 1.0
+	fight = {"id": "underboss", "name": e.cfg["name"], "sub": e.cfg["sub"], "e": e}
+	Sound.play("gate")
+	Sound.play("u_roar", 0.0, -3.0)
+	shake = 0.3
+
+
+func underboss_defeated(e: Node) -> void:
+	Game.set_flag("down_" + e.id)
+	fight = null
+	fx.projectiles.clear()
+	for x in ents:
+		if is_instance_valid(x) and (x.kind == "imp" or x.kind == "rider") and x.id.begins_with("sum"):
+			x.hit(999, 1)
+	boss_reward(140 if e.cfg.get("boss", false) else 90, e.cfg.get("item", ""), e.position + Vector2(0, -60))
+	toast("New lore unlocked · " + Game.label("menu") + " → LORE")
+	if e.id == "auditor":
+		get_tree().create_timer(1.2).timeout.connect(resolve_auditor)
+		return
+	var done = {"monitor": "rooftopDone", "brood": "downtownDone", "warden": "underpassDone", "judge": "neonDone"}.get(e.id, "")
+	if done != "":
+		get_tree().create_timer(1.0).timeout.connect(func(): start_dialog(done))
+
+
+func resolve_auditor() -> void:
+	_boss_choice("THE AUDITOR", "The Office of Continuity's records spill across the floor. Psychometry shows you everything.",
+		[{"k": "READ"}, {"k": "REACH", "d": "EXPOSE: send the files to Channel 6. Let Westbrook know."}, {"k": "BIND", "d": "CONFRONT: take the files home to your mother. Privately."},
+		{"k": "STRIKE", "d": "INFILTRATE: burn the office and wear its access badge."}],
+		[["narr", "", "READ: A lab, nineteen years ago. A young Ciencia presses a probe to a sleeping child's temple. The child projects. The worlds touch for the first time."], ["narr", "", "The child is Max."]],
+		{"REACH": [["jason", "smirk", "Channel 6 has it. All of it. Good luck auditing that."], ["narr", "", "By morning, the Dharma Foundation's website is gone. Its office is empty. Its ads are not."]],
+		"BIND": [["max", "worried", "Mom. We need to talk. About the lab. About me."], ["narr", "", "She doesn't cry. She just nods, like she has been waiting sixteen years for this."]],
+		"STRIKE": [["lana", "angry", "Burn it."], ["narr", "", "The records go up. Max pockets a grey access badge. It has his photo on it already."]]},
+		"auditorDone", "c5End", 5)
 
 
 ## Elite riders become a mini-boss fight the first time they notice you.
@@ -1029,7 +1116,43 @@ func fire_laser(p: CharacterBody2D) -> void:
 		Sound.play("hit", 0.08)
 
 
+## Max's Rage: unlimited, immortal, a doubled aura and every power at no
+## cost. Toggled on and off with its own button (1 by default).
+func toggle_rage() -> void:
+	if player.rage:
+		player.rage = false
+		player.aura.scale = Vector2.ONE
+		toast("Rage fades. Max breathes again.")
+		Sound.play("u_portal", 0.0, -6.0)
+		return
+	if astral_active():
+		end_projection(false)
+	if player.hero != "max":
+		switch_hero("max")
+	player.rage = true
+	player.res = 99.0
+	player.inv = 0.0
+	player.hp = player.max_hp
+	Sound.play("u_roar", 0.0, -1.0)
+	Sound.play("fp", 0.0, -4.0)
+	flash_screen(0.6, Color("#ff3a6a"))
+	shake = 0.5
+	Game.rumble(0.8, 1.0, 0.5)
+	for i in 50:
+		var a = randf() * TAU
+		fx.part(player.position + Vector2(0, -36), Vector2(cos(a), sin(a)) * randf_range(200, 520), "spark", Color("#ff6a9a") if i % 2 else Color("#c9b8ff"))
+	fx.sprite("ring", player.position, 260.0, 0.5, 0.0, Color("#ff6a9a"), 4, 2)
+	fx.sprite("magic/void_sigil_ring", player.position + Vector2(0, -40), 320.0, 0.8, 0.0, Color.WHITE, 8)
+	toast("RAGE · Max can't be hurt · every power is free · %s to calm down" % Game.label("rage"))
+
+
 func hurt_player(d: int, from_x: float) -> void:
+	if player.rage and mode == "play":
+		if player.inv <= 0.0:
+			player.inv = 0.35
+			fx.burst(player.position + Vector2(0, -30), 10, 240, Color("#ff9ab8"))
+			Sound.play("tp_shield_parry", 0.1, -10.0)
+		return
 	if player.inv > 0.0 or mode != "play":
 		return
 	player.hp -= d
@@ -1058,6 +1181,8 @@ func hurt_player(d: int, from_x: float) -> void:
 
 
 func hurt_astral() -> void:
+	if player.rage:
+		return
 	if not astral_active() or astral.ret > 0.0 or astral.inv > 0.0:
 		return
 	astral.inv = 1.0
@@ -1095,7 +1220,8 @@ func _respawn() -> void:
 
 func _full_potential() -> void:
 	player.res = 0.0
-	Game.overdraw += 1
+	if not player.rage:
+		Game.overdraw += 1
 	Sound.play("fp")
 	flash_screen(0.8, Color("#c9b8ff"))
 	shake = 0.5
@@ -1115,6 +1241,12 @@ func _full_potential() -> void:
 # ---------- story ----------
 
 func _fire_event(ev: String) -> void:
+	if ev.begins_with("dlg_"):
+		var did = ev.substr(4)
+		if not Game.flag("seen_" + did):
+			Game.set_flag("seen_" + did)
+			start_dialog(did)
+		return
 	match ev:
 		"firstProjection":
 			if Game.flag("projected"):
@@ -1170,6 +1302,16 @@ func _fire_event(ev: String) -> void:
 				Sound.play("gate")
 				shake = 0.3
 			start_dialog("tideIntro", go_t)
+		"auditorArena":
+			if Game.flag("down_auditor") or fight != null:
+				return
+			var ab: Node = null
+			for e in ents:
+				if is_instance_valid(e) and e.kind == "underboss" and e.id == "auditor":
+					ab = e
+			if ab == null:
+				return
+			start_dialog("auditorIntro", func(): start_underboss(ab))
 		"eliteIntro":
 			if Game.flag("eliteIntro") or Game.flag("down_elite_r4"):
 				return
@@ -1404,13 +1546,14 @@ func _chapter_end(n: int) -> void:
 		Game.write_save(c["room"], c["spawn"])
 	else:
 		Game.clear_save()
-	var key = {1: "ending", 2: "carrierDone_choice", 3: "tideDone_choice", 4: "collectiveDone_choice"}[n]
+	var key = {1: "ending", 2: "carrierDone_choice", 3: "tideDone_choice", 4: "collectiveDone_choice", 5: "auditorDone_choice"}[n]
 	var k: String = Game.flags.get(key, "")
 	var titles = {
 		1: {"REACH": "The Signal Goes Quiet", "BIND": "A Patch on a Broken Wall", "STRIKE": "Very Bright, Then Very Dark"},
 		2: {"REACH": "One Voice Answers", "BIND": "He Hums When It Rains", "STRIKE": "A Name Left Behind"},
 		3: {"REACH": "Warm Rain", "BIND": "The Listener Under the Water", "STRIKE": "A Hundred Kitchens"},
 		4: {"REACH": "Four Hundred Minds Come Home", "BIND": "First Place, Forever", "STRIKE": "Honorable Mention"},
+		5: {"REACH": "Exposed", "BIND": "The Quiet Room", "STRIKE": "Burned Records"},
 	}
 	var td: Dictionary = Game.tend
 	var lead = "RUPTURE"
@@ -1433,7 +1576,7 @@ func _check_switch() -> void:
 	var party: Array = Game.party()
 	if Input.is_action_just_pressed("switch") and party.size() > 1:
 		want = party[(party.find(player.hero) + 1) % party.size()]
-	for i in 3:
+	for i in [1, 2]:
 		if Input.is_action_just_pressed("hero%d" % (i + 1)) and i < party.size():
 			want = party[i]
 	if want != "" and want != player.hero:
@@ -1446,6 +1589,9 @@ func switch_hero(h: String) -> void:
 		return
 	if not Game.hero_unlocked(h):
 		return
+	if player.rage and h != "max":
+		player.rage = false
+		player.aura.scale = Vector2.ONE
 	var frac: float = float(player.hp) / float(maxi(1, player.max_hp))
 	player.set_hero(h)
 	Game.prog["hero"] = h
@@ -1456,6 +1602,7 @@ func switch_hero(h: String) -> void:
 	player.laser_t = 0.0
 	Sound.play("swap")
 	Sound.play("u_swap", 0.05, -8.0)
+	fx.sprite("magic/smoke_poof", player.position + Vector2(0, -40), 150.0, 0.45, 0.0, Color.WHITE, 8)
 	fx.burst(player.position + Vector2(0, -34), 26, 320, Color(Game.HEROES[h]["col"]))
 	fx.sprite("ring", player.position + Vector2(0, -4), 150.0, 0.35, 0.0, Color(Game.HEROES[h]["col"]), 4, 2)
 	toast("Playing as " + Game.HEROES[h]["name"].capitalize())
@@ -1474,7 +1621,7 @@ func _clear_allies() -> void:
 ## whoever isn't being played fights alongside.
 func _spawn_allies() -> void:
 	_clear_allies()
-	if fight == null or fight_id() == "echo":
+	if fight == null or fight_id() == "echo" or not Game.settings.get("allies", true):
 		return
 	var present = ["max", "lana", "jason"]
 	var i = 0
@@ -1527,7 +1674,7 @@ func enemy_defeated(e: Node, xp: int) -> void:
 	var shards = clampi(xp / 5, 2, 10)
 	for i in shards:
 		_drop("xp", at, {"xp": int(ceil(float(xp) / shards))})
-	var luck = 0.28 + Game.mod("luck")
+	var luck = 0.28 + Game.mod("luck") + Game.attr(player.hero, "lck") * 0.03
 	if randf() < luck:
 		_drop("hp", at, {})
 	if randf() < 0.3:

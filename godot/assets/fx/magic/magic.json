@@ -1,0 +1,122 @@
+{
+ "thorn_bramble": {
+  "frames": 8,
+  "w": 144,
+  "h": 144,
+  "src": "1 Magic/1.png",
+  "anchor": "bottom",
+  "desc": "Copper-orange thorny brambles/roots sprout from the ground and spread (earth/nature trap)"
+ },
+ "thorn_bramble_b": {
+  "frames": 8,
+  "w": 144,
+  "h": 144,
+  "src": "1 Magic/1_2.png",
+  "anchor": "bottom",
+  "desc": "Variant of thorn_bramble with slightly different growth shapes"
+ },
+ "arcane_splash": {
+  "frames": 6,
+  "w": 144,
+  "h": 144,
+  "src": "1 Magic/10.png",
+  "anchor": "center",
+  "desc": "Magenta arcane blob bursts and scatters into droplets that fade (frame 0 is empty: a 1-frame delay)"
+ },
+ "void_sigil_ring": {
+  "frames": 8,
+  "w": 144,
+  "h": 144,
+  "src": "1 Magic/2.png",
+  "anchor": "center",
+  "desc": "Dark violet ring with 8 purple crystal spikes pulsing outward - curse/summon sigil, loopable"
+ },
+ "light_beam_h": {
+  "frames": 8,
+  "w": 144,
+  "h": 144,
+  "src": "1 Magic/3.png",
+  "anchor": "center",
+  "desc": "Horizontal white-gold energy beam: muzzle flash, thick beam spanning full frame width, then thinning out"
+ },
+ "light_beam_diag": {
+  "frames": 8,
+  "w": 144,
+  "h": 144,
+  "src": "1 Magic/3_2.png",
+  "anchor": "center",
+  "desc": "Diagonal (down-right) version of light_beam_h"
+ },
+ "fire_bolt": {
+  "frames": 4,
+  "w": 144,
+  "h": 144,
+  "src": "1 Magic/4.png",
+  "anchor": "center",
+  "desc": "Small orange fireball projectile travelling right with ember trail, loopable"
+ },
+ "fire_bolt_diag": {
+  "frames": 4,
+  "w": 144,
+  "h": 144,
+  "src": "1 Magic/4_1.png",
+  "anchor": "center",
+  "desc": "Diagonal (up-right) fire_bolt projectile, loopable"
+ },
+ "fire_bolt_impact": {
+  "frames": 4,
+  "w": 144,
+  "h": 144,
+  "src": "1 Magic/4_2.png",
+  "anchor": "center",
+  "desc": "White flash pop breaking into an orange/red ember ring - projectile hit"
+ },
+ "heart_charm": {
+  "frames": 8,
+  "w": 144,
+  "h": 144,
+  "src": "1 Magic/5.png",
+  "anchor": "center",
+  "desc": "Small red-to-purple hearts float and flicker - charm/heal/buff"
+ },
+ "flame_flicker": {
+  "frames": 4,
+  "w": 144,
+  "h": 144,
+  "src": "1 Magic/6.png",
+  "anchor": "bottom",
+  "desc": "Small white-hot flame with orange tips burning on the ground (torch/candle/burning status), loopable"
+ },
+ "flame_splash_ground": {
+  "frames": 4,
+  "w": 144,
+  "h": 144,
+  "src": "1 Magic/6_2.png",
+  "anchor": "bottom",
+  "desc": "Flame drops and splashes into a crown of white petals that scatter - fire landing"
+ },
+ "stone_spikes": {
+  "frames": 8,
+  "w": 144,
+  "h": 144,
+  "src": "1 Magic/7.png",
+  "anchor": "bottom",
+  "desc": "Steel-blue stone spikes erupt diagonally from the ground (earth spike trap)"
+ },
+ "smoke_poof": {
+  "frames": 8,
+  "w": 144,
+  "h": 144,
+  "src": "1 Magic/9.png",
+  "anchor": "center",
+  "desc": "Big white smoke puff that breaks into scattered droplets and dissipates - teleport/vanish/death poof"
+ },
+ "heal_glyph_ground": {
+  "frames": 8,
+  "w": 144,
+  "h": 144,
+  "src": "1 Magic/8.png",
+  "anchor": "bottom",
+  "desc": "Thin green glyph line along the ground with rising pixel sparks - healing/regeneration field (matches green plus-sign Icon_08), loopable"
+ }
+}

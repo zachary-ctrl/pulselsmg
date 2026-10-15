@@ -1,6 +1,6 @@
 # SAKAWA: Astral Max — Godot 4 project
 
-Season One, Chapters 1–4, in **Godot 4.3+**:
+Season One, Chapters 1–5, in **Godot 4.3+**:
 
 | Chapter | Rooms | Boss |
 | --- | --- | --- |
@@ -57,6 +57,26 @@ Default bindings:
 Generous jump timing (coyote time and jump buffering), wall slides and wall jumps for every hero, automatic ledge climbing when you just miss a ledge, sliding around ceiling corners, and hold down on a desk or ledge to drop through.
 
 Kandria-inspired additions: **wall climbing** (hold Up on a wall; a small stamina ring shows how long you can climb, refilled on the ground) and an **8-way air dash** (hold a direction while dashing in the air).
+
+### Max's Rage
+
+Press **1** (Touchpad on PlayStation; remappable as "Max's Rage mode") to toggle Rage. It's unlimited until you press it again: Max can't be hurt, his aura doubles in size, every power is free, Special cycles through all six specials (laser, mind orb, shout, flurry, wave, geyser), strikes hit harder with magic bursts, he runs faster and gets extra air jumps. Pressing it as Lana or Jason swaps to Max first.
+
+### Story difficulty
+
+On Story, everything is open from the start: all three heroes, projection and levitation, every special (no level requirements, cheap Resonance), all 12 pieces of gear, every chapter in Chapter Select, alter egos that don't drain, and Full Potential at 60 Resonance.
+
+### Side areas, underbosses and Chapter 5
+
+Glowing doorways (press Up) lead to side areas built on the craftpix city backgrounds, each guarded by an underboss: **The Hall Monitor** (School Rooftop, Ch1), **The Brood Mother** (Downtown at Dusk, Ch2), **The Pipe Warden** (Flooded Underpass, Ch3), **The Third Judge** (Neon Billboards, Ch4). **Chapter 5 · The Teacher Who Was Fired** crosses Westbrook After Dark and the Smog Line rooftops to the Dharma Records Office and **The Auditor**, with the choice to expose, confront or infiltrate. Underbosses mix charges, leaping shockwaves, orb volleys, summons, teleports and locking light pillars, and get angrier at half health.
+
+### Lore, attributes and options
+
+- **Lore codex** (Character menu → LORE): 23 entries from the story bible, unlocked by chapters, memory anchors and underbosses.
+- **Six attributes**: Vitality, Power, Focus, Agility (speed, dash), Luck (critical hits, drops), Spirit (special damage). Critical hits deal double.
+- **Settings → Lana & Jason help in boss fights**: turn the AI allies off.
+- **Readability**: body text uses Atkinson Hyperlegible Next (OFL), larger HUD text with outlines.
+- **Feel** (after Celeste's documented forgiveness tricks): half gravity at the top of a held jump, buffered attacks, corner and ledge correction, and a look-ahead camera with a vertical dead zone.
 
 ### Map
 
@@ -130,4 +150,4 @@ godot --path godot -- --autotest /tmp/sakawa_shots
 
 Install export templates from **Editor → Manage Export Templates**, then **Project → Export** and add presets for Windows, macOS, Linux, Android, iOS or Web. The project uses the Compatibility renderer so it runs on phones and in browsers.
 
-Fonts are Cinzel and Spectral (SIL Open Font License, see `assets/fonts/OFL-*.txt`). The shinobi alter-ego sprites (`assets/anim/*_sh`) and the GUI frames (`assets/gui`) are free craftpix.net assets (craftpix.net/file-licenses); extra sound effects (`assets/audio/u_*.wav`) come from the supplied sound pack. Third-party art and audio from open-source games are in `assets/third_party/` with per-file attribution in `assets/third_party/CREDITS.md` and the licences in `assets/third_party/licenses/` (item icons: Dan Allen, CC-BY 4.0, and Titan Tactics, CC-BY 4.0; music and sounds: Titan Tactics, CC-BY 4.0, and the Godot TPS Demo, CC-BY 3.0). The in-game Credits screen shows all of them.
+Fonts are Cinzel and Spectral (SIL Open Font License, see `assets/fonts/OFL-*.txt`). The shinobi alter-ego sprites (`assets/anim/*_sh`) and the GUI frames (`assets/gui`) are free craftpix.net assets (craftpix.net/file-licenses); extra sound effects (`assets/audio/u_*.wav`) come from the supplied sound pack. City backgrounds (`assets/rooms/city*`) and magic effects (`assets/fx/magic`) are craftpix.net free packs. Third-party art and audio from open-source games are in `assets/third_party/` with per-file attribution in `assets/third_party/CREDITS.md` and the licences in `assets/third_party/licenses/` (item icons: Dan Allen, CC-BY 4.0, and Titan Tactics, CC-BY 4.0; music and sounds: Titan Tactics, CC-BY 4.0, and the Godot TPS Demo, CC-BY 3.0). The in-game Credits screen shows all of them.

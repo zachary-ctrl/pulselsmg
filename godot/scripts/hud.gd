@@ -9,9 +9,14 @@ func _process(_d: float) -> void:
 	queue_redraw()
 
 
+## HUD text: a size up from the original layout, with a dark outline so it
+## reads over any background.
 func _text(font: Font, pos: Vector2, s: String, size: int, col: Color, center := false) -> void:
+	size = maxi(size + 2, 13)
 	var w = font.get_string_size(s, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
-	draw_string(font, pos - Vector2(w / 2.0 if center else 0.0, 0), s, HORIZONTAL_ALIGNMENT_LEFT, -1, size, col)
+	var at = pos - Vector2(w / 2.0 if center else 0.0, 0)
+	draw_string_outline(font, at, s, HORIZONTAL_ALIGNMENT_LEFT, -1, size, 4, Color(0, 0, 0, 0.75 * col.a))
+	draw_string(font, at, s, HORIZONTAL_ALIGNMENT_LEFT, -1, size, col)
 
 
 var _plate: Texture2D
@@ -86,6 +91,11 @@ func _draw() -> void:
 	# hero, level and party
 	for i in 10:
 		draw_rect(Rect2(0, 96 + i * 5.0, 300 - i * 12.0, 5), Color(0, 0, 0, 0.32 - i * 0.02))
+	if p.rage:
+		var rc = Color("#ff4a7a").lerp(Color.WHITE, 0.25 + 0.25 * sin(t * 8.0))
+		draw_rect(Rect2(W / 2 - 120, 8, 240, 30), Color(0.15, 0, 0.05, 0.75))
+		_text(Game.font_display, Vector2(W / 2, 30), "RAGE · IMMORTAL", 18, rc, true)
+		_text(Game.font_semi, Vector2(W / 2, 52), "[%s] to calm down" % Game.label("rage"), 13, Color(1, 0.85, 0.9, 0.85), true)
 	var hd: Dictionary = Game.HEROES[p.hero]
 	if p.shinobi:
 		var ego = "ALTER EGO · " + p.EGO_NAMES[p.hero]

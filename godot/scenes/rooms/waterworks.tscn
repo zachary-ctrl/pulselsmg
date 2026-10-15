@@ -208,44 +208,51 @@ script = ExtResource("marker")
 kind = "worker"
 id = "w1"
 
-[node name="Worker_w2_5" type="Node2D" parent="Markers"]
+[node name="Portal_underpass_5" type="Node2D" parent="Markers"]
+position = Vector2(560, 1010)
+script = ExtResource("marker")
+kind = "portal"
+target_room = "underpass"
+spawn_point = Vector2(120, 470)
+
+[node name="Worker_w2_6" type="Node2D" parent="Markers"]
 position = Vector2(1150, 1010)
 script = ExtResource("marker")
 kind = "worker"
 id = "w2"
 
-[node name="Worker_w3_6" type="Node2D" parent="Markers"]
+[node name="Worker_w3_7" type="Node2D" parent="Markers"]
 position = Vector2(2470, 520)
 script = ExtResource("marker")
 kind = "worker"
 id = "w3"
 
-[node name="Anchor_workOrder_7" type="Node2D" parent="Markers"]
+[node name="Anchor_workOrder_8" type="Node2D" parent="Markers"]
 position = Vector2(1100, 780)
 script = ExtResource("marker")
 kind = "anchor"
 id = "workOrder"
 
-[node name="Bench_bench_8" type="Node2D" parent="Markers"]
+[node name="Bench_bench_9" type="Node2D" parent="Markers"]
 position = Vector2(2300, 520)
 script = ExtResource("marker")
 kind = "bench"
 
-[node name="Spawn_w1m_9" type="Node2D" parent="Markers"]
+[node name="Spawn_w1m_10" type="Node2D" parent="Markers"]
 position = Vector2(900, 720)
 script = ExtResource("marker")
 kind = "spawn"
 id = "w1m"
 enemy = "mote"
 
-[node name="Spawn_w2m_10" type="Node2D" parent="Markers"]
+[node name="Spawn_w2m_11" type="Node2D" parent="Markers"]
 position = Vector2(1750, 640)
 script = ExtResource("marker")
 kind = "spawn"
 id = "w2m"
 enemy = "mote"
 
-[node name="Spawn_t6_11" type="Node2D" parent="Markers"]
+[node name="Spawn_t6_12" type="Node2D" parent="Markers"]
 position = Vector2(1400, 1010)
 script = ExtResource("marker")
 kind = "spawn"
@@ -253,14 +260,14 @@ id = "t6"
 enemy = "sleeper"
 patrol_range = 120
 
-[node name="Spawn_t7_12" type="Node2D" parent="Markers"]
+[node name="Spawn_t7_13" type="Node2D" parent="Markers"]
 position = Vector2(2200, 1010)
 script = ExtResource("marker")
 kind = "spawn"
 id = "t7"
 enemy = "sleeper"
 
-[node name="Spawn_r2_13" type="Node2D" parent="Markers"]
+[node name="Spawn_r2_14" type="Node2D" parent="Markers"]
 position = Vector2(400, 1010)
 script = ExtResource("marker")
 kind = "spawn"
@@ -268,7 +275,7 @@ id = "r2"
 enemy = "rider"
 patrol_range = 200
 
-[node name="Spawn_elite_r3_14" type="Node2D" parent="Markers"]
+[node name="Spawn_elite_r3_15" type="Node2D" parent="Markers"]
 position = Vector2(2300, 1010)
 script = ExtResource("marker")
 kind = "spawn"
@@ -276,7 +283,7 @@ id = "elite_r3"
 enemy = "rider"
 patrol_range = 200
 
-[node name="Spawn_i5_15" type="Node2D" parent="Markers"]
+[node name="Spawn_i5_16" type="Node2D" parent="Markers"]
 position = Vector2(1100, 780)
 script = ExtResource("marker")
 kind = "spawn"
@@ -284,7 +291,7 @@ id = "i5"
 enemy = "imp"
 patrol_range = 60
 
-[node name="Spawn_i6_16" type="Node2D" parent="Markers"]
+[node name="Spawn_i6_17" type="Node2D" parent="Markers"]
 position = Vector2(1930, 780)
 script = ExtResource("marker")
 kind = "spawn"
@@ -292,14 +299,14 @@ id = "i6"
 enemy = "imp"
 patrol_range = 60
 
-[node name="Loot_h_water_17" type="Node2D" parent="Markers"]
+[node name="Loot_h_water_18" type="Node2D" parent="Markers"]
 position = Vector2(2250, 650)
 script = ExtResource("marker")
 kind = "loot"
 id = "h_water"
 item = "heart"
 
-[node name="Loot_l_bell_18" type="Node2D" parent="Markers"]
+[node name="Loot_l_bell_19" type="Node2D" parent="Markers"]
 position = Vector2(680, 880)
 script = ExtResource("marker")
 kind = "loot"

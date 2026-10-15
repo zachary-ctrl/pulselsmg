@@ -29,6 +29,13 @@ const ROOM_SCENES := {
 	"waterworks": "res://scenes/rooms/waterworks.tscn",
 	"pumphouse": "res://scenes/rooms/pumphouse.tscn",
 	"fairhall": "res://scenes/rooms/fairhall.tscn",
+	"rooftop": "res://scenes/rooms/rooftop.tscn",
+	"downtown": "res://scenes/rooms/downtown.tscn",
+	"underpass": "res://scenes/rooms/underpass.tscn",
+	"neon": "res://scenes/rooms/neon.tscn",
+	"nightcity": "res://scenes/rooms/nightcity.tscn",
+	"skyline": "res://scenes/rooms/skyline.tscn",
+	"archive": "res://scenes/rooms/archive.tscn",
 	"gym": "res://scenes/rooms/gym.tscn",
 	"stage": "res://scenes/rooms/stage.tscn",
 }
@@ -38,10 +45,13 @@ const CHAPTERS := {
 	2: {"title": "The Carrier", "room": "street", "spawn": Vector2(120, 470)},
 	3: {"title": "Red Water", "room": "waterworks", "spawn": Vector2(120, 1010)},
 	4: {"title": "#ScienceMatters", "room": "fairhall", "spawn": Vector2(120, 470)},
+	5: {"title": "The Teacher Who Was Fired", "room": "nightcity", "spawn": Vector2(120, 470)},
 }
 const ROOM_TITLES := {"classroom": "Room 101", "hallway": "East Hall", "cafeteria": "Cafeteria", "lab": "Sub-Basement Lab", "street": "Westbrook Ave",
-	"hospital": "Mercy General", "waterworks": "Waterworks", "pumphouse": "Pumphouse", "fairhall": "Fair Night Hall", "gym": "Gymnasium", "stage": "Main Stage"}
-const CHAPTER_WORD := {1: "ONE", 2: "TWO", 3: "THREE", 4: "FOUR"}
+	"hospital": "Mercy General", "waterworks": "Waterworks", "pumphouse": "Pumphouse", "fairhall": "Fair Night Hall", "gym": "Gymnasium", "stage": "Main Stage",
+	"rooftop": "School Rooftop", "downtown": "Downtown at Dusk", "underpass": "Flooded Underpass", "neon": "Neon Billboards",
+	"nightcity": "Westbrook After Dark", "skyline": "The Smog Line", "archive": "Dharma Records Office"}
+const CHAPTER_WORD := {1: "ONE", 2: "TWO", 3: "THREE", 4: "FOUR", 5: "FIVE"}
 const PROGRESS_PATH := "user://sakawa_progress.json"
 var chapter = 1
 
@@ -53,6 +63,47 @@ const DIFF := [
 	{"name": "HARD", "hp": 5, "ehp": 1.4, "espd": 1.15, "res": 0.85},
 ]
 var difficulty = 1
+
+## Lore codex (Character menu → LORE). Each entry unlocks by a condition:
+## "always", "ch:N" (reached chapter N), "flag:x", "anchor:x".
+const LORE := [
+	{"id": "westbrook", "title": "Westbrook", "when": "always", "text": "A small American town with a reservoir, a hospital, a waterworks and one high school. For three weeks, nobody in it has been hungry, and nobody has noticed that this is strange."},
+	{"id": "layers", "title": "The Three Layers", "when": "always", "text": "The Waking World is ordinary reality. The Astral Realm is a living ecology of thought, memory and emotion that overlaps it. The Outside is where the rules of both can be seen and changed. Dreams, trauma and psychic ability open temporary doors between them."},
+	{"id": "resonance", "title": "Resonance", "when": "always", "text": "Every power is Resonance: a nervous system synchronizing with one band of the Astral Spectrum. Red is the body, orange emotion, yellow will, green healing, blue meaning, indigo mind, violet reality."},
+	{"id": "fullpotential", "title": "Full Potential", "when": "always", "text": "Not simply maximum damage — maximum exposure. The stronger you become, the more reality you can perceive. The more you perceive, the less human reality appears. Every Overdraw leaves a door open."},
+	{"id": "sakawa", "title": "Sakawa", "when": "ch:2", "text": "A Dharma Order codeword for any exchange across incompatible layers of reality: matter for memory, identity for power, possibility for certainty. A Sakawa event always gives something and always takes something."},
+	{"id": "seals", "title": "The Seven Seals", "when": "ch:3", "text": "Not doors, but laws that keep human reality consistent: Body, Feeling, Will, Life, Meaning, Mind, Reality. Break one and nothing is released — a rule simply stops holding."},
+	{"id": "choir", "title": "The Choir", "when": "flag:projected", "text": "What the infected hear. It speaks in many voices and calls itself we. Ciencia believed it was a signal he could command. It was studying how individuality works."},
+	{"id": "blacksun", "title": "The Black Sun", "when": "flag:cienciaDone", "text": "Every infected mind was looking at the same thing: a black sun beneath the world. It is not in the sky. It looks back."},
+	{"id": "dharma", "title": "The Dharma Order", "when": "anchor:dharmaNote", "text": "A private order that funds 'adaptation' research. Its public face is the Dharma Foundation. Its private one is the Office of Continuity."},
+	{"id": "ciencia", "title": "Dr. R. Ciencia", "when": "flag:cienciaDone", "text": "Westbrook High's fired science teacher. Telepath, psychometrist, builder of machines that mimic what they touch. He believed he was the receiver."},
+	{"id": "max", "title": "Max Inoki", "when": "always", "text": "Sixteen, weird, hardworking. Psychokinesis, levitation and astral projection far stronger than anyone admits. His mother knows something."},
+	{"id": "lana", "title": "Lana", "when": "ch:2", "text": "Max's best friend. Superhuman reflexes, durability and hand-to-hand combat. Offensively funny on purpose: the infected flinch when you get personal."},
+	{"id": "jason", "title": "Jason", "when": "ch:3", "text": "Max's rival, future politician, owner of one blazer. Superhuman strength. Since the pumphouse, water listens to him — and remembers him back."},
+	{"id": "kai", "title": "Kai Brooks", "when": "flag:carrierDone", "text": "Missing nine days, found in dry clothes by the reservoir, speaking in three voices. One belonged to a woman who drowned in 1962."},
+	{"id": "motes", "title": "Choir Motes", "when": "always", "text": "Floating eyes ringed by broken circles. Only the astral body can reach them reliably. They drift toward whoever Max is right now."},
+	{"id": "imps", "title": "Choir Imps", "when": "ch:2", "text": "Skull-masked things that climbed out of projector screens and billboards. Lana calls them Kevins. They spit red and claw up close."},
+	{"id": "riders", "title": "Static Riders", "when": "ch:2", "text": "Goblins on boars built out of borrowed nightmares. They sneer before they charge. Elite riders are bigger, meaner, and always carry something worth taking."},
+	{"id": "monitor", "title": "The Hall Monitor", "when": "flag:down_monitor", "text": "Mr. Hadley, 31 years at Westbrook. The Choir amplified the one thing he cared about — everyone in class, on time — until it was all he was."},
+	{"id": "brood", "title": "The Brood Mother", "when": "flag:down_brood", "text": "Imps are not born. They are copied, from whatever is loudest in a city at night. The Brood Mother was the loudest thing downtown."},
+	{"id": "warden", "title": "The Pipe Warden", "when": "flag:down_warden", "text": "The waterworks night supervisor. Three days in the underpass, humming what the water hummed. He remembers none of it. The water remembers all of it."},
+	{"id": "judge", "title": "The Third Judge", "when": "flag:down_judge", "text": "Ciencia's science fair had three judges. Two were people. The third was a billboard that learned to score minds."},
+	{"id": "auditor", "title": "The Auditor", "when": "flag:down_auditor", "text": "Office of Continuity. Grey suit, different face every time. Its job is to keep reality consistent. It considers Max the inconsistency."},
+	{"id": "subject7", "title": "Subject 7", "when": "anchor:subject7", "text": "The Order's file on Max. Projection stable past sixty seconds. 'The Seals answer to him.'"},
+]
+
+
+func lore_unlocked(e: Dictionary) -> bool:
+	var w: String = e["when"]
+	if w == "always":
+		return true
+	if w.begins_with("ch:"):
+		return chapter >= int(w.substr(3))
+	if w.begins_with("flag:"):
+		return flag(w.substr(5))
+	if w.begins_with("anchor:"):
+		return anchors.has(w.substr(7))
+	return false
 
 ## Playable heroes. Max leads; Lana joins in Chapter 2, Jason in Chapter 3.
 ## Stats: run speed, jump, strike damage, strike cooldown, bonus health,
@@ -98,7 +149,7 @@ func fresh_prog(ch := 1) -> Dictionary:
 	var attr = {}
 	for k in HEROES:
 		pts[k] = lv - 1
-		attr[k] = {"vit": 0, "pow": 0, "foc": 0}
+		attr[k] = {"vit": 0, "pow": 0, "foc": 0, "agi": 0, "lck": 0, "spr": 0}
 	var items = []
 	if ch >= 2:
 		items = ["lunchbox", "charger"]
@@ -106,6 +157,8 @@ func fresh_prog(ch := 1) -> Dictionary:
 		items += ["wristband"]
 	if ch >= 4:
 		items += ["goggles", "stone"]
+	if ch >= 5:
+		items += ["jersey", "hallpass"]
 	return {"xp": 0, "level": lv, "pts": pts, "attr": attr, "items": items, "equip": ["", "", ""], "hp_bonus": (ch - 1),
 		"special": {"max": "laser", "lana": "shout", "jason": "wave"}, "hero": "max", "picked": {}}
 
@@ -123,11 +176,28 @@ func mod(name: String) -> float:
 
 
 func attr(hero: String, a: String) -> int:
+	if prog.is_empty():
+		return 0
 	return int(prog["attr"].get(hero, {}).get(a, 0))
 
 
+## Story difficulty: every hero, power, special and piece of gear is open.
+func story_mode() -> bool:
+	return difficulty == 0
+
+
+func apply_story() -> void:
+	if not story_mode() or prog.is_empty():
+		return
+	ability["project"] = true
+	ability["double"] = true
+	for id in ITEMS:
+		if not id in prog["items"]:
+			prog["items"].append(id)
+
+
 func hero_unlocked(h: String) -> bool:
-	if h == "max":
+	if h == "max" or story_mode():
 		return true
 	if h == "lana":
 		return chapter >= 2 or flag("lana_joined")
@@ -148,11 +218,13 @@ func hero_max_hp(h: String) -> int:
 
 func special_cost(h: String) -> float:
 	var sp: String = prog["special"].get(h, HEROES[h]["specials"][0])
+	if story_mode():
+		return 10.0
 	return maxf(6.0, float(SPECIALS[sp]["cost"]) + mod("cost") - attr(h, "foc") * 2.0)
 
 
 func fp_need() -> float:
-	return 99.0 + mod("fp")
+	return (60.0 if story_mode() else 99.0) + mod("fp")
 
 
 ## Adds experience; returns the number of levels gained.
@@ -186,6 +258,7 @@ func diff() -> Dictionary:
 func cycle_difficulty() -> void:
 	difficulty = (difficulty + 1) % DIFF.size()
 	_write_progress(unlocked())
+	apply_story()
 
 const ANCH := {
 	"momText": {"title": "Text · Mom · 3:12 PM", "body": "School called. They said lunch was \"weird\"? Eat something. Love you. Dad says bring back his charger."},
@@ -196,6 +269,12 @@ const ANCH := {
 	"chart": {"title": "Patient Chart · Kai Brooks", "body": "Found at the reservoir edge in dry clothes. Core temperature 91°F. Patient speaks in three distinct voices. One voice requested \"more water.\""},
 	"workOrder": {"title": "Work Order · Westbrook Waterworks", "body": "Intake 3 flagged: red discoloration, faint singing in the pipes. Supervisor note: \"Pipes don't sing. Close ticket.\""},
 	"flyer": {"title": "Flyer · Science Fair Night", "body": "WESTBROOK SCIENCE FAIR! Guest judge: Dr. R. Ciencia, Dharma Order. Theme this year: COLLECTIVE COGNITION. Think together!"},
+	"rooftopNote": {"title": "Note · taped to the roof door", "body": "If you can hear the pigeons counting, go back downstairs. — Mr. Okafor, custodian"},
+	"busAd": {"title": "Bus shelter ad · Downtown", "body": "THE DHARMA FOUNDATION: Adaptation is mercy. Free cognitive screenings for Westbrook families."},
+	"floodLog": {"title": "Maintenance log · Underpass pump 2", "body": "Water level rising with no rain. Pump hums in a voice. Night shift asked to be moved. Request denied."},
+	"neonBill": {"title": "Billboard · flickering", "body": "VOTE ONELLIUS. A STRONGER MIND FOR A STRONGER NATION. (Someone has scratched a black sun over his face.)"},
+	"cienciaFile": {"title": "Personnel file · R. Ciencia", "body": "Recruited by the Order at 19. Project: RECEIVER. Note in margin: 'The subject at Westbrook is the real receiver. Ciencia is a decoy. Keep him believing otherwise.'"},
+	"subject7": {"title": "Dharma memo · Subject 7", "body": "Inoki, Max. Projection stable past 60 seconds as of this quarter. Recommend observation, not intervention. The Seals answer to him."},
 	"levitation": {"title": "Memory Anchor · Levitation", "body": "Your body remembers what your mind just learned. Press JUMP again in midair to levitate once.", "ability": "double"},
 }
 
@@ -293,6 +372,31 @@ const DLG := {
 		["ciencia", "smirk", "And you, Mr. Inoki, are a Dharma project. Did no one tell you? The Order has watched you since the day you were born."],
 		["max", "shocked", "...What?"], ["jason", "angry", "Don't listen to him. Max. MAX. We do this together."],
 		[N, "", "Lana and Jason fight beside you. Swap who you control with {switch}."]],
+	"rooftopIntro": [[N, "", "The roof of Westbrook High. The city glitters. Something on the vents is counting out loud."], ["max", "worried", "That is a hall monitor. That is a very, very large hall monitor."]],
+	"rooftopDone": [["max", "neutral", "He just wanted everyone in class on time. The Choir turned that into a cage."]],
+	"downtownIntro": [[N, "", "Downtown at dusk. Every bus shelter shows the same ad. The imps are nesting in the billboards."], ["lana", "smirk", "Kevins. Downtown Kevins. Bigger Kevins."]],
+	"downtownDone": [["lana", "neutral", "That was their mom. I feel weird about it. Not bad. Weird."]],
+	"underpassIntro": [[N, "", "The underpass floods without rain. A man in a night-shift vest stands waist-deep, humming."], ["jason", "worried", "That is my cousin's supervisor. He has been down here for three days."]],
+	"underpassDone": [["jason", "neutral", "He's breathing. The water let him go. It listens to me now. I don't love that."]],
+	"neonIntro": [[N, "", "Above the fair, the billboards flicker with a face that isn't there."], ["max", "worried", "Ciencia said there were three judges. We only met one."]],
+	"neonDone": [["max", "neutral", "Score: zero out of ten. Feels good to be the judge for once."]],
+	"c5Intro": [[N, "", "One week after the science fair. Westbrook after dark."],
+		["max", "worried", "Mom said the letter was a prank. Then she burned it. Then she asked me if I'd been sleeping okay."],
+		["lana", "neutral", "Ciencia's old apartment is downtown. If he kept records, they're there. Or at the Dharma office above the bank."],
+		["jason", "angry", "Someone in a grey suit has been following us since the pumphouse. Same suit. Different face every time."],
+		[N, "", "Find what the Dharma Order knows about Max. Use psychometry: touch the records, hear their past."],
+		[N, "", "New: underbosses guard side areas. Look for glowing doorways and press {up} to enter."]],
+	"c5_lana": [["lana", "smirk", "Grey Suit is on the roof. He's not even hiding. That's insulting."]],
+	"skylineIntro": [[N, "", "The smog line. The rooftops are close enough to jump. The grey suit waits at the far end, then is gone."]],
+	"auditorIntro": [["auditor", "", "Mr. Inoki. You have broken three Seals' worth of rules in one school year."],
+		["max", "angry", "Who ARE you people?"], ["auditor", "", "The Office of Continuity. We keep reality consistent. You are an inconsistency."],
+		["auditor", "", "Dr. Ciencia believed he was the receiver. He was our decoy. You are the receiver, Subject 7."],
+		["lana", "angry", "Nobody calls him a subject. He's a sophomore."], ["auditor", "", "Then let us find out what he becomes."]],
+	"c5End": [["max", "worried", "Every file in there was about me. My first projection. My first nosebleed. Third grade."],
+		["jason", "neutral", "And about the Seals. Seven of them. Two are already cracked."],
+		["lana", "worried", "Max... are you okay?"], ["max", "neutral", "No. But I know what I am now. That's something."],
+		[N, "", "On the ride home, the radio switches stations by itself. A voice says: ONE MINUTE OUTSIDE."],
+		[N, "", "Season One continues."]],
 	"c4End": [["lana", "worried", "Okay. Nobody's saying it, so I will. He said you're a Dharma project."], ["max", "worried", "My mom has a LOT of explaining to do."],
 		["jason", "neutral", "Whatever they are, they don't get you. Not on my watch. Not near my water."],
 		[N, "", "That night, Max finds a letter in his locker. The seal is a black sun ringed by seven broken circles."],
@@ -305,8 +409,9 @@ const PORTRAIT := {
 	"jason": {"neutral": "jason_neutral", "smile": "jason_smile", "smirk": "jason_smirk", "worried": "jason_worried", "shocked": "jason_shocked", "angry": "jason_angry", "sad": "jason_worried"},
 	"ciencia": {"*": "ciencia_0"},
 	"choir": {"*": "choir_0"},
+	"auditor": {"*": "ciencia_0"},
 }
-const SPEAKER := {"max": "MAX INOKI", "lana": "LANA", "jason": "JASON", "ciencia": "DR. CIENCIA", "choir": "THE CHOIR"}
+const SPEAKER := {"max": "MAX INOKI", "lana": "LANA", "jason": "JASON", "ciencia": "DR. CIENCIA", "choir": "THE CHOIR", "auditor": "THE AUDITOR"}
 
 var _portraits = {}
 
@@ -321,9 +426,10 @@ func _ready() -> void:
 	display.base_font = cinzel
 	display.variation_embolden = 0.55
 	font_display = display
-	font_body = load("res://assets/fonts/Spectral-Regular.ttf")
-	font_italic = load("res://assets/fonts/Spectral-Italic.ttf")
-	font_semi = load("res://assets/fonts/Spectral-SemiBold.ttf")
+	# Atkinson Hyperlegible Next (OFL): designed for maximum legibility.
+	font_body = load("res://assets/fonts/Atkinson-Regular.ttf")
+	font_italic = load("res://assets/fonts/Atkinson-Italic.ttf")
+	font_semi = load("res://assets/fonts/Atkinson-Bold.ttf")
 
 
 func portrait(who: String, expr: String) -> Texture2D:
@@ -356,16 +462,16 @@ const SETTINGS_PATH := "user://sakawa_settings.json"
 const REBINDABLE := [["left", "Move left"], ["right", "Move right"], ["up", "Up · talk · rest"], ["down", "Down · drop"],
 	["jump", "Jump"], ["attack", "Strike"], ["kick", "Kick"], ["laser", "Special"], ["dash", "Dash"], ["heal", "Focus heal"],
 	["project", "Astral projection"], ["fp", "Full Potential"], ["transform", "Alter ego (transform)"], ["switch", "Swap hero"],
-	["menu", "Character menu"], ["pause", "Pause"]]
+	["menu", "Character menu"], ["rage", "Max's Rage mode"], ["pause", "Pause"]]
 const DEFAULT_KEYS := {
 	"left": [KEY_A, KEY_LEFT], "right": [KEY_D, KEY_RIGHT], "up": [KEY_W, KEY_UP], "down": [KEY_S, KEY_DOWN],
 	"jump": [KEY_SPACE, KEY_Z], "attack": [KEY_X, KEY_J], "kick": [KEY_V, KEY_L], "laser": [KEY_B, KEY_I], "dash": [KEY_C, KEY_K, KEY_SHIFT],
-	"heal": [KEY_Q, KEY_F], "project": [KEY_E, KEY_P], "fp": [KEY_R], "transform": [KEY_T, KEY_G], "switch": [KEY_TAB], "menu": [KEY_M, KEY_N],
+	"heal": [KEY_Q, KEY_F], "project": [KEY_E, KEY_P], "fp": [KEY_R], "transform": [KEY_T, KEY_G], "switch": [KEY_TAB], "menu": [KEY_M, KEY_N], "rage": [KEY_1],
 	"pause": [KEY_ESCAPE],
 }
 const DEFAULT_PAD := {
 	"left": ["b13"], "right": ["b14"], "up": ["b11"], "down": ["b12"], "jump": ["b0"], "attack": ["b2"], "kick": ["b1"], "laser": ["a5+"],
-	"dash": ["b10"], "heal": ["b9"], "project": ["b3"], "fp": ["a4+"], "transform": ["b7"], "switch": ["b8"], "menu": ["b4", "b20"], "pause": ["b6"],
+	"dash": ["b10"], "heal": ["b9"], "project": ["b3"], "fp": ["a4+"], "transform": ["b7"], "switch": ["b8"], "menu": ["b4"], "pause": ["b6"], "rage": ["b20"],
 }
 const PAD_NAMES := {
 	"ps": {"b0": "Cross", "b1": "Circle", "b2": "Square", "b3": "Triangle", "b4": "Create", "b5": "PS", "b6": "Options", "b7": "L3", "b8": "R3",
@@ -423,7 +529,7 @@ func _pad_event(code: String) -> InputEvent:
 
 
 func apply_bindings() -> void:
-	var fixed = {"confirm": [KEY_ENTER, KEY_KP_ENTER], "hero1": [KEY_1], "hero2": [KEY_2], "hero3": [KEY_3]}
+	var fixed = {"confirm": [KEY_ENTER, KEY_KP_ENTER], "hero2": [KEY_2], "hero3": [KEY_3]}
 	for action in fixed:
 		if not InputMap.has_action(action):
 			InputMap.add_action(action, 0.35)
@@ -589,7 +695,10 @@ func new_game(ch := 1) -> void:
 	if ch >= 4:
 		flags["tideDone"] = true
 		flags["tideClear"] = true
+	if ch >= 5:
+		flags["collectiveDone"] = true
 	prog = fresh_prog(ch)
+	apply_story()
 	var c: Dictionary = CHAPTERS[ch]
 	save_data = {"room": c["room"], "x": c["spawn"].x, "y": c["spawn"].y}
 
@@ -628,6 +737,7 @@ func load_save(d: Dictionary) -> void:
 			prog[k] = pg[k]
 	prog["level"] = int(prog["level"])
 	prog["xp"] = int(prog["xp"])
+	apply_story()
 	save_data = d
 
 

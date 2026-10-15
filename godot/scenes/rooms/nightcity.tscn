@@ -1,0 +1,216 @@
+[gd_scene load_steps=14 format=3]
+
+[ext_resource type="Script" path="res://scripts/room.gd" id="room"]
+[ext_resource type="Script" path="res://scripts/marker.gd" id="marker"]
+[ext_resource type="Script" path="res://scripts/blocker.gd" id="blocker"]
+
+[sub_resource type="RectangleShape2D" id="shape_p0"]
+size = Vector2(1200, 70)
+
+[sub_resource type="RectangleShape2D" id="shape_p1"]
+size = Vector2(1620, 70)
+
+[sub_resource type="RectangleShape2D" id="shape_p2"]
+size = Vector2(180, 10)
+
+[sub_resource type="RectangleShape2D" id="shape_p3"]
+size = Vector2(160, 12)
+
+[sub_resource type="RectangleShape2D" id="shape_p4"]
+size = Vector2(160, 12)
+
+[sub_resource type="RectangleShape2D" id="shape_p5"]
+size = Vector2(120, 12)
+
+[sub_resource type="RectangleShape2D" id="shape_p6"]
+size = Vector2(160, 12)
+
+[sub_resource type="RectangleShape2D" id="shape_p7"]
+size = Vector2(180, 12)
+
+[sub_resource type="RectangleShape2D" id="shape_p8"]
+size = Vector2(120, 50)
+
+[sub_resource type="RectangleShape2D" id="shape_b0"]
+size = Vector2(28, 240)
+
+[node name="Nightcity" type="Node2D"]
+script = ExtResource("room")
+room_id = "nightcity"
+display_name = "Westbrook After Dark"
+subtitle = "Chapter Five · The Teacher Who Was Fired"
+room_size = Vector2(3000, 540)
+floor_sound = "lino"
+tint = Color(0.6588, 1.0000, 0.8118, 1)
+draw_platforms = true
+
+[node name="Platforms" type="Node2D" parent="."]
+
+[node name="Solid0" type="StaticBody2D" parent="Platforms"]
+position = Vector2(600, 505)
+collision_layer = 1
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/Solid0"]
+shape = SubResource("shape_p0")
+
+[node name="Solid1" type="StaticBody2D" parent="Platforms"]
+position = Vector2(2190, 505)
+collision_layer = 1
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/Solid1"]
+shape = SubResource("shape_p1")
+
+[node name="Solid2" type="StaticBody2D" parent="Platforms"]
+position = Vector2(1290, 545)
+collision_layer = 1
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/Solid2"]
+shape = SubResource("shape_p2")
+
+[node name="OneWay3" type="StaticBody2D" parent="Platforms"]
+position = Vector2(530, 386)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay3"]
+shape = SubResource("shape_p3")
+one_way_collision = true
+
+[node name="OneWay4" type="StaticBody2D" parent="Platforms"]
+position = Vector2(980, 356)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay4"]
+shape = SubResource("shape_p4")
+one_way_collision = true
+
+[node name="OneWay5" type="StaticBody2D" parent="Platforms"]
+position = Vector2(1290, 406)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay5"]
+shape = SubResource("shape_p5")
+one_way_collision = true
+
+[node name="OneWay6" type="StaticBody2D" parent="Platforms"]
+position = Vector2(1780, 386)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay6"]
+shape = SubResource("shape_p6")
+one_way_collision = true
+
+[node name="OneWay7" type="StaticBody2D" parent="Platforms"]
+position = Vector2(2290, 346)
+collision_layer = 2
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/OneWay7"]
+shape = SubResource("shape_p7")
+one_way_collision = true
+
+[node name="Solid8" type="StaticBody2D" parent="Platforms"]
+position = Vector2(2560, 445)
+collision_layer = 1
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Platforms/Solid8"]
+shape = SubResource("shape_p8")
+
+[node name="Blockers" type="Node2D" parent="."]
+
+[node name="Gate0" type="StaticBody2D" parent="Blockers"]
+position = Vector2(2764, 350)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("blocker")
+kind = "gate"
+condition = "elite_alive"
+flag = "elite_r5"
+size = Vector2(28, 240)
+
+[node name="Shape" type="CollisionShape2D" parent="Blockers/Gate0"]
+shape = SubResource("shape_b0")
+
+[node name="Markers" type="Node2D" parent="."]
+
+[node name="Hazard_hazard_0" type="Node2D" parent="Markers"]
+position = Vector2(1200, 500)
+script = ExtResource("marker")
+kind = "hazard"
+size = Vector2(180, 40)
+
+[node name="Bench_bench_1" type="Node2D" parent="Markers"]
+position = Vector2(260, 470)
+script = ExtResource("marker")
+kind = "bench"
+
+[node name="Npc_lana_2" type="Node2D" parent="Markers"]
+position = Vector2(520, 470)
+script = ExtResource("marker")
+kind = "npc"
+id = "lana"
+dialog = "c5_lana"
+dialog_repeat = "c5_lana"
+face = 1
+
+[node name="Exit_skyline_3" type="Node2D" parent="Markers"]
+position = Vector2(2978, 290)
+script = ExtResource("marker")
+kind = "exit"
+size = Vector2(22, 180)
+target_room = "skyline"
+spawn_point = Vector2(60, 470)
+
+[node name="Spawn_nc_t1_4" type="Node2D" parent="Markers"]
+position = Vector2(800, 470)
+script = ExtResource("marker")
+kind = "spawn"
+id = "nc_t1"
+enemy = "sleeper"
+patrol_range = 120
+
+[node name="Spawn_nc_i1_5" type="Node2D" parent="Markers"]
+position = Vector2(950, 350)
+script = ExtResource("marker")
+kind = "spawn"
+id = "nc_i1"
+enemy = "imp"
+patrol_range = 40
+
+[node name="Spawn_nc_r1_6" type="Node2D" parent="Markers"]
+position = Vector2(1600, 470)
+script = ExtResource("marker")
+kind = "spawn"
+id = "nc_r1"
+enemy = "rider"
+patrol_range = 160
+
+[node name="Spawn_nc_i2_7" type="Node2D" parent="Markers"]
+position = Vector2(2250, 340)
+script = ExtResource("marker")
+kind = "spawn"
+id = "nc_i2"
+enemy = "imp"
+patrol_range = 40
+
+[node name="Spawn_elite_r5_8" type="Node2D" parent="Markers"]
+position = Vector2(2550, 470)
+script = ExtResource("marker")
+kind = "spawn"
+id = "elite_r5"
+enemy = "rider"
+patrol_range = 120
+
+[node name="Loot_h_night_9" type="Node2D" parent="Markers"]
+position = Vector2(950, 350)
+script = ExtResource("marker")
+kind = "loot"
+id = "h_night"
+item = "heart"

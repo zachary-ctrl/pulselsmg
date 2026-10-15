@@ -166,5 +166,59 @@
     "h": 540
    }
   ]
+ },
+ "rooftop": {
+  "w": 2400,
+  "h": 540,
+  "city": "city1",
+  "layers": []
+ },
+ "downtown": {
+  "w": 2800,
+  "h": 540,
+  "city": "city2",
+  "layers": []
+ },
+ "underpass": {
+  "w": 2600,
+  "h": 540,
+  "city": "city3",
+  "layers": []
+ },
+ "neon": {
+  "w": 2400,
+  "h": 540,
+  "city": "city6",
+  "layers": []
+ },
+ "nightcity": {
+  "w": 3000,
+  "h": 540,
+  "city": "city8",
+  "layers": []
+ },
+ "skyline": {
+  "w": 2800,
+  "h": 540,
+  "city": "city7",
+  "layers": []
+ },
+ "archive": {
+  "w": 1120,
+  "h": 540,
+  "layers": [
+   {
+    "file": "lab_bg0.jpg",
+    "f": 0.3,
+    "w": 1008,
+    "h": 540
+   },
+   {
+    "file": "lab_bg1.png",
+    "f": 0.65,
+    "w": 1064,
+    "h": 540
+   }
+  ]
  }
 }

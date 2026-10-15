@@ -61,8 +61,14 @@ func _ready() -> void:
 		var img: Image = cur.get_image()
 		img.resize(img.get_width() * 2, img.get_height() * 2, Image.INTERPOLATE_NEAREST)
 		Input.set_custom_mouse_cursor(ImageTexture.create_from_image(img), Input.CURSOR_ARROW, Vector2(2, 2))
-	_theme.set_font("font", "Button", Game.font_display)
-	_theme.set_font_size("font_size", "Button", 15)
+	_theme.set_font("font", "Button", Game.font_semi)
+	_theme.set_font_size("font_size", "Button", 16)
+	_theme.set_font_size("font_size", "Label", 16)
+	_theme.set_constant("outline_size", "Label", 4)
+	_theme.set_color("font_outline_color", "Label", Color(0, 0, 0, 0.85))
+	_theme.set_constant("outline_size", "Button", 3)
+	_theme.set_color("font_outline_color", "Button", Color(0, 0, 0, 0.8))
+	_theme.set_font("font", "LineEdit", Game.font_body)
 	_theme.set_color("font_color", "Button", Color("#ece6d8"))
 	_theme.set_font("font", "Label", Game.font_body)
 	_theme.set_color("font_color", "Label", Color("#d6cfbf"))
@@ -173,7 +179,7 @@ func show_title(has_save: bool, unlocked := 1) -> void:
 	_title.visible = true
 	_title_main.visible = true
 	_sub.visible = false
-	_title_main.get_node("Chapters").visible = unlocked > 1
+	_title_main.get_node("Chapters").visible = unlocked > 1 or Game.story_mode()
 	_btn_continue.visible = has_save
 	_title.get_node("Hint").text = "Touch controls appear in play." if Game.touch_mode else "%s move · %s jump · %s strike · %s kick · %s special · %s alter ego · %s swap hero · %s menu" % [
 		Game.label("move"), Game.label("jump"), Game.label("attack"), Game.label("kick"), Game.label("laser"), Game.label("transform"), Game.label("switch"), Game.label("menu")]
@@ -206,7 +212,7 @@ func show_sub(kind: String, from_pause := false) -> void:
 		"chapters":
 			v.add_child(_heading("CHAPTER SELECT", 22))
 			for n in Game.CHAPTERS:
-				if n > Game.unlocked():
+				if n > Game.unlocked() and not Game.story_mode():
 					continue
 				var nn = n
 				var b = _menu_button("%d · %s" % [n, Game.CHAPTERS[n]["title"]], func(): sub_back(); main.start_chapter(nn, true))
@@ -248,6 +254,7 @@ func show_sub(kind: String, from_pause := false) -> void:
 			var rows = [["DIFFICULTY: " + Game.diff()["name"], func(): Game.cycle_difficulty(); main.apply_difficulty(); show_sub("settings")],
 				["SOUND: " + ("ON" if Sound.sound_on else "OFF"), func(): Sound.set_sound(not Sound.sound_on); show_sub("settings")],
 				["MUSIC: " + ("ON" if Sound.music_on else "OFF"), func(): Sound.set_music(not Sound.music_on); show_sub("settings")],
+				["LANA & JASON HELP IN BOSS FIGHTS: " + ("ON" if Game.settings.get("allies", true) else "OFF"), func(): Game.settings["allies"] = not Game.settings.get("allies", true); Game.save_settings(); show_sub("settings")],
 				["CONTROLLER RUMBLE: " + ("ON" if Game.settings.get("rumble", true) else "OFF"), func(): Game.settings["rumble"] = not Game.settings.get("rumble", true); Game.save_settings(); Game.rumble(0.5, 0.5, 0.2); show_sub("settings")],
 				["BUTTON ICONS: " + {"auto": "AUTO", "ps": "PLAYSTATION", "xbox": "XBOX"}[Game.settings.get("pad_style", "auto")], func(): _cycle_style(); show_sub("settings")],
 				["CONTROLS...", func(): show_sub("controls")]]
@@ -628,15 +635,16 @@ func _refresh_menu(focus_tab := false) -> void:
 	var head = HBoxContainer.new()
 	head.add_theme_constant_override("separation", 10)
 	_menu_body.add_child(head)
-	var tabs = ["PARTY", "EQUIPMENT", "ABILITIES", "MAP"]
+	var tabs = ["PARTY", "EQUIPMENT", "ABILITIES", "MAP", "LORE"]
 	var tab_btns = []
 	for i in tabs.size():
 		var ii = i
-		var b = _btn(("▸ " if i == _menu_tab else "") + tabs[i], func(): _menu_go(ii), 150, 14)
+		var b = _btn(("▸ " if i == _menu_tab else "") + tabs[i], func(): _menu_go(ii), 118, 14)
 		head.add_child(b)
 		tab_btns.append(b)
 	var lv = _small("   LEVEL %d · %d / %d XP" % [pg["level"], pg["xp"], Game.xp_next(pg["level"])], 15, Color("#fff2c8"))
 	lv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	lv.autowrap_mode = TextServer.AUTOWRAP_OFF
 	lv.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	head.add_child(lv)
 	var bar = ProgressBar.new()
@@ -657,6 +665,8 @@ func _refresh_menu(focus_tab := false) -> void:
 			_menu_skills()
 		3:
 			_menu_map()
+		4:
+			_menu_lore()
 	_menu_body.add_child(_menu_desc)
 	var close = _btn("CLOSE  [" + Game.label("menu") + "]", func(): main.close_menu(), 0, 14)
 	_menu_body.add_child(close)
@@ -686,7 +696,8 @@ func _menu_party() -> void:
 		var pts = int(Game.prog["pts"].get(h, 0))
 		card.add_child(_small("Health %d · Strike %d · Special %d Resonance" % [Game.hero_max_hp(h), int(hd["dmg"]) + int(Game.mod("dmg")) + int(Game.attr(h, "pow") / 2), int(Game.special_cost(h))], 12))
 		card.add_child(_small("Points to spend: %d" % pts, 13, Color("#fff2c8") if pts > 0 else Color("#8a8494")))
-		for a in [["vit", "VITALITY", "+1 health"], ["pow", "POWER", "+1 damage every 2"], ["foc", "FOCUS", "cheaper specials, +10% Resonance"]]:
+		for a in [["vit", "VITALITY", "+1 health"], ["pow", "POWER", "+1 damage every 2 points"], ["foc", "FOCUS", "cheaper specials, +10% Resonance"],
+				["agi", "AGILITY", "+3% move speed, faster dash"], ["lck", "LUCK", "+3% critical hits and better drops"], ["spr", "SPIRIT", "+1 special damage every 2 points"]]:
 			var line = HBoxContainer.new()
 			var l = _small("%s %d" % [a[1], Game.attr(h, a[0])], 13)
 			l.custom_minimum_size = Vector2(120, 0)
@@ -711,7 +722,7 @@ func _spend(h: String, a: String) -> void:
 	if int(Game.prog["pts"].get(h, 0)) <= 0:
 		return
 	Game.prog["pts"][h] = int(Game.prog["pts"][h]) - 1
-	Game.prog["attr"][h][a] = int(Game.prog["attr"][h][a]) + 1
+	Game.prog["attr"][h][a] = int(Game.prog["attr"][h].get(a, 0)) + 1
 	Sound.play("pickup")
 	if main.player.hero == h:
 		var m: int = Game.hero_max_hp(h)
@@ -803,7 +814,7 @@ func _menu_skills() -> void:
 		row.add_child(sl)
 		for sp in hd["specials"]:
 			var sd: Dictionary = Game.SPECIALS[sp]
-			var locked = lvl < int(sd["lv"])
+			var locked = lvl < int(sd["lv"]) and not Game.story_mode()
 			var sel: bool = Game.prog["special"].get(h, "") == sp
 			var hh = h
 			var spp: String = sp
@@ -818,10 +829,11 @@ func _menu_skills() -> void:
 ## Screen map (after YKnytt / Knytt Stories): each room of the chapter as a
 ## box, lit once visited, with where you are blinking.
 const MAP := {
-	1: [["classroom", 0, 1, 2, 1], ["hallway", 2, 1, 3, 1], ["cafeteria", 5, 0, 2, 2], ["lab", 7, 0, 1, 1]],
-	2: [["street", 0, 0, 4, 1], ["hospital", 4, 0, 3, 1]],
-	3: [["waterworks", 0, 0, 4, 2], ["pumphouse", 4, 0, 2, 1]],
-	4: [["fairhall", 0, 1, 4, 1], ["gym", 4, 0, 3, 2], ["stage", 7, 0, 2, 1]],
+	1: [["classroom", 0, 1, 2, 1], ["hallway", 2, 1, 3, 1], ["cafeteria", 5, 0, 2, 2], ["lab", 7, 0, 1, 1], ["rooftop", 2, 0, 3, 1]],
+	2: [["street", 0, 0, 4, 1], ["hospital", 4, 0, 3, 1], ["downtown", 1, 1, 3, 1]],
+	3: [["waterworks", 0, 0, 4, 2], ["pumphouse", 4, 0, 2, 1], ["underpass", 0, 2, 3, 1]],
+	4: [["fairhall", 0, 1, 4, 1], ["gym", 4, 0, 3, 2], ["stage", 7, 0, 2, 1], ["neon", 1, 0, 3, 1]],
+	5: [["nightcity", 0, 1, 4, 1], ["skyline", 4, 1, 3, 1], ["archive", 7, 1, 1, 1]],
 }
 
 
@@ -847,7 +859,7 @@ func _draw_map(mc: Control) -> void:
 		var seen: bool = Game.visited.has(r[0])
 		mc.draw_rect(rect, Color(0.2, 0.22, 0.4, 0.95) if seen else Color(0.08, 0.08, 0.14, 0.9))
 		mc.draw_rect(rect, Color("#8fb8ff") if seen else Color(1, 1, 1, 0.15), false, 2.0)
-		if i > 0:
+		if i > 0 and r[0] not in ["rooftop", "downtown", "underpass", "neon"]:
 			var prev: Array = rooms[i - 1]
 			var pr = Rect2(org + Vector2(prev[1], prev[2]) * cell, Vector2(prev[3], prev[4]) * cell - Vector2(6, 6))
 			var y = clampf(rect.get_center().y, maxf(pr.position.y, rect.position.y) + 10, minf(pr.end.y, rect.end.y) - 10)
@@ -855,7 +867,7 @@ func _draw_map(mc: Control) -> void:
 		var nm = main.meta.get(r[0], {})
 		var label = r[0].capitalize() if not seen else Game.ROOM_TITLES.get(r[0], r[0].capitalize())
 		mc.draw_string(Game.font_semi, rect.position + Vector2(8, 18), label if seen else "?", HORIZONTAL_ALIGNMENT_LEFT, rect.size.x - 12, 12, Color.WHITE if seen else Color(1, 1, 1, 0.4))
-		if r[0] in ["lab", "hospital", "pumphouse", "stage"]:
+		if r[0] in ["lab", "hospital", "pumphouse", "stage", "archive", "rooftop", "downtown", "underpass", "neon"]:
 			mc.draw_string(Game.font_display, rect.end - Vector2(18, 8), "♦", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("#ff8aa0"))
 		if r[0] in ["hallway", "cafeteria", "street", "hospital", "waterworks", "fairhall", "gym"]:
 			mc.draw_rect(Rect2(rect.position + Vector2(8, rect.size.y - 16), Vector2(8, 8)), Color("#ffd6a0"))
@@ -865,6 +877,35 @@ func _draw_map(mc: Control) -> void:
 			if int(main.t * 4.0) % 2 == 0:
 				mc.draw_circle(pp, 6, Color(Game.HEROES[main.player.hero]["col"]))
 			mc.draw_arc(pp, 9, 0, TAU, 16, Color.WHITE, 1.5)
+
+
+func _menu_lore() -> void:
+	var got = 0
+	for e in Game.LORE:
+		if Game.lore_unlocked(e):
+			got += 1
+	_menu_body.add_child(_small("CODEX · %d / %d entries" % [got, Game.LORE.size()], 15, Color("#fff2c8")))
+	var row = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	_menu_body.add_child(row)
+	var sc = ScrollContainer.new()
+	sc.custom_minimum_size = Vector2(250, 300)
+	var lv = VBoxContainer.new()
+	sc.add_child(lv)
+	row.add_child(sc)
+	var txt = _small("Pick an entry.", 15, Color("#e8e2d4"))
+	txt.custom_minimum_size = Vector2(500, 300)
+	txt.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	row.add_child(txt)
+	for e in Game.LORE:
+		var ok: bool = Game.lore_unlocked(e)
+		var title: String = e["title"] if ok else "???"
+		var body: String = e["text"] if ok else "Not discovered yet. Keep exploring, read memory anchors, and defeat underbosses."
+		var b = _btn(title, func(): txt.text = title.to_upper() + "\n\n" + body, 230, 13)
+		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		b.disabled = not ok
+		b.focus_entered.connect(func(): txt.text = title.to_upper() + "\n\n" + body)
+		lv.add_child(b)
 
 
 func _pick_special(h: String, sp: String) -> void:
@@ -957,7 +998,7 @@ func show_end(chapter: int, title: String, lead: String, stats: Array, has_next:
 		cell.add_child(lab)
 		g.add_child(cell)
 	_end_body.add_child(g)
-	_end_body.add_child(_para(("Next: Chapter %s · %s" % [Game.CHAPTER_WORD[chapter + 1].capitalize(), Game.CHAPTERS[chapter + 1]["title"]]) if has_next else "Season One continues: The Teacher Who Was Fired · One Minute Outside", true))
+	_end_body.add_child(_para(("Next: Chapter %s · %s" % [Game.CHAPTER_WORD[chapter + 1].capitalize(), Game.CHAPTERS[chapter + 1]["title"]]) if has_next else ("Season One continues: One Minute Outside · The Viral Saint" if chapter >= 5 else "Season One continues: The Teacher Who Was Fired"), true))
 	var b = Button.new()
 	b.text = ("CONTINUE TO CHAPTER " + Game.CHAPTER_WORD[chapter + 1]) if has_next else "PLAY AGAIN"
 	var armed = Time.get_ticks_msec() + 1200
