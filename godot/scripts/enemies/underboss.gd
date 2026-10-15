@@ -8,6 +8,10 @@ extends CharacterBody2D
 ##   summon  — calls Choir imps
 ##   blink   — vanishes and reappears beside the hero
 ##   pillars — vertical beams that lock on where the hero stands
+##   sigil   — void sigils bloom under the hero, then detonate
+##
+## Azazel, the devil, is the recurring big bad: devil1..devil5, one per
+## chapter, each larger, tougher and with more of the patterns above.
 
 const Anim = preload("res://scripts/anim_sprite.gd")
 const CONFIG := {
@@ -21,6 +25,16 @@ const CONFIG := {
 		"tint": Color(1, 0.3, 0.7, 0.2), "attacks": ["pillars", "blink", "volley"], "float": true, "item": "badge", "lore": "judge"},
 	"auditor": {"name": "THE AUDITOR", "sub": "Dharma Order · Office of Continuity", "key": "saint", "size": 1.5, "hp": 96, "col": "#ffe08a",
 		"tint": Color(1, 0.85, 0.3, 0.3), "attacks": ["pillars", "blink", "volley", "summon", "slam"], "float": true, "item": "seal", "lore": "auditor", "boss": true},
+	"devil1": {"name": "AZAZEL", "sub": "The Horned Witness · first sighting", "key": "devil", "size": 1.1, "hp": 40, "col": "#5ff2e0", "tint": Color(0, 0, 0, 0),
+		"attacks": ["volley", "blink", "sigil"], "item": "", "devil": 1, "hb": 1.35},
+	"devil2": {"name": "AZAZEL", "sub": "The Horned Witness · he remembers you", "key": "devil", "size": 1.22, "hp": 56, "col": "#5ff2e0", "tint": Color(0, 0, 0, 0),
+		"attacks": ["volley", "blink", "sigil", "charge"], "item": "", "devil": 2, "hb": 1.35},
+	"devil3": {"name": "AZAZEL", "sub": "The Horned Witness · the water remembers him", "key": "devil", "size": 1.34, "hp": 74, "col": "#5ff2e0", "tint": Color(0, 0, 0, 0),
+		"attacks": ["volley", "blink", "sigil", "summon", "pillars"], "item": "", "devil": 3, "hb": 1.35},
+	"devil4": {"name": "AZAZEL", "sub": "The Horned Witness · every Seal feeds him", "key": "devil", "size": 1.46, "hp": 94, "col": "#5ff2e0", "tint": Color(0.1, 0.4, 0.4, 0.12),
+		"attacks": ["volley", "blink", "sigil", "summon", "pillars", "slam"], "item": "", "devil": 4, "hb": 1.35},
+	"devil5": {"name": "AZAZEL", "sub": "What watched you being born", "key": "devil", "size": 1.6, "hp": 124, "col": "#5ff2e0", "tint": Color(0.2, 0.6, 0.6, 0.18),
+		"attacks": ["volley", "blink", "sigil", "summon", "pillars", "slam", "charge"], "item": "", "devil": 5, "hb": 1.35, "enraged": true},
 }
 
 var main: Node
@@ -45,6 +59,8 @@ var w = 40.0
 var h = 90.0
 var home = Vector2.ZERO
 var beams_on = false
+var sigils: Array = []
+var introduced = false
 
 
 func setup(sid: String, pos: Vector2) -> void:
@@ -56,7 +72,8 @@ func setup(sid: String, pos: Vector2) -> void:
 	max_hp = hp
 	var s: float = cfg["size"]
 	w = 26.0 * s
-	h = 54.0 * s
+	h = 54.0 * s * cfg.get("hb", 1.0)
+	phase2 = cfg.get("enraged", false)
 	var cs = CollisionShape2D.new()
 	var sh = RectangleShape2D.new()
 	sh.size = Vector2(w * 0.8, h)
@@ -159,6 +176,10 @@ func step(dt: float) -> void:
 				for b in main.fx.beams:
 					if absf(p.hitbox().get_center().x - b["x"]) < 20.0:
 						main.hurt_player(1, b["x"])
+		"sigil":
+			if tm <= 0.0:
+				_detonate()
+				_recover(0.7)
 		"recover":
 			velocity.x = move_toward(velocity.x, 0.0, 900.0 * dt)
 			if tm <= 0.0:
@@ -196,6 +217,13 @@ func _pick() -> void:
 		for k in (3 if phase2 else 2):
 			main.fx.beams.append({"k": "v", "x": clampf(px + (k - 1) * 150.0 + randf_range(-30, 30), 40.0, main.room.room_size.x - 40.0), "on": false})
 		main.fx.beams.append({"k": "v", "x": px, "on": false})
+	if cur == "sigil":
+		sigils.clear()
+		var n: int = 1 + int(cfg.get("devil", 1) >= 3) + int(phase2)
+		for k in n:
+			var at: Vector2 = main.player.position + Vector2((k - (n - 1) / 2.0) * 130.0, 0)
+			sigils.append(at)
+			main.fx.sprite("magic/void_sigil_ring", at + Vector2(0, -30), 170.0, 1.1, 0.0, Color(0.5, 1.0, 0.95), 8)
 
 
 func _execute() -> void:
@@ -226,6 +254,10 @@ func _execute() -> void:
 			state = "pillars"
 			tm = 0.55 if phase2 else 0.75
 			Sound.play("charge")
+		"sigil":
+			state = "sigil"
+			tm = 0.45 if phase2 else 0.6
+			Sound.play("u_spell", 0.05, -4.0)
 
 
 func _recover(t: float) -> void:
@@ -240,6 +272,17 @@ func _fan(n: int) -> void:
 		var a = (i - (n - 1) / 2.0) * 0.22
 		main.fx.shoot(from, aim.rotated(a) * 240.0, 7.0, "orb", Color(cfg["col"]))
 	Sound.play("u_spit" if rig.key == "imp" else "throw", 0.1, -4.0)
+
+
+func _detonate() -> void:
+	main.shake = maxf(main.shake, 0.25)
+	Sound.play("boom", 0.1, -2.0)
+	for at in sigils:
+		main.fx.sprite("magic/arcane_splash", at + Vector2(0, -40), 190.0, 0.45, 0.0, Color(0.5, 1.0, 0.95), 6)
+		main.fx.burst(at + Vector2(0, -30), 22, 340, Color(cfg["col"]))
+		if main.player.hitbox().get_center().distance_to(at + Vector2(0, -30)) < 80.0:
+			main.hurt_player(2 if phase2 else 1, at.x)
+	sigils.clear()
 
 
 func _shockwave() -> void:
@@ -273,6 +316,10 @@ func hit(dmg: int, _hdir: int) -> bool:
 func _process(_d: float) -> void:
 	rig.face = face
 	match state:
+		"wait", "dormant":
+			rig.play(_anim(["meditate", "idle"]))
+		"sigil":
+			rig.play(_anim(["summon", "cast"]))
 		"dying":
 			rig.play(_anim(["collapse", "death", "kneel", "stagger"]))
 		"tell":
@@ -280,13 +327,13 @@ func _process(_d: float) -> void:
 		"charge":
 			rig.play(_anim(["lunge", "attack2", "walk", "attack"]))
 		"slam":
-			rig.play(_anim(["lunge", "attack", "teleport"]))
+			rig.play(_anim(["fly", "lunge", "attack", "teleport"]))
 		"volley", "pillars":
 			rig.play(_anim(["shoot", "throw", "cast", "notice"]))
 		"blink", "blinkin":
 			rig.play(_anim(["teleport", "idle"]))
 		"recover":
-			rig.play(_anim(["hurt", "stagger", "idle", "walk"]))
+			rig.play(_anim(["summon"]) if cur == "summon" and rig.key == "devil" else _anim(["hurt", "stagger", "idle", "walk"]))
 		_:
 			rig.play(_anim(["idle", "walk"]))
 	rig.alpha = alpha

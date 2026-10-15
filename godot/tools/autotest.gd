@@ -39,6 +39,11 @@ func hold(action: String, s: float) -> void:
 	Input.action_release(action)
 
 
+func _nodevil() -> void:
+	for k in range(1, 6):
+		Game.flags["down_devil%d" % k] = true
+
+
 func advance(n: int) -> void:
 	for k in n:
 		if main.mode != "dialog":
@@ -79,6 +84,16 @@ func _quick(ch: int) -> void:
 
 
 func _run() -> void:
+	if OS.get_environment("DEVIL") != "":
+		await wait(1.0)
+		main.start_chapter(5, false)
+		await wait(1.0)
+		await advance(14)
+		main.card = null
+		main.mode = "play"
+		await _devil_test()
+		get_tree().quit()
+		return
 	if OS.get_environment("QUICK") == "ui":
 		await wait(0.5)
 		await shot("q_title")
@@ -232,6 +247,7 @@ func _run() -> void:
 	await wait(1.2)
 	await shot("09_enemy")
 	main.player.hp = 5
+	_nodevil()
 	main.load_room("hallway", Vector2(2470, 470))
 	await wait(0.3)
 	await hold("right", 0.5)
@@ -297,6 +313,7 @@ func _run() -> void:
 	print("CH1 DONE mode=", main.mode, " ending=", Game.flags.get("ending", ""))
 	# ---- chapter 2 ----
 	main.start_chapter(2, false)
+	_nodevil()
 	await wait(1.0)
 	await shot("20_ch2_intro")
 	await advance(10)
@@ -343,6 +360,7 @@ func _run() -> void:
 	print("CH2 mode=", main.mode, " carrier=", Game.flags.get("carrierDone_choice", ""))
 	# ---- chapter 3 ----
 	main.start_chapter(3, false)
+	_nodevil()
 	await wait(1.0)
 	await advance(10)
 	await wait(0.5)
@@ -394,6 +412,7 @@ func _run() -> void:
 	main.player.max_hp = 5
 	# ---- chapter 4 ----
 	main.start_chapter(4, false)
+	_nodevil()
 	await wait(1.0)
 	await shot("40_ch4_intro")
 	await advance(12)
@@ -517,6 +536,7 @@ func _run() -> void:
 	await shot("55_ch4_end")
 	# ---- chapter 5 + side areas + rage ----
 	main.start_chapter(5, false)
+	_nodevil()
 	await wait(1.0)
 	await shot("60_ch5_intro")
 	await advance(12)
@@ -584,6 +604,73 @@ func _run() -> void:
 	await wait(0.3)
 	await shot("70_lore")
 	main.close_menu()
+	await _devil_test()
 	print("CH5 auditor=", Game.flags.get("auditorDone_choice", ""))
 	print("AUTOTEST DONE mode=", main.mode, " tide=", Game.flags.get("tideDone_choice", ""), " collective=", Game.flags.get("collectiveDone_choice", ""), " unlocked=", Game.unlocked(), " level=", Game.prog["level"])
 	get_tree().quit()
+
+
+func _devil_test() -> void:
+	# ---- Azazel (the recurring devil), spells, boss-help key, Rage for all ----
+	main.card = null
+	main.ui._end.hide()
+	main.mode = "play"
+	Game.flags.erase("down_devil5")
+	main.player.hp = 99
+	main.player.max_hp = 99
+	main.load_room("skyline", Vector2(2420, 470))
+	await wait(0.4)
+	await hold("right", 0.3)
+	await wait(0.6)
+	await shot("71_devil_intro")
+	await advance(6)
+	await wait(1.2)
+	print("DEVIL fight=", main.fight_id(), " name=", main.fight["name"] if main.fight != null else "", " allies=", main.allies.size())
+	await shot("72_devil_fight")
+	await tap("allies")
+	await wait(0.2)
+	print("ALLIES key off=", not Game.settings.get("allies", true), " allies=", main.allies.size())
+	await tap("allies")
+	await wait(0.2)
+	print("ALLIES key on=", Game.settings.get("allies", true), " allies=", main.allies.size())
+	main.player.res = 99.0
+	var spells = ["firebolt", "lance", "arcane", "sigil", "thorns", "spikes", "flame", "charm", "glyph", "smoke"]
+	var dhp0 = 0
+	for e in main.ents:
+		if e.kind == "underboss":
+			dhp0 = e.hp
+	for spl in spells:
+		main.player.laser_dir = Vector2(main.player.face, 0)
+		main.fire_special(main.player, spl)
+		await wait(0.12)
+		if spl == "flame":
+			await shot("73_spell_flame")
+		if spl == "lance":
+			await shot("73_spell_lance")
+	await wait(0.5)
+	var dhp1 = 0
+	for e in main.ents:
+		if e.kind == "underboss":
+			dhp1 = e.hp
+	print("SPELLS cast=", spells.size(), " devil_hp ", dhp0, " -> ", dhp1)
+	Game.prog["special"]["max"] = "laser"
+	await tap("spell")
+	print("SPELL cycle max=", Game.prog["special"]["max"])
+	main.switch_hero("lana")
+	main.toggle_rage()
+	await wait(0.4)
+	var lhp = main.player.hp
+	main.hurt_player(3, main.player.position.x + 10)
+	print("RAGE lana rage=", main.player.rage, " hero=", main.player.hero, " hp ", lhp, " -> ", main.player.hp)
+	await shot("74_rage_lana")
+	main.toggle_rage()
+	main.switch_hero("max")
+	for e in main.ents:
+		if e.kind == "underboss":
+			e.alpha = 1.0
+			e.state = "idle"
+			e.hit(999, 1)
+	await wait(2.0)
+	await shot("75_devil_kneel")
+	await advance(6)
+	print("DEVIL down=", Game.flag("down_devil5"))

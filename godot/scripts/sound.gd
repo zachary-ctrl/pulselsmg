@@ -12,6 +12,7 @@ var _music_name = ""
 var _amb: AudioStreamPlayer
 var _amb_name = ""
 var _focus: AudioStreamPlayer
+var _voice: AudioStreamPlayer
 
 const SFX := ["lsmg_jingle", "ar_blip", "ar_charge", "ar_shoot", "ar_swish", "ar_rim", "ar_buzzer", "ar_bounce", "ar_three", "u_punch1", "u_punch2", "u_throw", "u_shot", "u_transform", "u_portal", "u_swap", "u_item", "u_boar", "u_roar", "u_bat", "u_spit", "u_raven", "u_zombie", "u_laugh", "u_spell", "u_reload", "u_shot2",
 	"slash", "kick", "hit", "pickup", "levelup", "swap", "splash", "step_wood", "step_tile", "step_lino", "step_metal", "step_astral", "land", "jump", "djump", "dash", "hurt",
@@ -39,6 +40,18 @@ func _ready() -> void:
 	add_child(_amb)
 	_focus = AudioStreamPlayer.new()
 	add_child(_focus)
+	_voice = AudioStreamPlayer.new()
+	add_child(_voice)
+
+
+## Spoken lines (assets/audio/vo, generated with ElevenLabs). One at a time.
+func line(name: String, volume_db := 2.0) -> void:
+	var path = "res://assets/audio/vo/%s.ogg" % name
+	if not sound_on or not ResourceLoader.exists(path):
+		return
+	_voice.stream = load(path)
+	_voice.volume_db = volume_db
+	_voice.play()
 
 
 func play(name: String, pitch_var := 0.0, volume_db := 0.0) -> void:

@@ -47,7 +47,10 @@ Default bindings:
 | Astral projection (Max) | E, P | Triangle | Y |
 | Full Potential | R | L2 | LT |
 | Alter ego (shinobi transformation) | T, G | L3 | LS |
-| Swap hero | Tab, 1 / 2 / 3 | R3 | RS |
+| Swap hero | Tab | R3 | RS |
+| Rage (immortal mode, any hero) | 1 | Touchpad | Touchpad |
+| Lana & Jason boss help on/off | 2 | Mic | Share |
+| Next special / spell | 3, Y | Right stick → | Right stick → |
 | Character menu | M, N | Create, Touchpad | View |
 | Talk, rest at benches | W, Up | D-pad Up | D-pad Up |
 | Pause | Esc | Options | Menu |
@@ -58,9 +61,21 @@ Generous jump timing (coyote time and jump buffering), wall slides and wall jump
 
 Kandria-inspired additions: **wall climbing** (hold Up on a wall; a small stamina ring shows how long you can climb, refilled on the ground) and an **8-way air dash** (hold a direction while dashing in the air).
 
-### Max's Rage
+### Rage (every hero)
 
-Press **1** (Touchpad on PlayStation; remappable as "Max's Rage mode") to toggle Rage. It's unlimited until you press it again: Max can't be hurt, his aura doubles in size, every power is free, Special cycles through all six specials (laser, mind orb, shout, flurry, wave, geyser), strikes hit harder with magic bursts, he runs faster and gets extra air jumps. Pressing it as Lana or Jason swaps to Max first.
+Press **1** (Touchpad on PlayStation; remappable as "Rage (immortal) mode") to toggle Rage for whoever you're playing. It's unlimited until you press it again: the hero can't be hurt, their aura doubles in size, every power is free, Special cycles through all the specials (Max adds his whole spellbook), strikes hit harder with magic bursts, they run faster and get extra air jumps. Swapping heroes keeps Rage on.
+
+### Max's spellbook
+
+Max can cast every effect in the magic pack, all open from Level 1: **Fire Bolt**, **Light Lance** (both aim diagonally while holding Up), **Arcane Splash**, **Void Sigil** (stuns), **Bramble Snare** (roots), **Stone Spikes**, **Flame Line**, **Heart Charm** (charms an enemy and heals 1), **Heal Glyph** (heals 2) and **Smoke Step** (a short teleport). Press **3** (Right stick →) to step to the next special in a fight, or pick one under Character menu → Abilities. His original Psychic Laser and Mind Orb are unchanged.
+
+### Azazel, the recurring devil
+
+A winged, goat-headed sorcerer (from the uploaded sprite sheet) waits in every chapter, bigger and stronger each time: East Hall (Ch1), Westbrook Avenue (Ch2), the Waterworks floor (Ch3), Science Fair Night (Ch4) and the Smog Line (Ch5). His health rises from 40 to 124, and each appearance adds an attack: orb volleys, teleports, void sigils that detonate under you, charges, summoned imps, light pillars and slams; in Chapter 5 he starts enraged. He never dies: he kneels and dissolves, and comes back. His intro and exit lines are voiced with **ElevenLabs** (`assets/audio/vo/`), and beating him unlocks three lore entries about the Black Sun.
+
+### Lana & Jason's boss help
+
+Press **2** to turn Lana and Jason's help in boss fights on or off at any time; mid-fight, they join or leave immediately. The setting is saved and also in Settings.
 
 ### Story difficulty
 
@@ -72,9 +87,9 @@ Glowing doorways (press Up) lead to side areas built on the craftpix city backgr
 
 ### Lore, attributes and options
 
-- **Lore codex** (Character menu → LORE): 23 entries from the story bible, unlocked by chapters, memory anchors and underbosses.
+- **Lore codex** (Character menu → LORE): 26 entries from the story bible, unlocked by chapters, memory anchors and underbosses.
 - **Six attributes**: Vitality, Power, Focus, Agility (speed, dash), Luck (critical hits, drops), Spirit (special damage). Critical hits deal double.
-- **Settings → Lana & Jason help in boss fights**: turn the AI allies off.
+- **Settings → Lana & Jason help in boss fights** (or key 2): turn the AI allies off.
 - **Readability**: body text uses Atkinson Hyperlegible Next (OFL), larger HUD text with outlines.
 - **Feel** (after Celeste's documented forgiveness tricks): half gravity at the top of a held jump, buffered attacks, corner and ledge correction, and a look-ahead camera with a vertical dead zone.
 

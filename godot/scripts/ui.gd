@@ -254,7 +254,7 @@ func show_sub(kind: String, from_pause := false) -> void:
 			var rows = [["DIFFICULTY: " + Game.diff()["name"], func(): Game.cycle_difficulty(); main.apply_difficulty(); show_sub("settings")],
 				["SOUND: " + ("ON" if Sound.sound_on else "OFF"), func(): Sound.set_sound(not Sound.sound_on); show_sub("settings")],
 				["MUSIC: " + ("ON" if Sound.music_on else "OFF"), func(): Sound.set_music(not Sound.music_on); show_sub("settings")],
-				["LANA & JASON HELP IN BOSS FIGHTS: " + ("ON" if Game.settings.get("allies", true) else "OFF"), func(): Game.settings["allies"] = not Game.settings.get("allies", true); Game.save_settings(); show_sub("settings")],
+				["LANA & JASON HELP IN BOSS FIGHTS [%s]: " % Game.label("allies") + ("ON" if Game.settings.get("allies", true) else "OFF"), func(): Game.settings["allies"] = not Game.settings.get("allies", true); Game.save_settings(); show_sub("settings")],
 				["CONTROLLER RUMBLE: " + ("ON" if Game.settings.get("rumble", true) else "OFF"), func(): Game.settings["rumble"] = not Game.settings.get("rumble", true); Game.save_settings(); Game.rumble(0.5, 0.5, 0.2); show_sub("settings")],
 				["BUTTON ICONS: " + {"auto": "AUTO", "ps": "PLAYSTATION", "xbox": "XBOX"}[Game.settings.get("pad_style", "auto")], func(): _cycle_style(); show_sub("settings")],
 				["CONTROLS...", func(): show_sub("controls")]]
@@ -304,6 +304,14 @@ func show_sub(kind: String, from_pause := false) -> void:
 						var b = Button.new()
 						b.custom_minimum_size = Vector2(120, 26)
 						b.add_theme_font_size_override("font_size", 11)
+						# Slimmer rows so every binding fits on one screen.
+						for st in ["normal", "hover", "pressed", "focus", "disabled"]:
+							var sb = b.get_theme_stylebox(st)
+							if sb != null:
+								sb = sb.duplicate()
+								sb.content_margin_top = 2
+								sb.content_margin_bottom = 2
+								b.add_theme_stylebox_override(st, sb)
 						b.text = Game.bind_label(act, pad)
 						b.pressed.connect(func(): _begin_capture(act, pp, b))
 						g.add_child(b)
@@ -805,20 +813,31 @@ func _menu_skills() -> void:
 		var ml = _small(moves, 12, Color("#a8a0b0"))
 		ml.custom_minimum_size = Vector2(780, 0)
 		_menu_body.add_child(ml)
-		var row = HBoxContainer.new()
-		row.add_theme_constant_override("separation", 10)
-		_menu_body.add_child(row)
-		var sl = _small("SPECIAL [%s]:" % Game.label("laser"), 13)
+		var top = HBoxContainer.new()
+		top.add_theme_constant_override("separation", 10)
+		_menu_body.add_child(top)
+		var sl = _small("SPECIAL [%s] · next [%s]:" % [Game.label("laser"), Game.label("spell")], 13)
 		sl.autowrap_mode = TextServer.AUTOWRAP_OFF
 		sl.custom_minimum_size = Vector2(130, 0)
-		row.add_child(sl)
+		top.add_child(sl)
+		var many: bool = hd["specials"].size() > 3
+		var row: Container
+		if many:
+			var g = GridContainer.new()
+			g.columns = 4
+			g.add_theme_constant_override("h_separation", 6)
+			g.add_theme_constant_override("v_separation", 4)
+			_menu_body.add_child(g)
+			row = g
+		else:
+			row = top
 		for sp in hd["specials"]:
 			var sd: Dictionary = Game.SPECIALS[sp]
 			var locked = lvl < int(sd["lv"]) and not Game.story_mode()
 			var sel: bool = Game.prog["special"].get(h, "") == sp
 			var hh = h
 			var spp: String = sp
-			var b = _btn(("▸ " if sel else "") + sd["name"] + ("  (Lv %d)" % sd["lv"] if locked else ""), func(): _pick_special(hh, spp), 230, 12)
+			var b = _btn(("▸ " if sel else "") + sd["name"] + ("  (Lv %d)" % sd["lv"] if locked else ""), func(): _pick_special(hh, spp), 190 if many else 230, 12)
 			b.disabled = locked
 			var d: String = sd["d"] + "  Cost %d Resonance." % int(sd["cost"])
 			b.focus_entered.connect(func(): _menu_desc.text = d)

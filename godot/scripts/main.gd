@@ -544,6 +544,10 @@ func _physics_process(dt: float) -> void:
 	_check_switch()
 	if Input.is_action_just_pressed("rage"):
 		toggle_rage()
+	if Input.is_action_just_pressed("allies"):
+		toggle_allies()
+	if Input.is_action_just_pressed("spell"):
+		cycle_special()
 	if trans != null:
 		trans["t"] += dt
 		if not trans["done"] and trans["t"] >= 0.28:
@@ -826,7 +830,7 @@ func _check_sigils() -> void:
 
 func _check_anchors() -> void:
 	for a in room.markers["anchor"]:
-		if Game.anchors.has(a.id):
+		if Game.anchors.has(a.id) or fight != null:
 			continue
 		var c: Node = null
 		if a.astral:
@@ -984,6 +988,68 @@ func fire_special(p: CharacterBody2D, kind: String) -> void:
 			fx.projectiles.append({"p": p.position + Vector2(p.face * 30, -14), "v": Vector2(p.face * 540, 0), "r": 22.0, "k": "pwave", "c": Color("#8fd8ff"),
 				"life": 1.5, "grav": 0.0, "rot": 0.0, "friendly": true, "pierce": true, "dmg": special_dmg(p, 3), "hits": {}})
 			Sound.play("whoosh")
+		"firebolt":
+			var dv: Vector2 = p.laser_dir
+			fx.projectiles.append({"p": p.position + Vector2(p.face * 26, -48), "v": dv * 620.0, "r": 12.0, "k": "fire", "c": Color("#ffb060"),
+				"life": 1.4, "grav": 0.0, "rot": 0.0, "friendly": true, "dmg": special_dmg(p, 3), "hits": {}})
+			fx.sprite("magic/flame_flicker", p.position + Vector2(p.face * 30, -40), 70.0, 0.25, 0.0, Color.WHITE, 4)
+			Sound.play("u_shot", 0.08, -6.0)
+		"lance":
+			_spell_lance(p)
+		"arcane":
+			var ac: Vector2 = p.position + Vector2(p.face * 110, -40)
+			fx.sprite("magic/arcane_splash", ac, 240.0, 0.45, 0.0, Color.WHITE, 6)
+			Sound.play("u_spell", 0.05, -4.0)
+			Sound.play("pop")
+			_spell_area(p, ac, 120.0, 3, 0.0)
+		"sigil":
+			var sc: Vector2 = p.position + Vector2(0, -40)
+			fx.sprite("magic/void_sigil_ring", sc, 340.0, 0.6, 0.0, Color.WHITE, 8)
+			fx.rings.append({"p": sc, "r": 10.0, "life": 0.45, "max": 0.45, "c": Color("#c9b8ff")})
+			Sound.play("glitch")
+			Sound.play("boom", 0.05, -6.0)
+			shake = maxf(shake, 0.2)
+			_spell_area(p, sc, 170.0, 2, 1.6)
+		"thorns":
+			for k in 3:
+				var tx: float = p.position.x + p.face * (70.0 + k * 80.0)
+				fx.sprite("magic/thorn_bramble" if k % 2 == 0 else "magic/thorn_bramble_b", Vector2(tx, p.position.y - 60), 150.0, 0.6, 0.0, Color.WHITE, 8)
+			Sound.play("u_bat", 0.1, -6.0)
+			_spell_box(p, Rect2(minf(p.position.x, p.position.x + p.face * 280.0), p.position.y - 70, 280, 80), 2, 2.0)
+		"spikes":
+			var tgt: Node = _nearest(p, 640.0)
+			var sx: float = tgt.position.x if tgt else p.position.x + p.face * 160.0
+			var sy: float = tgt.position.y if tgt else p.position.y
+			fx.sprite("magic/stone_spikes", Vector2(sx, sy - 70), 160.0, 0.55, 0.0, Color.WHITE, 8)
+			Sound.play("boom", 0.05, -3.0)
+			shake = maxf(shake, 0.2)
+			_spell_box(p, Rect2(sx - 50, sy - 200, 100, 210), 4, 0.0)
+		"flame":
+			for k in 3:
+				var fxp: float = p.position.x + p.face * (80.0 + k * 90.0)
+				var delay = k * 0.12
+				get_tree().create_timer(delay).timeout.connect(func():
+					fx.sprite("magic/flame_splash_ground", Vector2(fxp, p.position.y - 50), 130.0, 0.5, 0.0, Color.WHITE, 4)
+					fx.sprite("magic/flame_flicker", Vector2(fxp, p.position.y - 50), 110.0, 0.6, 0.0, Color.WHITE, 4)
+					Sound.play("whoosh", 0.1, -6.0)
+					_spell_box(p, Rect2(fxp - 45, p.position.y - 110, 90, 120), 2, 0.0))
+		"charm":
+			var ct: Node = _nearest(p, 520.0)
+			var cp: Vector2 = ct.hurt_rect().get_center() if ct else p.position + Vector2(p.face * 120, -50)
+			fx.sprite("magic/heart_charm", cp + Vector2(0, -30), 150.0, 0.8, 0.0, Color.WHITE, 8)
+			Sound.play("u_item", 0.05, -4.0)
+			if ct:
+				ct.hit(1, p.face)
+				stun(ct, 3.0)
+			p.hp = mini(p.max_hp, p.hp + 1)
+			fx.text_float(p.position + Vector2(0, -90), "+1", Color("#ff9ad8"), 0.8)
+		"glyph":
+			fx.sprite("magic/heal_glyph_ground", p.position + Vector2(0, -40), 200.0, 0.9, 0.0, Color.WHITE, 8)
+			Sound.play("heal")
+			p.hp = mini(p.max_hp, p.hp + 2)
+			fx.text_float(p.position + Vector2(0, -90), "+2", Color("#9fffc8"), 0.9)
+		"smoke":
+			_spell_smoke(p)
 		"geyser":
 			var best: Node = null
 			var bd = 640.0
@@ -1004,6 +1070,79 @@ func fire_special(p: CharacterBody2D, kind: String) -> void:
 			for en in ents:
 				if is_instance_valid(en) and not en.dead and absf(en.hurt_rect().get_center().x - gx) < 46.0 and absf(en.position.y - gy) < 220.0:
 					en.hit(special_dmg(p, 4), 1)
+
+
+func _nearest(p: Node, within: float) -> Node:
+	var best: Node = null
+	var bd = within
+	for en in ents:
+		if alive(en):
+			var d: float = en.position.distance_to(p.position)
+			if d < bd:
+				bd = d
+				best = en
+	return best
+
+
+## Spell damage helpers: everything alive in a circle or a box.
+func _spell_area(p: Node, c: Vector2, r: float, base: int, stun_t: float) -> void:
+	for en in ents:
+		if alive(en) and en.hurt_rect().get_center().distance_to(c) < r:
+			if en.hit(special_dmg(p, base), int(signf(en.position.x - p.position.x)) if en.position.x != p.position.x else 1) and stun_t > 0.0:
+				stun(en, stun_t)
+
+
+func _spell_box(p: Node, box: Rect2, base: int, stun_t: float) -> void:
+	for en in ents:
+		if alive(en) and en.hurt_rect().intersects(box):
+			if en.hit(special_dmg(p, base), p.face) and stun_t > 0.0:
+				stun(en, stun_t)
+
+
+## Light Lance: like the psychic laser, in white light (diagonal when aimed).
+func _spell_lance(p: CharacterBody2D) -> void:
+	var dir: Vector2 = p.laser_dir
+	var from: Vector2 = p.position + Vector2(p.face * 26, -48)
+	var to: Vector2 = from + dir * 900.0
+	var r = p.get_world_2d().direct_space_state.intersect_ray(PhysicsRayQueryParameters2D.create(from, to, 1 | 8))
+	if not r.is_empty():
+		to = r["position"]
+	var diag: bool = dir.y != 0.0
+	var n = maxi(1, int(from.distance_to(to) / 110.0))
+	for i in n:
+		var at: Vector2 = from.lerp(to, (i + 0.5) / float(n))
+		if diag:
+			fx.sprite("magic/light_beam_diag", at, 170.0, 0.4, -PI / 2.0 if dir.x > 0.0 else PI, Color(1, 0.95, 0.8), 8)
+		else:
+			fx.sprite("magic/light_beam_h", at, 150.0, 0.4, 0.0 if dir.x > 0.0 else PI, Color(1, 0.95, 0.8), 8)
+	Sound.play("beam", 0.05)
+	shake = maxf(shake, 0.15)
+	fx.burst(to, 14, 320, Color("#fff2c8"))
+	for en in ents:
+		if not alive(en):
+			continue
+		var box: Rect2 = en.hurt_rect().grow(14)
+		# Sample along the beam: cheap segment-vs-box.
+		for k in 12:
+			if box.has_point(from.lerp(to, k / 11.0)):
+				en.hit(special_dmg(p, 3), int(signf(dir.x)) if dir.x != 0.0 else 1)
+				break
+
+
+## Smoke Step: vanish, reappear up to 200px ahead (stopping at walls),
+## hitting everything passed through.
+func _spell_smoke(p: CharacterBody2D) -> void:
+	var from: Vector2 = p.position
+	var want: Vector2 = from + Vector2(p.face * 200.0, 0)
+	var r = p.get_world_2d().direct_space_state.intersect_ray(PhysicsRayQueryParameters2D.create(from + Vector2(0, -30), want + Vector2(0, -30), 1))
+	if not r.is_empty():
+		want.x = r["position"].x - p.face * 20.0
+	fx.sprite("magic/smoke_poof", from + Vector2(0, -40), 150.0, 0.45, 0.0, Color.WHITE, 8)
+	p.position.x = want.x
+	p.inv = maxf(p.inv, 0.3)
+	fx.sprite("magic/smoke_poof", p.position + Vector2(0, -40), 150.0, 0.45, 0.0, Color.WHITE, 8)
+	Sound.play("whoosh")
+	_spell_box(p, Rect2(minf(from.x, want.x), from.y - 90, absf(want.x - from.x) + 1.0, 90), 1, 0.4)
 
 
 func alive(en) -> bool:
@@ -1030,6 +1169,18 @@ func summon(kind: String, at: Vector2) -> void:
 func start_underboss(e: Node) -> void:
 	if fight != null or mode != "play":
 		return
+	if e.cfg.has("devil") and e.state == "wait" and not e.introduced:
+		# Azazel always has something to say first (voiced with ElevenLabs).
+		e.state = "dormant"
+		e.introduced = true
+		Sound.line("vo_devil%d" % e.cfg["devil"])
+		fx.sprite("magic/void_sigil_ring", e.position + Vector2(0, -60), 300.0, 1.0, 0.0, Color(0.5, 1.0, 0.95), 8)
+		flash_screen(0.4, Color("#5ff2e0"))
+		start_dialog(e.id, func():
+			if is_instance_valid(e):
+				e.state = "wait"
+				start_underboss(e))
+		return
 	e.state = "idle"
 	e.tm = 1.0
 	fight = {"id": "underboss", "name": e.cfg["name"], "sub": e.cfg["sub"], "e": e}
@@ -1045,10 +1196,15 @@ func underboss_defeated(e: Node) -> void:
 	for x in ents:
 		if is_instance_valid(x) and (x.kind == "imp" or x.kind == "rider") and x.id.begins_with("sum"):
 			x.hit(999, 1)
-	boss_reward(140 if e.cfg.get("boss", false) else 90, e.cfg.get("item", ""), e.position + Vector2(0, -60))
-	toast("New lore unlocked · " + Game.label("menu") + " → LORE")
+	boss_reward(140 if e.cfg.get("boss", false) else 90 + 25 * int(e.cfg.get("devil", 0)), e.cfg.get("item", ""), e.position + Vector2(0, -60))
+	if e.cfg.has("lore") or e.id in ["devil1", "devil3", "devil5"]:
+		toast("New lore unlocked · " + Game.label("menu") + " → LORE")
 	if e.id == "auditor":
 		get_tree().create_timer(1.2).timeout.connect(resolve_auditor)
+		return
+	if e.cfg.has("devil"):
+		Sound.line("vo_devil_rest")
+		get_tree().create_timer(1.6).timeout.connect(func(): start_dialog(e.id + "Out", func(): Sound.line("vo_devil_laugh")))
 		return
 	var done = {"monitor": "rooftopDone", "brood": "downtownDone", "warden": "underpassDone", "judge": "neonDone"}.get(e.id, "")
 	if done != "":
@@ -1116,19 +1272,17 @@ func fire_laser(p: CharacterBody2D) -> void:
 		Sound.play("hit", 0.08)
 
 
-## Max's Rage: unlimited, immortal, a doubled aura and every power at no
-## cost. Toggled on and off with its own button (1 by default).
+## Rage: unlimited, immortal, a doubled aura and every power at no cost, for
+## whoever is being played. Toggled on and off with its own button (1).
 func toggle_rage() -> void:
 	if player.rage:
 		player.rage = false
 		player.aura.scale = Vector2.ONE
-		toast("Rage fades. Max breathes again.")
+		toast("Rage fades. %s breathes again." % Game.HEROES[player.hero]["name"].capitalize())
 		Sound.play("u_portal", 0.0, -6.0)
 		return
 	if astral_active():
 		end_projection(false)
-	if player.hero != "max":
-		switch_hero("max")
 	player.rage = true
 	player.res = 99.0
 	player.inv = 0.0
@@ -1143,7 +1297,46 @@ func toggle_rage() -> void:
 		fx.part(player.position + Vector2(0, -36), Vector2(cos(a), sin(a)) * randf_range(200, 520), "spark", Color("#ff6a9a") if i % 2 else Color("#c9b8ff"))
 	fx.sprite("ring", player.position, 260.0, 0.5, 0.0, Color("#ff6a9a"), 4, 2)
 	fx.sprite("magic/void_sigil_ring", player.position + Vector2(0, -40), 320.0, 0.8, 0.0, Color.WHITE, 8)
-	toast("RAGE · Max can't be hurt · every power is free · %s to calm down" % Game.label("rage"))
+	toast("RAGE · %s can't be hurt · every power is free · %s to calm down" % [Game.HEROES[player.hero]["name"].capitalize(), Game.label("rage")])
+
+
+## Lana & Jason's help in boss fights, on and off (2 by default). Takes effect
+## at once, mid-fight included.
+func toggle_allies() -> void:
+	var on = not Game.settings.get("allies", true)
+	Game.settings["allies"] = on
+	Game.save_settings()
+	Sound.play("select")
+	if on:
+		toast("Boss help ON · the others fight beside you · %s to turn off" % Game.label("allies"))
+		if fight != null:
+			_spawn_allies()
+	else:
+		toast("Boss help OFF · you fight bosses alone · %s to turn on" % Game.label("allies"))
+		for a in allies:
+			if is_instance_valid(a):
+				fx.sprite("magic/smoke_poof", a.position + Vector2(0, -40), 130.0, 0.4, 0.0, Color.WHITE, 8)
+		_clear_allies()
+
+
+## Step to the next special this hero has unlocked (Max: his whole spellbook).
+func cycle_special() -> void:
+	if astral_active():
+		return
+	var h: String = player.hero
+	var list: Array = []
+	for sp in Game.HEROES[h]["specials"]:
+		if Game.prog["level"] >= int(Game.SPECIALS[sp]["lv"]) or Game.story_mode():
+			list.append(sp)
+	if list.size() < 2:
+		toast("No other specials yet")
+		return
+	var cur: String = Game.prog["special"].get(h, list[0])
+	var nxt: String = list[(list.find(cur) + 1) % list.size()]
+	Game.prog["special"][h] = nxt
+	Sound.play("tick")
+	fx.text_float(player.position + Vector2(0, -100), Game.SPECIALS[nxt]["name"].to_upper(), Color(Game.HEROES[h]["col"]), 0.9)
+	toast("%s · %s (%d Resonance)" % [Game.SPECIALS[nxt]["name"], Game.SPECIALS[nxt]["d"], int(Game.special_cost(h))])
 
 
 func hurt_player(d: int, from_x: float) -> void:
@@ -1576,9 +1769,6 @@ func _check_switch() -> void:
 	var party: Array = Game.party()
 	if Input.is_action_just_pressed("switch") and party.size() > 1:
 		want = party[(party.find(player.hero) + 1) % party.size()]
-	for i in [1, 2]:
-		if Input.is_action_just_pressed("hero%d" % (i + 1)) and i < party.size():
-			want = party[i]
 	if want != "" and want != player.hero:
 		switch_hero(want)
 
@@ -1589,9 +1779,6 @@ func switch_hero(h: String) -> void:
 		return
 	if not Game.hero_unlocked(h):
 		return
-	if player.rage and h != "max":
-		player.rage = false
-		player.aura.scale = Vector2.ONE
 	var frac: float = float(player.hp) / float(maxi(1, player.max_hp))
 	player.set_hero(h)
 	Game.prog["hero"] = h

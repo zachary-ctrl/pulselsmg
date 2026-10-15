@@ -195,7 +195,14 @@ kind = "portal"
 target_room = "rooftop"
 spawn_point = Vector2(120, 470)
 
-[node name="Loot_l_lunchbox_11" type="Node2D" parent="Markers"]
+[node name="Spawn_devil1_11" type="Node2D" parent="Markers"]
+position = Vector2(2960, 470)
+script = ExtResource("marker")
+kind = "spawn"
+id = "devil1"
+enemy = "underboss"
+
+[node name="Loot_l_lunchbox_12" type="Node2D" parent="Markers"]
 position = Vector2(660, 404)
 script = ExtResource("marker")
 kind = "loot"

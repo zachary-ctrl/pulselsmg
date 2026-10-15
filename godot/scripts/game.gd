@@ -90,6 +90,9 @@ const LORE := [
 	{"id": "judge", "title": "The Third Judge", "when": "flag:down_judge", "text": "Ciencia's science fair had three judges. Two were people. The third was a billboard that learned to score minds."},
 	{"id": "auditor", "title": "The Auditor", "when": "flag:down_auditor", "text": "Office of Continuity. Grey suit, different face every time. Its job is to keep reality consistent. It considers Max the inconsistency."},
 	{"id": "subject7", "title": "Subject 7", "when": "anchor:subject7", "text": "The Order's file on Max. Projection stable past sixty seconds. 'The Seals answer to him.'"},
+	{"id": "azazel", "title": "Azazel, the Horned Witness", "when": "flag:down_devil1", "text": "A winged, goat-headed sorcerer who appears wherever a Seal weakens. He never dies; he kneels, smiles and dissolves into teal smoke. Every time he returns he is larger. He calls Max 'little dreamer'."},
+	{"id": "blacksun2", "title": "The Black Sun, Again", "when": "flag:down_devil3", "text": "Not a sun. An observation scar: the place where something Outside has been watching Westbrook so long that reality wore thin. Azazel says it widens every time Max fights him. He may be lying. He may not be."},
+	{"id": "azazel5", "title": "What Watched You Being Born", "when": "flag:down_devil5", "text": "Azazel claims Ciencia and the Dharma Order were only his hands, and that he was present in the lab when Subject 7 first projected. Nobody else in the files mentions him. Every file has a burned corner in the same place."},
 ]
 
 
@@ -110,7 +113,7 @@ func lore_unlocked(e: Dictionary) -> bool:
 ## aura color, and the special moves each can equip (the first is default).
 const HEROES := {
 	"max": {"name": "MAX", "run": 300.0, "jump": 760.0, "dmg": 1, "cd": 0.26, "hp": 0, "aura": "violet", "col": "#c9b8ff",
-		"blurb": "Psychokinesis, levitation, astral projection.", "specials": ["laser", "orb"]},
+		"blurb": "Psychokinesis, levitation, astral projection.", "specials": ["laser", "orb", "firebolt", "lance", "arcane", "sigil", "thorns", "spikes", "flame", "charm", "glyph", "smoke"]},
 	"lana": {"name": "LANA", "run": 335.0, "jump": 740.0, "dmg": 1, "cd": 0.19, "hp": 2, "aura": "crimson", "col": "#ff8a7a",
 		"blurb": "Superhuman reflexes, durability, hand-to-hand.", "specials": ["shout", "flurry"]},
 	"jason": {"name": "JASON", "run": 285.0, "jump": 720.0, "dmg": 2, "cd": 0.38, "hp": 1, "aura": "sky", "col": "#8fd8ff",
@@ -123,6 +126,17 @@ const SPECIALS := {
 	"flurry": {"name": "Flurry", "cost": 24, "lv": 3, "d": "Dash forward throwing six fast punches."},
 	"wave": {"name": "Tidal Push", "cost": 22, "lv": 1, "d": "A wave rolls along the floor for 3 damage."},
 	"geyser": {"name": "Geyser", "cost": 28, "lv": 4, "d": "Water erupts under the nearest enemy for 4 damage."},
+	# Max's spellbook: every effect in the magic pack, open from the start.
+	"firebolt": {"name": "Fire Bolt", "cost": 14, "lv": 1, "d": "A fast bolt of fire. 3 damage and a burst on impact. Hold up to fire it diagonally."},
+	"lance": {"name": "Light Lance", "cost": 22, "lv": 1, "d": "A beam of white light through everything in line for 3. Hold up to angle it."},
+	"arcane": {"name": "Arcane Splash", "cost": 16, "lv": 1, "d": "A burst of raw thought in front of Max: 3 damage around the splash."},
+	"sigil": {"name": "Void Sigil", "cost": 24, "lv": 1, "d": "A ring of sigils around Max. 2 damage and stuns everyone close."},
+	"thorns": {"name": "Bramble Snare", "cost": 18, "lv": 1, "d": "Thorns erupt along the floor ahead. 2 damage and roots enemies in place."},
+	"spikes": {"name": "Stone Spikes", "cost": 24, "lv": 1, "d": "Stone spears rise under the nearest enemy for 4 damage."},
+	"flame": {"name": "Flame Line", "cost": 20, "lv": 1, "d": "Three pillars of fire roll out along the floor. 2 damage each."},
+	"charm": {"name": "Heart Charm", "cost": 18, "lv": 1, "d": "Charms the nearest enemy (stunned for 3s) and heals Max 1."},
+	"glyph": {"name": "Heal Glyph", "cost": 30, "lv": 1, "d": "A glyph of light under Max. Heals 2 instantly."},
+	"smoke": {"name": "Smoke Step", "cost": 10, "lv": 1, "d": "Vanish in smoke and step forward through enemies, hitting each for 1."},
 }
 ## Equipment (three slots). Mods are summed across equipped items.
 const ITEMS := {
@@ -388,6 +402,22 @@ const DLG := {
 		[N, "", "New: underbosses guard side areas. Look for glowing doorways and press {up} to enter."]],
 	"c5_lana": [["lana", "smirk", "Grey Suit is on the roof. He's not even hiding. That's insulting."]],
 	"skylineIntro": [[N, "", "The smog line. The rooftops are close enough to jump. The grey suit waits at the far end, then is gone."]],
+	"devil1": [[N, "", "The lockers stop whispering. Something with horns is sitting cross-legged in the air at the end of the hall."],
+		["devil", "", "Little dreamer. You opened a door in your sleep... and I walked through it."], ["max", "shocked", "Okay. That's a goat. That's a GOAT, talking."]],
+	"devil1Out": [["devil", "", "Kneel? No. I only... rest."], [N, "", "He folds into teal smoke. Above the school, for one second, the sun goes black."]],
+	"devil2": [["devil", "", "Again? Every time you strike me, the black sun grows wider."], ["lana", "angry", "Max. Why is the goat back. Why does the goat know you."],
+		["max", "worried", "He was in the hallway. He's... following me."]],
+	"devil2Out": [["devil", "", "Kneel? No. I only... rest."], ["lana", "neutral", "He's stronger than last time. That's not how beating someone is supposed to work."]],
+	"devil3": [["devil", "", "The water remembers me, boy. It always has."], ["jason", "angry", "Then it can remember this."],
+		[N, "", "The reservoir turns teal around his feet. He is bigger now. The wings almost touch both walls."]],
+	"devil3Out": [["devil", "", "Kneel? No. I only... rest."], ["jason", "worried", "He let go. He wasn't losing. He was... measuring us."]],
+	"devil4": [["devil", "", "Your science fair is my altar. Look how they smile."], ["max", "angry", "Leave them out of this."],
+		["devil", "", "They were never out of it. Every Seal you break, I grow. Shall we test the hypothesis?"]],
+	"devil4Out": [["devil", "", "Kneel? No. I only... rest."], [N, "", "The parents keep smiling. One of them is clapping slowly, out of time with everyone else."]],
+	"devil5": [["devil", "", "The teacher was only my hands. I am what watched you being born."], ["max", "worried", "The black sun. It's not a sun. It's an eye."],
+		["devil", "", "Clever boy. Every time you projected, I learned your name a little better. Now: show me everything."]],
+	"devil5Out": [["devil", "", "Kneel? No. I only... rest."], ["lana", "worried", "He's not done. Is he ever going to be done?"],
+		["max", "neutral", "No. But neither are we."]],
 	"auditorIntro": [["auditor", "", "Mr. Inoki. You have broken three Seals' worth of rules in one school year."],
 		["max", "angry", "Who ARE you people?"], ["auditor", "", "The Office of Continuity. We keep reality consistent. You are an inconsistency."],
 		["auditor", "", "Dr. Ciencia believed he was the receiver. He was our decoy. You are the receiver, Subject 7."],
@@ -410,8 +440,9 @@ const PORTRAIT := {
 	"ciencia": {"*": "ciencia_0"},
 	"choir": {"*": "choir_0"},
 	"auditor": {"*": "ciencia_0"},
+	"devil": {"*": "devil_0"},
 }
-const SPEAKER := {"max": "MAX INOKI", "lana": "LANA", "jason": "JASON", "ciencia": "DR. CIENCIA", "choir": "THE CHOIR", "auditor": "THE AUDITOR"}
+const SPEAKER := {"max": "MAX INOKI", "lana": "LANA", "jason": "JASON", "ciencia": "DR. CIENCIA", "choir": "THE CHOIR", "auditor": "THE AUDITOR", "devil": "AZAZEL"}
 
 var _portraits = {}
 
@@ -462,22 +493,22 @@ const SETTINGS_PATH := "user://sakawa_settings.json"
 const REBINDABLE := [["left", "Move left"], ["right", "Move right"], ["up", "Up · talk · rest"], ["down", "Down · drop"],
 	["jump", "Jump"], ["attack", "Strike"], ["kick", "Kick"], ["laser", "Special"], ["dash", "Dash"], ["heal", "Focus heal"],
 	["project", "Astral projection"], ["fp", "Full Potential"], ["transform", "Alter ego (transform)"], ["switch", "Swap hero"],
-	["menu", "Character menu"], ["rage", "Max's Rage mode"], ["pause", "Pause"]]
+	["menu", "Character menu"], ["rage", "Rage (immortal) mode"], ["allies", "Lana & Jason boss help on/off"], ["spell", "Next special / spell"], ["pause", "Pause"]]
 const DEFAULT_KEYS := {
 	"left": [KEY_A, KEY_LEFT], "right": [KEY_D, KEY_RIGHT], "up": [KEY_W, KEY_UP], "down": [KEY_S, KEY_DOWN],
 	"jump": [KEY_SPACE, KEY_Z], "attack": [KEY_X, KEY_J], "kick": [KEY_V, KEY_L], "laser": [KEY_B, KEY_I], "dash": [KEY_C, KEY_K, KEY_SHIFT],
-	"heal": [KEY_Q, KEY_F], "project": [KEY_E, KEY_P], "fp": [KEY_R], "transform": [KEY_T, KEY_G], "switch": [KEY_TAB], "menu": [KEY_M, KEY_N], "rage": [KEY_1],
+	"heal": [KEY_Q, KEY_F], "project": [KEY_E, KEY_P], "fp": [KEY_R], "transform": [KEY_T, KEY_G], "switch": [KEY_TAB], "menu": [KEY_M, KEY_N], "rage": [KEY_1], "allies": [KEY_2], "spell": [KEY_3, KEY_Y],
 	"pause": [KEY_ESCAPE],
 }
 const DEFAULT_PAD := {
 	"left": ["b13"], "right": ["b14"], "up": ["b11"], "down": ["b12"], "jump": ["b0"], "attack": ["b2"], "kick": ["b1"], "laser": ["a5+"],
-	"dash": ["b10"], "heal": ["b9"], "project": ["b3"], "fp": ["a4+"], "transform": ["b7"], "switch": ["b8"], "menu": ["b4"], "pause": ["b6"], "rage": ["b20"],
+	"dash": ["b10"], "heal": ["b9"], "project": ["b3"], "fp": ["a4+"], "transform": ["b7"], "switch": ["b8"], "menu": ["b4"], "pause": ["b6"], "rage": ["b20"], "allies": ["b15"], "spell": ["a2+"],
 }
 const PAD_NAMES := {
 	"ps": {"b0": "Cross", "b1": "Circle", "b2": "Square", "b3": "Triangle", "b4": "Create", "b5": "PS", "b6": "Options", "b7": "L3", "b8": "R3",
-		"b9": "L1", "b10": "R1", "b11": "D-pad Up", "b12": "D-pad Down", "b13": "D-pad Left", "b14": "D-pad Right", "b20": "Touchpad", "a4+": "L2", "a5+": "R2"},
+		"b9": "L1", "b10": "R1", "b11": "D-pad Up", "b12": "D-pad Down", "b13": "D-pad Left", "b14": "D-pad Right", "b15": "Mic", "b20": "Touchpad", "a4+": "L2", "a5+": "R2"},
 	"xbox": {"b0": "A", "b1": "B", "b2": "X", "b3": "Y", "b4": "View", "b5": "Guide", "b6": "Menu", "b7": "LS", "b8": "RS",
-		"b9": "LB", "b10": "RB", "b11": "D-pad Up", "b12": "D-pad Down", "b13": "D-pad Left", "b14": "D-pad Right", "b20": "Touchpad", "a4+": "LT", "a5+": "RT"},
+		"b9": "LB", "b10": "RB", "b11": "D-pad Up", "b12": "D-pad Down", "b13": "D-pad Left", "b14": "D-pad Right", "b15": "Share", "b20": "Touchpad", "a4+": "LT", "a5+": "RT"},
 }
 const AXIS_NAMES := {"a0-": "Left stick ←", "a0+": "Left stick →", "a1-": "Left stick ↑", "a1+": "Left stick ↓", "a2-": "Right stick ←", "a2+": "Right stick →",
 	"a3-": "Right stick ↑", "a3+": "Right stick ↓"}
@@ -529,7 +560,7 @@ func _pad_event(code: String) -> InputEvent:
 
 
 func apply_bindings() -> void:
-	var fixed = {"confirm": [KEY_ENTER, KEY_KP_ENTER], "hero2": [KEY_2], "hero3": [KEY_3]}
+	var fixed = {"confirm": [KEY_ENTER, KEY_KP_ENTER]}
 	for action in fixed:
 		if not InputMap.has_action(action):
 			InputMap.add_action(action, 0.35)

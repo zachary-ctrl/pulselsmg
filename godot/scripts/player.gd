@@ -479,8 +479,14 @@ func _laser(dt: float, healing: bool) -> void:
 	special = Game.prog["special"].get(hero, Game.HEROES[hero]["specials"][0])
 	var cost = Game.special_cost(hero)
 	if rage:
-		# Rage: every power, free, cycling through all six specials.
-		special = RAGE_SPECIALS[rage_i % RAGE_SPECIALS.size()]
+		# Rage: every power, free, cycling through all of them (Max adds his
+		# whole spellbook).
+		var pool: Array = RAGE_SPECIALS.duplicate()
+		if hero == "max":
+			for sp in Game.HEROES["max"]["specials"]:
+				if not pool.has(sp):
+					pool.append(sp)
+		special = pool[rage_i % pool.size()]
 		rage_i += 1
 		cost = 0.0
 		main.fx.text_float(position + Vector2(0, -96), Game.SPECIALS[special]["name"].to_upper(), Color("#ff9ad8"), 0.8)
@@ -490,7 +496,7 @@ func _laser(dt: float, healing: bool) -> void:
 		laser_cd = 0.6
 		return
 	res -= cost
-	laser_dir = Vector2.UP if inp.pressed("up") and special == "laser" else Vector2(face, 0)
+	laser_dir = Vector2.UP if inp.pressed("up") and special == "laser" else Vector2(face, -1).normalized() if inp.pressed("up") and special in ["firebolt", "lance"] else Vector2(face, 0)
 	laser_t = 0.4 if not rage else 0.3
 	laser_cd = 0.55 if not rage else 0.2
 	laser_fired = false
@@ -576,7 +582,7 @@ func update_pose(t: float, slumped: bool) -> void:
 	rig.visible = not blink
 	aura.scale = Vector2(2, 2) if rage else Vector2.ONE
 	if rage:
-		aura.color = "magenta"
+		aura.color = "magenta" if hero == "max" else Game.HEROES[hero]["aura"]
 		aura.target = 1.0
 		if not slumped and inv <= 1.0:
 			rig.tint = Color(1.0, 0.25, 0.45, 0.22 + 0.1 * sin(t * 9.0))

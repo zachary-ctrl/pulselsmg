@@ -2724,6 +2724,265 @@
      }
     ]
    }
+  },
+  "devil": {
+   "idle": {
+    "fps": 3,
+    "loop": true,
+    "frames": [
+     {
+      "f": "devil/idle_0.png",
+      "ax": 70.0,
+      "ay": 263
+     },
+     {
+      "f": "devil/idle_1.png",
+      "ax": 79.0,
+      "ay": 263
+     },
+     {
+      "f": "devil/idle_2.png",
+      "ax": 57.0,
+      "ay": 263
+     },
+     {
+      "f": "devil/idle_3.png",
+      "ax": 79.0,
+      "ay": 263
+     }
+    ]
+   },
+   "walk": {
+    "fps": 4,
+    "loop": true,
+    "frames": [
+     {
+      "f": "devil/walk_0.png",
+      "ax": 78.0,
+      "ay": 262
+     },
+     {
+      "f": "devil/walk_1.png",
+      "ax": 63.0,
+      "ay": 263
+     }
+    ]
+   },
+   "cast": {
+    "fps": 8,
+    "loop": false,
+    "frames": [
+     {
+      "f": "devil/cast_0.png",
+      "ax": 92.0,
+      "ay": 228
+     },
+     {
+      "f": "devil/cast_1.png",
+      "ax": 82.0,
+      "ay": 228
+     },
+     {
+      "f": "devil/cast_2.png",
+      "ax": 112.0,
+      "ay": 232
+     },
+     {
+      "f": "devil/cast_3.png",
+      "ax": 71.0,
+      "ay": 229
+     }
+    ]
+   },
+   "notice": {
+    "fps": 8,
+    "loop": false,
+    "frames": [
+     {
+      "f": "devil/notice_0.png",
+      "ax": 92.0,
+      "ay": 228
+     },
+     {
+      "f": "devil/notice_1.png",
+      "ax": 112.0,
+      "ay": 232
+     }
+    ]
+   },
+   "lunge": {
+    "fps": 10,
+    "loop": false,
+    "frames": [
+     {
+      "f": "devil/lunge_0.png",
+      "ax": 73.0,
+      "ay": 223
+     },
+     {
+      "f": "devil/lunge_1.png",
+      "ax": 98.0,
+      "ay": 222
+     },
+     {
+      "f": "devil/lunge_2.png",
+      "ax": 92.0,
+      "ay": 232
+     }
+    ]
+   },
+   "shoot": {
+    "fps": 8,
+    "loop": false,
+    "frames": [
+     {
+      "f": "devil/shoot_0.png",
+      "ax": 96.0,
+      "ay": 225
+     },
+     {
+      "f": "devil/shoot_1.png",
+      "ax": 75.0,
+      "ay": 232
+     },
+     {
+      "f": "devil/shoot_2.png",
+      "ax": 75.0,
+      "ay": 232
+     }
+    ]
+   },
+   "teleport": {
+    "fps": 12,
+    "loop": true,
+    "frames": [
+     {
+      "f": "devil/teleport_0.png",
+      "ax": 79.0,
+      "ay": 228
+     },
+     {
+      "f": "devil/teleport_1.png",
+      "ax": 68.0,
+      "ay": 220
+     },
+     {
+      "f": "devil/teleport_2.png",
+      "ax": 83.0,
+      "ay": 224
+     }
+    ]
+   },
+   "fly": {
+    "fps": 5,
+    "loop": true,
+    "frames": [
+     {
+      "f": "devil/fly_0.png",
+      "ax": 70.0,
+      "ay": 225
+     },
+     {
+      "f": "devil/fly_1.png",
+      "ax": 91.0,
+      "ay": 220
+     },
+     {
+      "f": "devil/fly_2.png",
+      "ax": 117.0,
+      "ay": 232
+     }
+    ]
+   },
+   "kneel": {
+    "fps": 5,
+    "loop": false,
+    "frames": [
+     {
+      "f": "devil/kneel_0.png",
+      "ax": 83.0,
+      "ay": 170
+     },
+     {
+      "f": "devil/kneel_1.png",
+      "ax": 81.0,
+      "ay": 145
+     },
+     {
+      "f": "devil/kneel_2.png",
+      "ax": 84.0,
+      "ay": 170
+     },
+     {
+      "f": "devil/kneel_3.png",
+      "ax": 98.0,
+      "ay": 170
+     },
+     {
+      "f": "devil/kneel_4.png",
+      "ax": 90.0,
+      "ay": 165
+     },
+     {
+      "f": "devil/kneel_5.png",
+      "ax": 101.0,
+      "ay": 160
+     }
+    ]
+   },
+   "summon": {
+    "fps": 6,
+    "loop": false,
+    "frames": [
+     {
+      "f": "devil/summon_0.png",
+      "ax": 89.0,
+      "ay": 251
+     },
+     {
+      "f": "devil/summon_1.png",
+      "ax": 65.0,
+      "ay": 244
+     },
+     {
+      "f": "devil/summon_2.png",
+      "ax": 78.0,
+      "ay": 219
+     }
+    ]
+   },
+   "meditate": {
+    "fps": 2,
+    "loop": true,
+    "frames": [
+     {
+      "f": "devil/meditate_0.png",
+      "ax": 83.0,
+      "ay": 204
+     },
+     {
+      "f": "devil/meditate_1.png",
+      "ax": 100.0,
+      "ay": 248
+     }
+    ]
+   },
+   "rise": {
+    "fps": 6,
+    "loop": false,
+    "frames": [
+     {
+      "f": "devil/rise_0.png",
+      "ax": 93.0,
+      "ay": 241
+     },
+     {
+      "f": "devil/rise_1.png",
+      "ax": 70.0,
+      "ay": 223
+     }
+    ]
+   }
   }
  }
 }

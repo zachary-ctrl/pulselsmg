@@ -161,7 +161,10 @@ func _friendly(p: Dictionary, dt: float) -> void:
 				main.hitstop = maxf(main.hitstop, 0.05)
 				Sound.play("hit", 0.08)
 				burst(pr.get_center(), 14, 340, p["c"])
-				sprite("vfx/burst_ice" if p["k"] == "pwave" else "vfx/burst_pink", pr.get_center(), 70.0, 0.3)
+				if p["k"] == "fire":
+					sprite("magic/fire_bolt_impact", pr.get_center(), 120.0, 0.3, 0.0, Color.WHITE, 4)
+				else:
+					sprite("vfx/burst_ice" if p["k"] == "pwave" else "vfx/burst_pink", pr.get_center(), 70.0, 0.3)
 				if not p.get("pierce", false):
 					p["life"] = 0.0
 					return
@@ -406,6 +409,16 @@ func _draw_add() -> void:
 			if tx:
 				_tex_draw(add_layer, tx, p["p"] - p["v"].normalized() * 40.0, Vector2(120, 38), ang, Color.WHITE)
 			add_layer.draw_circle(p["p"], 9, Color(0.9, 0.8, 1, 0.9))
+		elif p["k"] == "fire":
+			var diag: bool = absf(p["v"].x) > 1.0 and absf(p["v"].y) > 1.0
+			var fi = int(p["life"] * 14.0) % 4
+			var ft = vfx("magic/%s_%d" % ["fire_bolt_diag" if diag else "fire_bolt", fi])
+			if ft:
+				var r = 0.0 if not diag else (0.0 if p["v"].x > 0.0 else -PI / 2.0)
+				if not diag:
+					r = ang
+				_tex_draw(add_layer, ft, p["p"], Vector2(170, 170), r, Color.WHITE)
+			add_layer.draw_circle(p["p"], 7, Color(1, 0.8, 0.4, 0.8))
 		elif p["k"] == "pwave":
 			var tx2 = vfx("vfx/beam_ice")
 			if tx2:

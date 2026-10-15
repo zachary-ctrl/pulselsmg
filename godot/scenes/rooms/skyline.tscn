@@ -201,3 +201,10 @@ position = Vector2(2600, 470)
 script = ExtResource("marker")
 kind = "anchor"
 id = "cienciaFile"
+
+[node name="Spawn_devil5_8" type="Node2D" parent="Markers"]
+position = Vector2(2690, 470)
+script = ExtResource("marker")
+kind = "spawn"
+id = "devil5"
+enemy = "underboss"
